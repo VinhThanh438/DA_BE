@@ -1,5 +1,5 @@
 {
-  "name": "be-base",
+  "name": "da_be",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -15,6 +15,10 @@
     "prisma:mig": "npx prisma migrate dev",
     "prisma:seed": "ts-node src/common/infrastructure/database/prisma/seed.ts",
     "prisma:reset": "npx prisma migrate reset --skip-seed && npx prisma db push"
+  },
+  "prisma": {
+      "schema": "src/common/schema/schema.prisma",
+      "seed": "ts-node src/common/schema/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.0",
