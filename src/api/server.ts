@@ -27,7 +27,6 @@ export class ExpressServer {
     private httpServer?: Server;
 
     public async setup(port: number): Promise<Express> {
-
         const server = express();
         this.setupStandardMiddlewares(server);
         this.setupSecurityMiddlewares(server);
@@ -73,10 +72,7 @@ export class ExpressServer {
             }),
         );
 
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:3001',
-        ];
+        const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 
         server.use(
             cors({

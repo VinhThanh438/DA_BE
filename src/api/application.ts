@@ -84,6 +84,5 @@ export class Application {
     /**
      * Handle register event
      */
-    private static async registerEvents() {
-    }
+    private static async registerEvents() {}
 }

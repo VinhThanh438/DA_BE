@@ -5,9 +5,10 @@ export class Router {
     static async register(): Promise<Queue[]> {
         const queues: JobHandler[] = [];
 
-        queues.push(
+        queues
+            .push
             // push job here
-        );
+            ();
 
         return Promise.all(queues.map((queue) => queue.register()));
     }
