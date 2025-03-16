@@ -12,8 +12,10 @@ export class Application {
     /**
      * Implement create application, connecting db here
      */
+    private static databaseInstance = DatabaseAdapter.getInstance()
+
     public static async createApplication(): Promise<ExpressServer> {
-        await DatabaseAdapter.connect();
+        await this.databaseInstance.connect();
         await RedisAdapter.connect();
 
         Application.registerEvents();
@@ -68,7 +70,7 @@ export class Application {
     private static shutdownProperly(exitCode: number, express: ExpressServer) {
         Promise.resolve()
             .then(() => express.kill())
-            .then(() => DatabaseAdapter.disconnect())
+            .then(() => this.databaseInstance.disconnect())
             .then(() => RedisAdapter.disconnect())
             .then(() => {
                 logger.info('Shutdown complete, bye bye!');

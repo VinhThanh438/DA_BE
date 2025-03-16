@@ -23,9 +23,9 @@ export class DatabaseAdapter extends PrismaClient {
     async connect(): Promise<void> {
         try {
             await this.$connect();
-            logger.info('✅ Database connection established');
+            logger.info('Database connection established');
         } catch (error) {
-            logger.error('❌ Database connection failed:', error);
+            logger.error('Database connection failed:', error);
             throw error;
         }
     }
@@ -33,9 +33,9 @@ export class DatabaseAdapter extends PrismaClient {
     async disconnect(): Promise<void> {
         try {
             await this.$disconnect();
-            logger.info('✅ Database connection closed');
+            logger.info('Database connection closed');
         } catch (error) {
-            logger.error('❌ Error disconnecting from database:', error);
+            logger.error('Error disconnecting from database:', error);
             throw error;
         }
     }

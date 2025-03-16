@@ -1,5 +1,5 @@
 import { Application } from '@api/application';
-// import logger from '@common/logger';
+import logger from '@common/logger';
 
 /**
  * Entrypoint for bootstrapping and starting the application.
@@ -8,5 +8,5 @@ import { Application } from '@api/application';
  */
 
 Application.createApplication().then(() => {
-    // logger.info('The api was started successfully!');
+    logger.info('The api was started successfully!');
 });

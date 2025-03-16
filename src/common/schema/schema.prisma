@@ -13,4 +13,176 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Define your model
+// Define your models
+model Users {
+  id           BigInt  @id @default(autoincrement())
+  username     String  @unique
+  password     String
+  email        String  @unique
+  fullname     String
+  age          Int?
+  phone_number String?
+  description  String?
+  avatar       String?
+  type         String
+  is_disabled  Boolean @default(false)
+  created_by   String?
+
+  posts         Posts[]
+  comments      Comments[]
+  likes         Likes[]
+  saved_posts   SavedPosts[]
+  shared_posts  SharedPosts[]
+  notifications Notifications[]
+
+  followers     Follows[] @relation(name: "UserFollowers")
+  following     Follows[] @relation(name: "UserFollowing")
+
+  reports_made       Reports[] @relation(name: "UserReporter") // Người dùng báo cáo
+  reports_received   Reports[] @relation(name: "UserReported") // Người bị báo cáo
+
+  blocks_initiated   Blocks[]  @relation(name: "UserBlocks")   // Người dùng block người khác
+  blocks_received    Blocks[]  @relation(name: "UserBlocked")  // Người bị block
+
+  Tokens Tokens[]
+}
+
+model Follows {
+  id           BigInt @id @default(autoincrement())
+  following_id BigInt
+  follower_id  BigInt
+
+  following    Users @relation(name: "UserFollowing", fields: [following_id], references: [id], onDelete: Cascade)
+  follower     Users @relation(name: "UserFollowers", fields: [follower_id], references: [id], onDelete: Cascade)
+
+  @@unique([following_id, follower_id])
+}
+
+model Blocks {
+  id         BigInt @id @default(autoincrement())
+  blocked_id BigInt
+  user_id    BigInt
+
+  blocked    Users @relation(name: "UserBlocked", fields: [blocked_id], references: [id], onDelete: Cascade)
+  user       Users @relation(name: "UserBlocks", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([blocked_id, user_id])
+}
+
+model Reports {
+  id          BigInt  @id @default(autoincrement())
+  reason      String
+  comment_id  BigInt?
+  post_id     BigInt?
+  user_id     BigInt
+  reported_id BigInt
+
+  comment     Comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+  post        Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  reporter    Users @relation(name: "UserReporter", fields: [user_id], references: [id], onDelete: Cascade)
+  reported    Users @relation(name: "UserReported", fields: [reported_id], references: [id], onDelete: Cascade)
+}
+
+model Tokens {
+  id            BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  access_token  String
+  refresh_token String
+  expired_at    DateTime
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  user_data     Users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([refresh_token])
+}
+
+model Admins {
+  id       BigInt  @id @default(autoincrement())
+  username String  @unique
+  password String
+}
+
+model Posts {
+  id      BigInt  @id @default(autoincrement())
+  content String
+  user_id BigInt
+  user    Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  comments     Comments[]
+  likes        Likes[]
+  saved_posts  SavedPosts[]
+  shared_posts SharedPosts[]
+  post_medias  PostMedias[]
+  post_topics  PostTopics[]
+
+  reports      Reports[]
+}
+
+model Comments {
+  id       BigInt  @id @default(autoincrement())
+  content  String
+  user_id  BigInt?
+  post_id  BigInt?
+  user     Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  reports  Reports[]
+}
+
+model Likes {
+  id      BigInt  @id @default(autoincrement())
+  user_id BigInt?
+  post_id BigInt?
+  user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
+
+model SavedPosts {
+  id      BigInt  @id @default(autoincrement())
+  user_id BigInt?
+  post_id BigInt?
+  user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
+
+model SharedPosts {
+  id      BigInt  @id @default(autoincrement())
+  user_id BigInt?
+  post_id BigInt?
+  content String
+  user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
+
+model PostMedias {
+  id       BigInt  @id @default(autoincrement())
+  url      String
+  priority Int?
+  post_id  BigInt?
+  post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
+
+model Topics {
+  id   BigInt @id @default(autoincrement())
+  name String @unique
+
+  post_topics PostTopics[]
+}
+
+model PostTopics {
+  id       BigInt @id @default(autoincrement())
+  topic_id BigInt?
+  post_id  BigInt?
+  topic    Topics? @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+  post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
+
+model Notifications {
+  id      BigInt  @id @default(autoincrement())
+  action  String
+  is_read Boolean @default(false)
+  user_id BigInt
+  user    Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

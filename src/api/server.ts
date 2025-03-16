@@ -39,7 +39,7 @@ export class ExpressServer {
     }
 
     public listen(server: Express, port: number): Server {
-        logger.info(`🚀 Starting server on port ${port} (${NODE_ENV})`);
+        logger.info(`Starting server on port ${port} (${NODE_ENV})`);
         return server.listen(port);
     }
 
