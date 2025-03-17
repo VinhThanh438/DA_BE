@@ -132,3 +132,7 @@ dist
 # uploads
 upload
 *.upload
+
+# base folders
+src/api/base
+src/common/base
