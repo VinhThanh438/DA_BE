@@ -9,12 +9,12 @@ import fs from 'fs';
 import path from 'path';
 import logger from '@common/logger';
 import { NODE_ENV } from '@common/environment';
-import { ErrorCode } from '@common/errors';
+import { StatusCode } from '@common/errors';
 import { ResponseMiddleware } from './middleware/response.middleware';
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 express.response.sendJson = function (data: object) {
-    return this.json({ error_code: 0, status_code: ErrorCode.SUCCESS, message: 'OK', ...data });
+    return this.json({ error_code: 0, status_code: StatusCode.SUCCESS, message: 'OK', ...data });
 };
 
 /**

@@ -136,3 +136,6 @@ upload
 # base folders
 src/api/base
 src/common/base
+
+# migration
+src/common/schema/migrations

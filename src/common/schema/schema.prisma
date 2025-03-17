@@ -15,7 +15,7 @@ datasource db {
 
 // Define your models
 model Users {
-  id           BigInt  @id @default(autoincrement())
+  id           Int  @id @default(autoincrement())
   username     String  @unique
   password     String
   email        String  @unique
@@ -48,9 +48,9 @@ model Users {
 }
 
 model Follows {
-  id           BigInt @id @default(autoincrement())
-  following_id BigInt
-  follower_id  BigInt
+  id           Int @id @default(autoincrement())
+  following_id Int
+  follower_id  Int
 
   following    Users @relation(name: "UserFollowing", fields: [following_id], references: [id], onDelete: Cascade)
   follower     Users @relation(name: "UserFollowers", fields: [follower_id], references: [id], onDelete: Cascade)
@@ -59,9 +59,9 @@ model Follows {
 }
 
 model Blocks {
-  id         BigInt @id @default(autoincrement())
-  blocked_id BigInt
-  user_id    BigInt
+  id         Int @id @default(autoincrement())
+  blocked_id Int
+  user_id    Int
 
   blocked    Users @relation(name: "UserBlocked", fields: [blocked_id], references: [id], onDelete: Cascade)
   user       Users @relation(name: "UserBlocks", fields: [user_id], references: [id], onDelete: Cascade)
@@ -70,12 +70,12 @@ model Blocks {
 }
 
 model Reports {
-  id          BigInt  @id @default(autoincrement())
+  id          Int  @id @default(autoincrement())
   reason      String
-  comment_id  BigInt?
-  post_id     BigInt?
-  user_id     BigInt
-  reported_id BigInt
+  comment_id  Int?
+  post_id     Int?
+  user_id     Int
+  reported_id Int
 
   comment     Comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
   post        Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
@@ -84,8 +84,8 @@ model Reports {
 }
 
 model Tokens {
-  id            BigInt    @id @default(autoincrement())
-  user_id       BigInt
+  id            Int    @id @default(autoincrement())
+  user_id       Int
   access_token  String
   refresh_token String
   expired_at    DateTime
@@ -99,15 +99,15 @@ model Tokens {
 }
 
 model Admins {
-  id       BigInt  @id @default(autoincrement())
+  id       Int  @id @default(autoincrement())
   username String  @unique
   password String
 }
 
 model Posts {
-  id      BigInt  @id @default(autoincrement())
+  id      Int  @id @default(autoincrement())
   content String
-  user_id BigInt
+  user_id Int
   user    Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   comments     Comments[]
@@ -121,10 +121,10 @@ model Posts {
 }
 
 model Comments {
-  id       BigInt  @id @default(autoincrement())
+  id       Int  @id @default(autoincrement())
   content  String
-  user_id  BigInt?
-  post_id  BigInt?
+  user_id  Int?
+  post_id  Int?
   user     Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
   post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
@@ -132,57 +132,57 @@ model Comments {
 }
 
 model Likes {
-  id      BigInt  @id @default(autoincrement())
-  user_id BigInt?
-  post_id BigInt?
+  id      Int  @id @default(autoincrement())
+  user_id Int?
+  post_id Int?
   user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
   post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model SavedPosts {
-  id      BigInt  @id @default(autoincrement())
-  user_id BigInt?
-  post_id BigInt?
+  id      Int  @id @default(autoincrement())
+  user_id Int?
+  post_id Int?
   user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
   post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model SharedPosts {
-  id      BigInt  @id @default(autoincrement())
-  user_id BigInt?
-  post_id BigInt?
+  id      Int  @id @default(autoincrement())
+  user_id Int?
+  post_id Int?
   content String
   user    Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
   post    Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model PostMedias {
-  id       BigInt  @id @default(autoincrement())
+  id       Int  @id @default(autoincrement())
   url      String
   priority Int?
-  post_id  BigInt?
+  post_id  Int?
   post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model Topics {
-  id   BigInt @id @default(autoincrement())
+  id   Int @id @default(autoincrement())
   name String @unique
 
   post_topics PostTopics[]
 }
 
 model PostTopics {
-  id       BigInt @id @default(autoincrement())
-  topic_id BigInt?
-  post_id  BigInt?
+  id       Int @id @default(autoincrement())
+  topic_id Int?
+  post_id  Int?
   topic    Topics? @relation(fields: [topic_id], references: [id], onDelete: Cascade)
   post     Posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model Notifications {
-  id      BigInt  @id @default(autoincrement())
+  id      Int  @id @default(autoincrement())
   action  String
   is_read Boolean @default(false)
-  user_id BigInt
+  user_id Int
   user    Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

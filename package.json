@@ -17,11 +17,11 @@
     "prisma:reset": "npx prisma migrate reset --skip-seed && npx prisma db push"
   },
   "prisma": {
-      "schema": "src/common/schema/schema.prisma",
-      "seed": "ts-node src/common/schema/seed.ts"
+    "schema": "src/common/schema/schema.prisma",
+    "seed": "ts-node src/common/schema/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.0",
+    "@prisma/client": "^6.5.0",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.7.2",
     "body-parser": "^1.20.3",

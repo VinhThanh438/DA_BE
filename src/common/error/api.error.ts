@@ -1,4 +1,4 @@
-import { ErrorCode } from '@common/errors';
+import { StatusCode, ErrorCode } from '@common/errors';
 import { errors } from 'express-validation';
 
 interface APIErrorParams {
@@ -33,7 +33,7 @@ export class APIError extends Error {
         errors: errs,
         stack,
         errorCode,
-        status = ErrorCode.SERVER_ERROR,
+        status = StatusCode.SERVER_ERROR,
         isPublic = false,
         message_data = null,
     }: APIErrorParams) {

@@ -3,7 +3,7 @@ import { NODE_ENV } from '@common/environment';
 import { ValidationError } from 'express-validation';
 import logger from '@common/logger';
 import { pick } from 'lodash';
-import { ErrorCode } from '@common/errors';
+import { ErrorCode, StatusCode } from '@common/errors';
 import { APIError } from '@common/error/api.error';
 
 export class ResponseMiddleware {
@@ -18,15 +18,13 @@ export class ResponseMiddleware {
     static handler(err: APIError, req: Request, res: Response, next: NextFunction): void {
         const { status = ErrorCode.SERVER_ERROR, errorCode = 1, message_data } = err;
 
-        const message = err.message;
-
-        const response = {
+        const response: any = {
             error_code: errorCode,
             status_code: err.status,
             // message: err.status === 500 ? 'Server error!' : message,
-            message: message,
+            message: err.message,
             stack: err.stack,
-            errors: err.errors,
+            errors: ResponseMiddleware.formatValidationErrors(err.errors),
             message_data,
         };
 
@@ -36,6 +34,22 @@ export class ResponseMiddleware {
         res.status(status);
         res.json(response);
         res.end();
+    }
+
+    static formatValidationErrors(errors: any): string[] {
+        const formattedErrors: string[] = [];
+
+        if (!errors) return formattedErrors;
+
+        for (const key in errors) {
+            errors[key].forEach((error: any) => {
+                if (error.message) {
+                    formattedErrors.push(error.message);
+                }
+            });
+        }
+
+        return formattedErrors;
     }
 
     /**
@@ -51,7 +65,7 @@ export class ResponseMiddleware {
         if (err instanceof ValidationError) {
             convertedError = new APIError({
                 message: 'Validate failed',
-                status: ErrorCode.BAD_REQUEST,
+                status: StatusCode.BAD_REQUEST,
                 errors: err.details,
                 stack: err.error,
                 errorCode: ErrorCode.VERIFY_FAILED,
@@ -61,7 +75,7 @@ export class ResponseMiddleware {
         } else {
             convertedError = new APIError({
                 message: err.message,
-                status: ErrorCode.SERVER_ERROR,
+                status: StatusCode.SERVER_ERROR,
                 stack: err.stack,
                 errorCode: ErrorCode.SERVER_ERROR,
             });
@@ -86,7 +100,7 @@ export class ResponseMiddleware {
     static notFound(req: Request, res: Response, next: NextFunction): void {
         const err = new APIError({
             message: 'Not found!',
-            status: ErrorCode.REQUEST_NOT_FOUND,
+            status: StatusCode.REQUEST_NOT_FOUND,
             stack: '',
             errorCode: ErrorCode.REQUEST_NOT_FOUND,
         });
