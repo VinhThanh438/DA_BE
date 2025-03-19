@@ -11,6 +11,7 @@ import logger from '@common/logger';
 import { NODE_ENV } from '@common/environment';
 import { StatusCode } from '@common/errors';
 import { ResponseMiddleware } from './middleware/response.middleware';
+import { PublicUrlPath } from '@config/app.constant';
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 express.response.sendJson = function (data: object) {
@@ -101,6 +102,7 @@ export class ExpressServer {
     }
 
     private configureRoutes(server: Express) {
+        server.use(PublicUrlPath.PUBLIC_IMAGES, express.static('public/images'));
         server.use('/api/v1', routes);
     }
 
