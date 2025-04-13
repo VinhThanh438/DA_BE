@@ -1,7 +1,7 @@
 import eventbus from '@common/eventbus';
+import { IJobSendPendingEmailData } from '@common/interfaces/common.interface';
 import logger from '@common/logger';
 import { QueueService } from '@common/services/queue.service';
-import { IJobSendPendingEmailData } from '@config/app.constant';
 import { EVENT_DEVICE_PENDING_APPROVAL } from '@config/event.constant';
 import { SEND_PENDING_MAIL_JOB } from '@config/job.constant';
 

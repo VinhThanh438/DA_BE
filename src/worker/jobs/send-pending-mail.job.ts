@@ -2,8 +2,8 @@ import logger from '@common/logger';
 import { DoneCallback, Job, Queue } from 'bull';
 import { SEND_PENDING_MAIL_JOB as JOB_NAME } from '@config/job.constant';
 import { QueueService } from '@common/services/queue.service';
-import { IJobSendPendingEmailData } from '@config/app.constant';
 import { MailService } from '@common/services/mail.service';
+import { IJobSendPendingEmailData } from '@common/interfaces/common.interface';
 
 export class SendPendingMailJob {
     static async register(): Promise<Queue<unknown>> {

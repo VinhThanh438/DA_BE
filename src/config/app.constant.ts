@@ -18,18 +18,6 @@ export enum RequestStatus {
     REJECTED = 'rejected',
 }
 
-export interface SendMailData {
-    email?: string;
-    name?: string;
-    from?: string;
-}
-
-export interface IJobSendConfirmEmailData extends SendMailData {
-    status?: RequestStatus;
-}
-
-export type IJobSendPendingEmailData = SendMailData;
-
 export interface MailOptions {
     to: string | string[];
     subject: string;
@@ -37,4 +25,9 @@ export interface MailOptions {
     text?: string;
     from?: string;
     data?: any;
+}
+
+export enum PartnerType {
+    CUSTOMER = 'customer',
+    SUPPLIER = 'supplier'
 }

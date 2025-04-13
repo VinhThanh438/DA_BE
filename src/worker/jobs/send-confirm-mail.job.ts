@@ -2,8 +2,8 @@ import logger from '@common/logger';
 import { DoneCallback, Job, Queue } from 'bull';
 import { SEND_CONFIRM_MAIL_JOB as JOB_NAME } from '@config/job.constant';
 import { QueueService } from '@common/services/queue.service';
-import { IJobSendConfirmEmailData } from '@config/app.constant';
 import { MailService } from '@common/services/mail.service';
+import { IJobSendConfirmEmailData } from '@common/interfaces/common.interface';
 
 export class SendConfirmMailJob {
     static async register(): Promise<Queue<unknown>> {

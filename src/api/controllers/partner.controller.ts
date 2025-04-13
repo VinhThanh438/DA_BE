@@ -2,11 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import logger from '@common/logger';
 import { IPaginationInput } from '@common/interfaces/common.interface';
 import { PartnerService } from '@common/services/partner.service';
+import { ICreateAndUpdatePartner } from '@common/interfaces/partner.interface';
 
 export class PartnerController {
     public static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body
+            const body = req.body as ICreateAndUpdatePartner;
             const result = await PartnerService.create(body)
             res.sendJson(result);
         } catch (error) {

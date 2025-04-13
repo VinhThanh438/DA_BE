@@ -4,7 +4,8 @@ import fs from 'fs';
 import logger from '@common/logger';
 import { MailAdapter } from '@common/infrastructure/mail.adapter';
 import { MAIL_FROM } from '@common/environment';
-import { IJobSendConfirmEmailData, IJobSendPendingEmailData, MailOptions, RequestStatus } from '@config/app.constant';
+import { MailOptions, RequestStatus } from '@config/app.constant';
+import { IJobSendConfirmEmailData, IJobSendPendingEmailData } from '@common/interfaces/common.interface';
 
 const readFileAsync = fs.promises.readFile;
 

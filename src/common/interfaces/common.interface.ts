@@ -1,3 +1,5 @@
+import { RequestStatus } from "@config/app.constant";
+
 export interface IPaginationInfo {
     total_pages: number;
     total_records: number;
@@ -6,7 +8,7 @@ export interface IPaginationInfo {
 }
 
 export interface IPaginationResponse<T = any> {
-    data: T[];
+    data: T;
     pagination: IPaginationInfo;
 }
 
@@ -33,3 +35,15 @@ export interface ICreateAndUpdateResponse {
 export interface IIdResponse {
     id: number
 }
+
+export interface SendMailData {
+    email?: string;
+    name?: string;
+    from?: string;
+}
+
+export interface IJobSendConfirmEmailData extends SendMailData {
+    status?: RequestStatus;
+}
+
+export type IJobSendPendingEmailData = SendMailData;

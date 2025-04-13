@@ -6,34 +6,36 @@ import { ICreateAndUpdate } from '@common/interfaces/company.interface';
 import { PartnerGroupRepo } from '@common/repositories/partner-group.repo';
 
 export class PartnerGroupService {
+    private static repo = new PartnerGroupRepo();
+
     public static async paginate(body: IPaginationInput): Promise<IPaginationResponse> {
-        return PartnerGroupRepo.paginate(body);
+        return this.repo.paginate(body);
     }
 
     public static async create(body: ICreateAndUpdate): Promise<IIdResponse> {
-        const exist = await PartnerGroupRepo.findOne({ name: body.name });
+        const exist = await this.repo.findOne({ name: body.name });
         if (exist) {
             throw new APIError({
                 message: 'common.existed',
                 status: StatusCode.BAD_REQUEST,
             });
         }
-        const id = await PartnerGroupRepo.create(body);
+        const id = await this.repo.create(body);
         return { id };
     }
 
     public static async update(updateId: number, body: ICreateAndUpdate): Promise<IIdResponse> {
-        const id = await PartnerGroupRepo.update({ id: updateId }, body);
+        const id = await this.repo.update({ id: updateId }, body);
         return { id };
     }
 
     public static async delete(deleteId: number): Promise<IIdResponse> {
-        const id = await PartnerGroupRepo.delete({ id: deleteId });
+        const id = await this.repo.delete({ id: deleteId });
         return { id };
     }
 
     public static async findById(id: number): Promise<Partial<PartnerGroups | null>> {
-        const data = await PartnerGroupRepo.findOne({ id });
+        const data = await this.repo.findOne({ id });
         return data;
     }
 }
