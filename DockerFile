@@ -1,0 +1,22 @@
+FROM node:22.12.0 as base
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN yarn install
+
+COPY . .
+
+RUN npx prisma generate
+
+RUN yarn build
+
+
+FROM base as backend_service
+
+WORKDIR /app
+
+EXPOSE 4000
+
+CMD [ "npm", "start" ]
