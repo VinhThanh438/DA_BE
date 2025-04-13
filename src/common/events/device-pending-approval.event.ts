@@ -1,0 +1,29 @@
+import eventbus from '@common/eventbus';
+import logger from '@common/logger';
+import { QueueService } from '@common/services/queue.service';
+import { IJobSendPendingEmailData } from '@config/app.constant';
+import { EVENT_DEVICE_PENDING_APPROVAL } from '@config/event.constant';
+import { SEND_PENDING_MAIL_JOB } from '@config/job.constant';
+
+export class DevicePendingApprovalEvent {
+    /**
+     * Register device pending approval event
+     */
+    static register(): void {
+        eventbus.on(EVENT_DEVICE_PENDING_APPROVAL, this.sendPendingMail);
+    }
+
+    private static async sendPendingMail(data: any): Promise<void> {
+        try {
+            await (
+                await QueueService.getQueue<IJobSendPendingEmailData>(SEND_PENDING_MAIL_JOB)
+            ).add({
+                email: data.email,
+                name: data.name,
+            });
+            logger.info('DevicePendingApprovalEvent.sendPendingMail: Added send mail job successfully!');
+        } catch (error: any) {
+            logger.error('DevicePendingApprovalEvent.sendPendingMail:', error.message);
+        }
+    }
+}

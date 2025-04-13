@@ -1,0 +1,38 @@
+model Invoices {
+    id                Int   @id @default(autoincrement())
+    tax               String?
+    address           String?
+    payment_method    String?
+    order_code        String?
+    order_date        String?
+    files             Json?        @default("[]")
+
+    bank_id           Int?
+    sale_id           Int?
+    partner_id        Int
+
+    created_at         DateTime @default(now())
+    updated_at         DateTime @updatedAt
+
+    bank_account    BankAccounts?   @relation(fields: [bank_id], references: [id], onDelete: Cascade)
+    sale            Employees?   @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+    partner    Partners?   @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+    @@map("invoices")
+}
+
+model InvoiceDetails {
+    id                Int   @id @default(autoincrement())
+    product_id        Int
+    quantity          Int
+    price             Decimal
+    discount          Float
+    vat               Float
+    note              String?
+
+    created_at         DateTime @default(now())
+    updated_at         DateTime @updatedAt
+
+    product            Products?   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+    @@map("invoice_details")
+}

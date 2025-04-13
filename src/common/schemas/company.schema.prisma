@@ -1,0 +1,63 @@
+enum OrganizationType {
+  headquarter
+  company
+  department
+}
+
+model Organizations {
+  id             Int          @id @default(autoincrement())
+  code           String       @default(cuid())
+  name           String
+  type           OrganizationType
+  parent_id      Int?
+  responsibility String?
+  leader_id      Int?
+  files           Json?        @default("[]")
+  leader         Users?             @relation(fields: [leader_id], references: [id])
+  parent         Organizations?      @relation("OrganizationHierarchy", fields: [parent_id], references: [id])
+  
+  sub_organization Organizations[]   @relation("OrganizationHierarchy")
+  job_position   JobPositions[]
+
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  @@map("organizations")
+  Imports Imports[]
+  Exports Exports[]
+  QuotationRequest QuotationRequests[]
+}
+
+model JobPositions {
+  id              Int        @id @default(autoincrement())
+  organization_id Int
+  name   String
+  description     String?
+  job_title_id    Int  // chuc danh
+  level_id        Int?  //cap bac
+
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+
+  organization    Organizations @relation(fields: [organization_id], references: [id])
+  job_title    JobTitles?   @relation(fields: [job_title_id], references: [id], onDelete: Cascade)
+  level    Levels?   @relation(fields: [level_id], references: [id], onDelete: Cascade)
+
+  @@map("job_positions")
+}
+
+model JobTitles {
+    id        Int        @id @default(autoincrement())
+    name      String
+
+    JobPositions JobPositions[]
+    @@map("job_titles")
+}
+
+model Levels {
+    id        Int        @id @default(autoincrement())
+    name      String
+
+    JobPositions JobPositions[]
+    @@map("levels")
+}

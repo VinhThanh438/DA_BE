@@ -1,21 +1,27 @@
 {
     "compilerOptions": {
+        "target": "es6",
         "module": "commonjs",
+        "outDir": "./dist",
+        "rootDir": "src",
+        "strict": true,
         "esModuleInterop": true,
-        "target": "ESNext",
-        "noImplicitAny": false,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
         "moduleResolution": "node",
-        "sourceMap": true,
-        "outDir": "dist",
+        "resolveJsonModule": true,
         "baseUrl": ".",
-        "typeRoots": ["@types", "./node_modules/@types"],
         "paths": {
             "@api/*": ["src/api/*"],
             "@worker/*": ["src/worker/*"],
+            "@socket/*": ["src/socket/*"],
             "@common/*": ["src/common/*"],
             "@config/*": ["src/config/*"],
             "*": ["node_modules/*"]
-        }
+        },
+        "typeRoots": ["./@types", "./node_modules/@types"],
+        "types": ["node", "express"]
     },
-    "include": ["src/**/*"]
+    "include": ["src", "@types"],
+    "exclude": ["node_modules", "src/locales/**/*"]
 }

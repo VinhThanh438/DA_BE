@@ -8,8 +8,7 @@ interface APIErrorParams {
     errorCode?: number;
     status?: number;
     isPublic?: boolean;
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    message_data?: object;
+    messageData?: object | null;
 }
 
 /**
@@ -21,7 +20,7 @@ export class APIError extends Error {
     public isPublic: boolean;
     public errors?: errors;
     // eslint-disable-next-line @typescript-eslint/ban-types
-    public message_data?: object;
+    public messageData?: object;
     public statusCode: number;
 
     /**
@@ -35,20 +34,20 @@ export class APIError extends Error {
         errorCode,
         status = StatusCode.SERVER_ERROR,
         isPublic = false,
-        message_data = null,
+        messageData = null,
     }: APIErrorParams) {
         super(message);
         this.stack = stack;
         this.status = status;
         this.isPublic = isPublic;
         this.errors = errs;
-        this.statusCode = status; // Thêm status_code
+        this.statusCode = status;
 
         if (errorCode === undefined || errorCode === 0) {
             this.errorCode = status >= 500 ? ErrorCode.SERVER_ERROR : ErrorCode.VERIFY_FAILED;
         } else {
             this.errorCode = errorCode;
         }
-        this.message_data = message_data;
+        this.messageData = messageData as object | undefined;
     }
 }

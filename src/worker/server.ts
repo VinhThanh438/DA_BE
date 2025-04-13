@@ -6,7 +6,7 @@ import { Router } from './router';
  * Abstraction around bull processor
  */
 export class WorkerServer {
-    private queues: Queue[];
+    private queues: Queue[] = [];
 
     public async setup(): Promise<void> {
         await this.registerQueues();

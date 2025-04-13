@@ -1,14 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import logger from '@common/logger';
-import { ADMIN_PASSWORD } from '@common/environment';
-import eventbus from '@common/eventbus';
 
 export class DatabaseAdapter extends PrismaClient {
     private static instance: DatabaseAdapter;
 
     private constructor() {
         super({
-            log: ['query', 'error', 'warn'],
+            log: ['info', 'error', 'warn'],
             errorFormat: 'pretty',
         });
     }

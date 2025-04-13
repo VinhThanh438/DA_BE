@@ -1,0 +1,173 @@
+model Employees {
+  id           Int     @id @default(autoincrement())
+  code         String  @default(cuid())
+  email        String?
+  fullname     String?
+  age          Int?
+  phone_number String?
+  description  String?
+  avatar       String?
+  type         String
+  files        Json?        @default("[]")
+
+  is_deleted   Boolean @default(false)
+  is_default   Boolean @default(false)
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  education         Educations?
+  finance           Finances?
+  identity          Identities?
+  address           Address?
+  emergency_contact EmergencyContacts?
+  contract          UserContracts?
+  social_insurance  SocialInsurances?
+  user_position     UserPositions?
+
+  Users              Users[]
+  Partners           Partners[]
+  Invoice            Invoices[]
+  Imports            Imports[]
+  Exports            Exports[]
+  QuotationRequest   QuotationRequests[]
+  Quotations         Quotations[]
+  Orders             Orders[]
+
+  @@map("employees")
+  BankAccounts BankAccounts[]
+}
+
+enum AddressType {
+  tt  // Thường trú
+  qq  // Quê quán
+  tttv // Tạm trú tạm vắng
+}
+enum IdentityType {
+  cccd
+  hc
+}
+enum FinanceType {
+    kt
+    pc
+}
+
+model Educations {
+  id              Int   @id @default(autoincrement())
+  employee_id     Int   @unique
+  employee        Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  education_level String
+  training_level  String?
+  graduated_place String
+  faculty         String?
+  major           String?
+  graduation_year Int?
+
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  @@map("educations")
+}
+
+model Finances {
+  id           Int     @id @default(autoincrement())
+  employee_id  Int     @unique
+  employee     Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  name         String
+  amount       Float
+  note         String?
+  status       String
+  type         FinanceType
+
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("finances")
+}
+
+model Identities {
+  id           Int     @id @default(autoincrement())
+  employee_id  Int     @unique
+  employee     Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  code         String
+  issued_place String?
+  issued_date  DateTime?
+  expired_date DateTime?
+  type         IdentityType
+
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("identities")
+}
+
+model Address {
+  id           Int     @id @default(autoincrement())
+  employee_id  Int     @unique
+  employee     Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  country      String?
+  province     String?
+  district     String?
+  ward         String?
+  details      String?
+  type         AddressType?
+
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("address")
+}
+
+model UserContracts {
+  id           Int     @id @default(autoincrement())
+  employee_id  Int     @unique
+  employee     Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  code         String
+  type         String?
+  start_date   DateTime?
+  end_date     DateTime?
+  status       String?
+
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("user_contracts")
+}
+
+model SocialInsurances {
+  id               Int     @id @default(autoincrement())
+  employee_id      Int     @unique
+  employee         Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  is_participating Boolean @default(false)
+  percent          Float?
+  insurance_number String? @unique
+  insurance_salary Float?
+  start_date       DateTime?
+
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("social_insurances")
+}
+
+model UserPositions {
+  id                Int     @id @default(autoincrement())
+  employee_id       Int     @unique
+  employee          Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  time_keeping_code String?
+  organization_id   Int?
+  job_position_id   Int?
+  working_status    String?
+  hr_status         String?
+  trial_date        DateTime?
+  official_date     DateTime?
+
+  @@map("user_positions")
+}

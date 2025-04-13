@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Thông báo xác nhận</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #f4f4f4;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #333;
+            }
+
+            .email-wrapper {
+                width: 100%;
+                padding: 40px 0;
+            }
+
+            .email-container {
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #ffffff;
+                border-radius: 10px;
+                overflow: hidden;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            }
+
+            .email-header {
+                background-color: #007bff;
+                padding: 20px;
+                text-align: center;
+                color: #fff;
+            }
+
+            .email-header h1 {
+                margin: 0;
+                font-size: 20px;
+            }
+
+            .email-body {
+                padding: 30px 20px;
+            }
+
+            .email-body p {
+                font-size: 15px;
+                margin-bottom: 20px;
+            }
+
+            .status {
+                font-weight: bold;
+                color: #007bff;
+            }
+
+            .email-footer {
+                background-color: #f0f0f0;
+                text-align: center;
+                padding: 15px;
+                font-size: 13px;
+                color: #666;
+            }
+
+            .email-footer a {
+                color: #007bff;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="email-wrapper">
+            <div class="email-container">
+                <div class="email-header">
+                    <h1>Xác nhận yêu cầu đăng nhập</h1>
+                </div>
+                <div class="email-body">
+                    <p>Chào <strong>{{ name }}</strong>,</p>
+                    <p>Yêu cầu đăng nhập của bạn đã được <span class="status">{{ status }}</span> bởi quản trị viên.</p>
+                    <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi để được hỗ trợ.</p>
+                    <p>Trân trọng,<br />Đội ngũ hỗ trợ</p>
+                </div>
+                <div class="email-footer">
+                    © 2025 Itomo Inc. | <a href="mailto:support@itomo.vn">support@itomo.vn</a>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

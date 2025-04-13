@@ -1,0 +1,48 @@
+enum PartnerType {
+    customer // khach hang
+    supplier // nha cung cap
+}
+
+model Partners {
+  id           Int     @id @default(autoincrement())
+  code         String  @default(cuid())
+  name         String
+  phone        String?
+  address      String?
+  note         String?
+  tax          String?
+  type         PartnerType
+  sale_staff_id      Int?
+  partner_group_id Int?
+  emergency_contact_id Int?
+
+  payment_term  String?
+  max_dept_amount   Int?
+  max_dept_day      Int?
+
+  is_default   Boolean @default(false)
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  partner_group    PartnerGroups?   @relation(fields: [partner_group_id], references: [id], onDelete: Cascade)
+  sale_staff    Employees?   @relation(fields: [sale_staff_id], references: [id], onDelete: Cascade)
+  emergency_contact    EmergencyContacts?   @relation(fields: [emergency_contact_id], references: [id], onDelete: Cascade)
+
+  @@map("partners")
+  BankAccounts BankAccounts[]
+  Invoice Invoices[]
+  Imports Imports[]
+  OrderExpense OrderExpenses[]
+  Exports Exports[]
+  Quotations Quotations[]
+  Orders Orders[]
+}
+
+model PartnerGroups {
+  id            Int    @id @default(autoincrement())
+  name          String
+
+  @@map("partner_groups")
+  Partners Partners[]
+}

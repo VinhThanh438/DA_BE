@@ -104,6 +104,12 @@ dist
 .temp
 .cache
 
+# vitepress build output
+**/.vitepress/dist
+
+# vitepress cache directory
+**/.vitepress/cache
+
 # Docusaurus cache and generated files
 .docusaurus
 
@@ -130,12 +136,12 @@ dist
 .pnp.*
 
 # uploads
-upload
-*.upload
+uploads
+*.uploads
 
 # base folders
-src/api/base
-src/common/base
+# src/api/base
+# src/common/base
 
 # migration
 src/common/schema/migrations

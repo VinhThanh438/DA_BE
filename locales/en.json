@@ -1,0 +1,65 @@
+{
+    "translation": {
+        "common": {
+            "status": {
+                "200": "Success!",
+                "400": "Bad request!",
+                "404": "Resource not found!",
+                "403": "Access denied!",
+                "401": "Your session has expired, please login again",
+                "423": "Your account has been locked!",
+                "429": "You make requests too frequently, please try again in {{ minute }} minute!",
+                "500": "Server error"
+            },
+            "validate-failed": "Validate failed!",
+            "not-found": "Not found!",
+            "existed": "Already exists!",
+            "upload": {
+                "error": "Upload error",
+                "mismatch": "The number of files does not match the number of keys",
+                "failed": "File upload failed!"
+            }
+        },
+        "auth": {
+            "signup": {
+                "exist": "This account already exists, please use a different username!"
+            },
+            "login": {
+                "wrong-password": "Incorrect password!",
+                "not-found": "User not found!",
+                "invalid-password": "Incorrect password, please try again!",
+                "device-conflic": "Your account is currently logged in on another device!",
+                "device-not-found": "Device not found!",
+                "device-pending-approval": "You're signing in from a new device. Please wait for the administrator to approve your access."
+            },
+            "common": {
+                "token-missing": "Token is missing!",
+                "account-locked": "Your account has been locked. Access denied!",
+                "session-expired": "User session has expired or user is already logged out!",
+                "invalid-token": "invalid token!"
+            }
+        },
+        "request": {
+            "common": {
+                "not-found": "Request not found!",
+                "user-not-found": "User account not found!",
+                "exist": "Request already exists!",
+                "not-accept": "Request has not been accepted!",
+                "accept": "Request has been accepted!",
+                "cancel": "Request has been canceled!",
+                "not-accept-or-cancel": "Request has neither been accepted or canceled!"
+            }
+        },
+        "user": {
+            "common": {
+                "exist": "Username existed!",
+                "not-found": "User not found!"
+            }
+        },
+        "socket": {
+            "error": {
+                "not-init": "Socket server is not initialized!"
+            }
+        }
+    }
+}

@@ -1,0 +1,65 @@
+{
+    "translation": {
+        "common": {
+            "status": {
+                "200": "Thành công!",
+                "400": "Yêu cầu không hợp lệ!",
+                "404": "Không tìm thấy tài nguyên!",
+                "403": "Truy cập bị từ chối!",
+                "401": "Phiên đăng nhập của bạn đã hết hạn, vui lòng đăng nhập lại",
+                "423": "Tài khoản đã bị khóa!",
+                "429": "Bạn đang gửi quá nhiều yêu cầu, vui lòng thử lại sau {{ minute }} phút!",
+                "500": "Lỗi hệ thống!"
+            },
+            "validate-failed": "Xác thực không thành công",
+            "not-found": "Không tìm thấy!",
+            "existed": "Đã tồn tại!",
+            "upload": {
+                "error": "Lỗi upload",
+                "mismatch": "Số lượng file không khớp với số lượng key",
+                "failed": "Upload file không thành công!"
+            }
+        },
+        "auth": {
+            "signup": {
+                "exist": "Tài khoản này đã tồn tại, vui lòng sử dụng tên đăng nhập khác!"
+            },
+            "login": {
+                "wrong-password": "Mật khẩu không chính xác!",
+                "not-found": "Không tìm thấy người dùng!",
+                "invalid-password": "Mật khẩu không đúng, vui lòng thử lại!",
+                "device-conflic": "Bạn đang đăng nhập trên một thiết bị khác!",
+                "device-not-found": "Không tìm thấy thiết bị!",
+                "device-pending-approval": "Bạn đang đăng nhập từ một thiết bị mới. Vui lòng chờ quản trị viên phê duyệt truy cập."
+            },
+            "common": {
+                "token-missing": "Không tìm thấy token",
+                "account-locked": "Tài khoản của bạn đã bị khóa, truy cập bị từ chối!",
+                "session-expired":"Phiên đăng nhập đã hết hạn hoặc người dùng đã đăng xuất!",
+                "invalid-token": "Token không hợp lệ!"
+            }
+        },
+        "request": {
+            "common": {
+                "not-found": "Không tìm thấy yêu cầu!",
+                "user-not-found": "Không tìm thấy tài khoản người dùng!",
+                "exist": "Yêu cầu đã tồn tại!",
+                "not-accept": "Yêu cầu chưa được chấp nhận!",
+                "accept": "Yêu cầu đã được chấp nhận!",
+                "cancel": "Yêu cầu đã bị hủy!",
+                "not-accept-or-cancel": "Yêu cầu chưa được chấp nhận hoặc đã bị hủy!"
+            }
+        },
+        "user": {
+            "common": {
+                "exist": "Tên người dùng đã tồn tại!",
+                "not-found": "Người dùng không tồn tại!"
+            }
+        },
+        "socket": {
+            "error": {
+                "not-init": "Socket server chưa được khởi tạo!"
+            }
+        }
+    }
+}

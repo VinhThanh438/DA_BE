@@ -1,0 +1,20 @@
+model OrderExpenses {
+  id                Int   @id @default(autoincrement())
+  code              String @default(cuid())
+  date              DateTime
+  description       String?
+  payment_method    String?
+  amount            Decimal?
+  receipt           String?
+  address           String?
+  attached_document String?
+
+  partner_id        Int?
+  order_id          Int?
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  partner    Partners?   @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  @@map("order_expenses")
+}

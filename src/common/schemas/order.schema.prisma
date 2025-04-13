@@ -1,0 +1,93 @@
+enum OrderType {
+    purchase     // Đơn đặt mua hàng
+    production   // Đơn hàng sản xuất
+}
+
+model Orders {
+    id                Int   @id @default(autoincrement())
+    type          OrderType @default(purchase)
+    partner_id    Int?
+    address       String?
+    note          String?
+    employee_id   Int?
+    code          String    @default(cuid())
+    order_date    DateTime
+    files         Json?        @default("[]")
+
+    partner       Partners?    @relation(fields: [partner_id], references: [id])
+    employee      Employees?            @relation(fields: [employee_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("orders")
+    OrderProductDetails OrderProductDetails[]
+    OrderExportDetails OrderExportDetails[]
+    OrderImportDetails OrderImportDetails[]
+    OrderProductionDetails OrderProductionDetails[]
+    OrderContractDetails OrderContractDetails[]
+}
+
+model OrderProductDetails {
+    id                Int   @id @default(autoincrement())
+    order_id          Int
+    product_id        Int
+
+    product       Products?    @relation(fields: [product_id], references: [id])
+    order       Orders?    @relation(fields: [order_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("order_product_details")
+}
+
+model OrderContractDetails {
+    id                Int   @id @default(autoincrement())
+    order_id          Int
+    contract_id       Int
+
+    contract       Contracts?    @relation(fields: [contract_id], references: [id])
+    order       Orders?    @relation(fields: [order_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("order_contract_details")
+}
+
+model OrderProductionDetails {
+    id                Int   @id @default(autoincrement())
+    order_id          Int
+    production_order_id          Int
+
+    invoice       ProductionOrders?    @relation(fields: [production_order_id], references: [id])
+    order       Orders?    @relation(fields: [order_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("order_production_details")
+}
+
+model OrderImportDetails {
+    id                Int   @id @default(autoincrement())
+    order_id          Int
+    import_id          Int
+
+    import       Imports?    @relation(fields: [import_id], references: [id])
+    order       Orders?    @relation(fields: [order_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("order_import_details")
+}
+
+model OrderExportDetails {
+    id                Int   @id @default(autoincrement())
+    order_id          Int
+    export_id          Int
+
+    export       Exports?    @relation(fields: [export_id], references: [id])
+    order       Orders?    @relation(fields: [order_id], references: [id])
+
+    created_at    DateTime  @default(now())
+    updated_at    DateTime  @updatedAt
+    @@map("order_export_details")
+}

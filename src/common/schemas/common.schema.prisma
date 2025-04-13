@@ -1,0 +1,36 @@
+model BankAccounts {
+  id       Int     @id @default(autoincrement())
+  employee_id  Int?
+  partner_id    Int?
+  bank     String
+  number   String  @unique
+  name     String?
+  branch   String?
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  employee    Employees?   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  partner    Partners?   @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+
+  @@map("bank_accounts")
+  Invoice Invoices[]
+}
+
+model EmergencyContacts {
+  id          Int     @id @default(autoincrement())
+  employee_id  Int? @unique
+  name        String?
+  email       String?
+  relationship String?
+  address     String?
+  phone       String?
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  employee    Employees?   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+  Partners Partners[]
+}

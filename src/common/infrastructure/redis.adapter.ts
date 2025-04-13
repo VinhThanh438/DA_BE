@@ -101,7 +101,7 @@ export class RedisAdapter {
             });
         }
         return {
-            prefix: `Scheduling:jobs:`,
+            prefix: `Jobs:`,
             defaultJobOptions: {
                 removeOnComplete: 1000,
                 removeOnFail: 1000,

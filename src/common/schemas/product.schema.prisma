@@ -1,0 +1,59 @@
+model Products {
+  id                Int           @id @default(autoincrement())
+  product_type_id   Int
+  name              String
+  code              String
+  unit_id           Int
+  vat               Float?
+  packing_standard  Float?
+  note              String?
+  type              ProductType
+
+  product_group      ProductGroups   @relation(fields: [product_type_id], references: [id])
+  unit              Units          @relation(fields: [unit_id], references: [id])
+  productUnits      ProductUnits[]
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@map("products")
+  ContractDetails ContractDetails[]
+  InvoiceDetails InvoiceDetails[]
+  ImportDetails ImportDetails[]
+  ExportDetails ExportDetails[]
+  QuotationDetails QuotationDetails[]
+  OrderProductDetails OrderProductDetails[]
+}
+
+model Units {
+  id         Int           @id @default(autoincrement())
+  name       String
+  productUnits ProductUnits[]
+
+  @@map("units")
+  Product Products[]
+}
+
+model ProductGroups {
+  id       Int        @id @default(autoincrement())
+  name     String
+  products Products[]
+
+  @@map("product_types")
+}
+
+model ProductUnits {
+  id         Int    @id @default(autoincrement())
+  product_id Int
+  unit_id    Int
+
+  product    Products @relation(fields: [product_id], references: [id])
+  unit       Units    @relation(fields: [unit_id], references: [id])
+
+  @@map("product_units")
+}
+
+enum ProductType {
+  material      // Vật tư
+  product       // Hàng hóa
+}

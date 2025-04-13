@@ -5,18 +5,14 @@ import bodyParser from 'body-parser';
 import routes from '@api/router';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
 import logger from '@common/logger';
 import { NODE_ENV } from '@common/environment';
-import { StatusCode } from '@common/errors';
-import { ResponseMiddleware } from './middleware/response.middleware';
-import { PublicUrlPath } from '@config/app.constant';
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-express.response.sendJson = function (data: object) {
-    return this.json({ error_code: 0, status_code: StatusCode.SUCCESS, message: 'OK', ...data });
-};
+import { ResponseMiddleware } from './middlewares/response.middleware';
+import { PublicPath } from '@config/app.constant';
+import i18nMiddleware from 'i18next-http-middleware';
+import i18n from '@api/middlewares/i18.middleware';
+import { RateLimiterMiddleware } from './middlewares/ratelimiter.middleware';
+import { EnsureAdminAccountMiddleware } from './middlewares/ensure-admin.middleware';
 
 /**
  * Abstraction around the raw Express.js server and Nodes' HTTP server.
@@ -29,10 +25,12 @@ export class ExpressServer {
 
     public async setup(port: number): Promise<Express> {
         const server = express();
+        await this.i18next(server);
         this.setupStandardMiddlewares(server);
         this.setupSecurityMiddlewares(server);
         this.configureRoutes(server);
         this.setupErrorHandlers(server);
+        await this.ensureAdminAccount();
 
         this.httpServer = this.listen(server, port);
         this.server = server;
@@ -87,6 +85,16 @@ export class ExpressServer {
                 credentials: true,
             }),
         );
+        server.set('trust proxy', true);
+        server.use(RateLimiterMiddleware.createGlobalLimiter());
+    }
+
+    private async i18next(server: Express) {
+        server.use(i18nMiddleware.handle(await i18n.getI18n()));
+    }
+
+    private async ensureAdminAccount() {
+        await EnsureAdminAccountMiddleware.handleOnStartup();
     }
 
     private setupStandardMiddlewares(server: Express) {
@@ -102,7 +110,7 @@ export class ExpressServer {
     }
 
     private configureRoutes(server: Express) {
-        server.use(PublicUrlPath.PUBLIC_IMAGES, express.static('public/images'));
+        server.use(PublicPath.PUBLIC_IMAGES, express.static('public/images'));
         server.use('/api/v1', routes);
     }
 

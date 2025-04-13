@@ -1,4 +1,4 @@
-import { Application } from '@api/application';
+import { Application } from './application';
 import logger from '@common/logger';
 
 /**
@@ -8,5 +8,5 @@ import logger from '@common/logger';
  */
 
 Application.createApplication().then(() => {
-    logger.info('The api was started successfully!');
+    logger.info('The application was started successfully!');
 });

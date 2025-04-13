@@ -1,13 +1,17 @@
+import { IRequestInfo } from '@common/request.interface';
+
 declare global {
     namespace Express {
         interface Request {
-            // rawBody: Buffer;
-            // user: IPayload;
-            // headers(data: unknown): this;
+            t: (key: string, options?: any) => string;
+            user: any;
+            getRequestInfo(): IRequestInfo;
+            userDevice: IRequestInfo;
         }
 
         interface Response {
-            sendJson(data: unknown): this;
+            t: (key: string, options?: any) => string;
+            sendJson(data?: unknown): this;
         }
     }
 }

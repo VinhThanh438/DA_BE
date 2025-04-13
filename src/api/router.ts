@@ -1,11 +1,31 @@
 import express from 'express';
-import authRoutes from '@api/auth/auth.route'
-import postRoutes from '@api/post/post.route'
-import topicRoutes from '@api/topic/topic.route'
+import authRoutes from '@api/routes/auth.route';
+import commonRoutes from '@api/routes/common.route';
+import employeeRoutes from '@api/routes/employee.route';
+import userRoutes from '@api/routes/user.route';
+import permissionRoutes from '@api/routes/permission.route';
+import permissionGroupRoutes from '@api/routes/permission-group.route';
+import deviceRequestRoutes from '@api/routes/device-request.route';
+import levelRoutes from '@api/routes/level.route';
+import jobTitleRoutes from '@api/routes/job-title.route';
+import partnerRoutes from '@api/routes/partner.route';
+import partnerGroupRoutes from '@api/routes/partner-group.route';
+import { AuthMiddleware } from './middlewares/auth.middleware';
+import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
 const router = express.Router();
+router.use('/common', commonRoutes);
 
-router.use('/auth', authRoutes)
-router.use('/post', postRoutes)
-router.use('/topic', topicRoutes)
+router.use(UserDeviceMiddleware.getUserDevice);
+router.use('/auth', authRoutes);
+router.use(AuthMiddleware.authenticate);
+router.use('/employee', employeeRoutes);
+router.use('/user', userRoutes);
+router.use('/device-request', deviceRequestRoutes);
+router.use('/permission', permissionRoutes);
+router.use('/permission-group', permissionGroupRoutes);
+router.use('/level', levelRoutes);
+router.use('/job-title', jobTitleRoutes);
+router.use('/partner', partnerRoutes);
+router.use('/partner-group', partnerGroupRoutes);
 
 export default router;
