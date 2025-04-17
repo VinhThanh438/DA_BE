@@ -13,7 +13,7 @@ export class AuthController {
             res.cookie('refresh_token', data.refresh_token);
             res.sendJson(data);
         } catch (error) {
-            logger.error('AuthController.create: ', error);
+            logger.error(`AuthController.create: `, error);
             next(error);
         }
     }
@@ -26,7 +26,7 @@ export class AuthController {
             res.clearCookie('refresh_token');
             res.sendJson();
         } catch (error) {
-            logger.error('AuthController.logout: ', error);
+            logger.error(`AuthController.logout: `, error);
             next(error);
         }
     }

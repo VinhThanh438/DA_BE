@@ -1,72 +1,31 @@
 // Báo giá
-enum QuotationRequestStatus {
-    pending
-    confirmed
-    rejected
+enum QuotationStatus {
+  pending
+  confirmed
+  rejected
 }
 
-enum QuotationRequestType {
-    sale
-    purchase
-}
-
-model QuotationRequests {
-    id                Int   @id @default(autoincrement())
-    organization_id   Int
-    tax               String?
-    request_name      String
-    phone             String
-    email             String
-    address           String?
-    message           String
-    status            QuotationRequestStatus @default(pending)
-    type              QuotationRequestType @default(sale)
-    approved_id       Int?
-    files        Json?        @default("[]")
-
-    organization       Organizations?    @relation(fields: [organization_id], references: [id])
-    approved_by        Employees?            @relation(fields: [approved_id], references: [id])
-
-    created_at    DateTime  @default(now())
-    updated_at    DateTime  @updatedAt
-    @@map("quotation_requests")
-}
-
-// Báo giá mua hàng
 model Quotations {
-    id                Int   @id @default(autoincrement())
-    code              String @default(cuid())
-    quotation_date    DateTime? @default(now())
-    expired_date      DateTime?
-    partner_id        Int
-    address           String?
-    note              String?
-    employee_id       Int?
-    files        Json?        @default("[]")
+  id      Int             @id @default(autoincrement())
+  tax     String?
+  name    String?
+  phone   String?
+  email   String?
+  address String?
+  note    String?
+  status  QuotationStatus @default(pending)
+  files   Json?           @default("[]")
 
-    partner       Partners?    @relation(fields: [partner_id], references: [id])
-    employee        Employees?            @relation(fields: [employee_id], references: [id])
+  approved_id     Int?
+  organization_id Int?
 
-    created_at    DateTime  @default(now())
-    updated_at    DateTime  @updatedAt
-    @@map("quotations")
-    QuotationDetails QuotationDetails[]
-}
+  organization Organizations? @relation(fields: [organization_id], references: [id])
+  approved_by  Employees?     @relation(fields: [approved_id], references: [id])
 
-model QuotationDetails {
-    id                Int   @id @default(autoincrement())
-    quotation_id      Int
-    product_id        Int
-    quantity          Int
-    price             Decimal
-    discount          Float
-    vat               Float
-    note              String?
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
+  Partners                Partners[]
+  Quotation_order_datails QuotationOrderDetails[]
 
-    quotation       Quotations?    @relation(fields: [quotation_id], references: [id])
-    product        Products?            @relation(fields: [product_id], references: [id])
-
-    created_at    DateTime  @default(now())
-    updated_at    DateTime  @updatedAt
-    @@map("quotation_details")
+  @@map("quotation_requests")
 }

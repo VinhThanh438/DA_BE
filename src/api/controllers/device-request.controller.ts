@@ -8,7 +8,7 @@ export class DeviceRequestController {
             const result = await DeviceRequestService.getAll();
             res.sendJson(result);
         } catch (error) {
-            logger.error('DeviceRequestController.getAll: ', error);
+            logger.error(`DeviceRequestController.getAll: `, error);
             next(error);
         }
     }
@@ -21,7 +21,7 @@ export class DeviceRequestController {
             const result = await DeviceRequestService.approveRequest(id, status, userId);
             res.sendJson(result);
         } catch (error) {
-            logger.error('DeviceRequestController.update: ', error);
+            logger.error(`DeviceRequestController.approveRequest: `, error);
             next(error);
         }
     }

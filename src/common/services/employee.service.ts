@@ -58,13 +58,11 @@ export class EmployeeService {
         const dataInput = {
             code: body.code,
             email: body.email,
-            fullname: body.fullname,
+            name: body.name,
             age: body.age,
-            phone_number: body.phone_number,
+            phone: body.phone,
             description: body.description,
             avatar: body.avatar,
-            type: body.type,
-            files: body.files,
 
             education: body.education,
             finance: body.finance,

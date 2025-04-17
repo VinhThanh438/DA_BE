@@ -1,4 +1,5 @@
 import { Prisma, Tokens } from '.prisma/client';
+import { ADMIN_USER_NAME } from '@common/environment';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, StatusCode } from '@common/errors';
 import eventbus from '@common/eventbus';
@@ -11,15 +12,16 @@ import {
     ILoginResponse,
     IPayload,
 } from '@common/interfaces/auth.interface';
+import { IEventUserFirstLoggin } from '@common/interfaces/user.interface';
 import logger from '@common/logger';
 import { TokenRepo } from '@common/repositories/token.repo';
 import { UserRepo } from '@common/repositories/user.repo';
 import { REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
-import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_LOGIN } from '@config/event.constant';
+import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGGIN, EVENT_USER_LOGIN } from '@config/event.constant';
 
 export class AuthService {
     public static async login(body: ILoginRequest): Promise<ILoginResponse> {
-        if (!body.device) {
+        if (!body.device && body.username !== ADMIN_USER_NAME) {
             throw new APIError({
                 message: 'auth.login.device-not-found',
                 status: StatusCode.REQUEST_FORBIDDEN,
@@ -42,19 +44,25 @@ export class AuthService {
             });
         }
 
-        if (!user.device_uid?.includes(body.device)) {
-            eventbus.emit(EVENT_DEVICE_PENDING_APPROVAL, {
+        if (!user.device_uid?.includes(body.device as string) && user.username !== ADMIN_USER_NAME) {
+            if (!user.is_first_loggin) {
+                eventbus.emit(EVENT_DEVICE_PENDING_APPROVAL, {
+                    device: body.device,
+                    ip: body.ip,
+                    ua: body.ua,
+                    userId: user.id,
+                    email: user.email,
+                    name: user?.username,
+                } as unknown as ICreateDeviceRequest);
+                throw new APIError({
+                    message: 'auth.login.device-pending-approval',
+                    status: StatusCode.REQUEST_FORBIDDEN,
+                });
+            }
+            eventbus.emit(EVENT_USER_FIRST_LOGGIN, {
+                id: user.id,
                 device: body.device,
-                ip: body.ip,
-                ua: body.ua,
-                userId: user.id,
-                email: user.email,
-                name: user?.username,
-            } as unknown as ICreateDeviceRequest);
-            throw new APIError({
-                message: 'auth.login.device-pending-approval',
-                status: StatusCode.REQUEST_FORBIDDEN,
-            });
+            } as IEventUserFirstLoggin);
         }
 
         const transFormUserData: IPayload = {

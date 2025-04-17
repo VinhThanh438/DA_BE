@@ -25,6 +25,7 @@ import requestIp from 'request-ip';
 express.response.sendJson = function (data?: object | any[]) {
     const isArray = Array.isArray(data);
     const isObject = typeof data === 'object' && data !== null && !isArray;
+    const isPrimitive = typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean';
 
     if (
         isObject &&
@@ -43,8 +44,8 @@ express.response.sendJson = function (data?: object | any[]) {
     return this.json({
         error_code: 0,
         status_code: StatusCode.SUCCESS,
-        message: (data as any)?.message || 'OK',
-        ...(isArray ? { data } : isObject ? { data: data } : data || {}),
+        message: (isObject && (data as { message?: string })?.message) || 'OK',
+        ...(isArray ? { data } : isObject ? { data } : isPrimitive ? { data } : {}),
     });
 };
 

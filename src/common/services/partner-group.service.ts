@@ -8,8 +8,8 @@ import { PartnerGroupRepo } from '@common/repositories/partner-group.repo';
 export class PartnerGroupService {
     private static repo = new PartnerGroupRepo();
 
-    public static async paginate(body: IPaginationInput): Promise<IPaginationResponse> {
-        return this.repo.paginate(body);
+    public static async paginate(body: IPaginationInput, type: string | ''): Promise<IPaginationResponse> {
+        return this.repo.paginate(body, true, { type: type });
     }
 
     public static async create(body: ICreateAndUpdate): Promise<IIdResponse> {
@@ -25,11 +25,25 @@ export class PartnerGroupService {
     }
 
     public static async update(updateId: number, body: ICreateAndUpdate): Promise<IIdResponse> {
+        const exist = await this.repo.findOne({ id: updateId });
+        if (!exist) {
+            throw new APIError({
+                message: 'common.not-found',
+                status: StatusCode.BAD_REQUEST,
+            });
+        }
         const id = await this.repo.update({ id: updateId }, body);
         return { id };
     }
 
     public static async delete(deleteId: number): Promise<IIdResponse> {
+        const exist = await this.repo.findOne({ id: deleteId });
+        if (!exist) {
+            throw new APIError({
+                message: 'common.not-found',
+                status: StatusCode.BAD_REQUEST,
+            });
+        }
         const id = await this.repo.delete({ id: deleteId });
         return { id };
     }

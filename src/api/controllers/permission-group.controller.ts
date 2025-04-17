@@ -6,7 +6,7 @@ export class PermissionGroupController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionGroupController.create: ', error);
+            logger.error(`PermissionGroupController.create: `, error);
             next(error);
         }
     }
@@ -15,7 +15,7 @@ export class PermissionGroupController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionGroupController.getAll: ', error);
+            logger.error(`PermissionGroupController.getAll: `, error);
             next(error);
         }
     }
@@ -24,7 +24,7 @@ export class PermissionGroupController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionGroupController.update: ', error);
+            logger.error(`PermissionGroupController.update: `, error);
             next(error);
         }
     }
@@ -33,7 +33,7 @@ export class PermissionGroupController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionGroupController.delete: ', error);
+            logger.error(`PermissionGroupController.delete: `, error);
             next(error);
         }
     }
@@ -42,7 +42,7 @@ export class PermissionGroupController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionGroupController.getById: ', error);
+            logger.error(`PermissionGroupController.getById: `, error);
             next(error);
         }
     }

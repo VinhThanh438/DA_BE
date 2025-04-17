@@ -1,0 +1,36 @@
+model MaterialStandards {
+  id       Int     @id @default(autoincrement())
+  quantity Int
+  price    Decimal
+
+  product_id      Int?
+  material_id     Int?
+  organization_id Int?
+
+  product      Products?      @relation("ProductRelation", fields: [product_id], references: [id], onDelete: Cascade)
+  material     Products?      @relation("MaterialRelation", fields: [material_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("material_standards")
+}
+
+model MaterialBudgets {
+  id                 Int     @id @default(autoincrement())
+  add_for_production Int?
+  add_for_order      Int?
+  note               String?
+
+  product_id      Int?
+  organization_id Int?
+
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("material_budgets")
+}

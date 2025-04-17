@@ -8,23 +8,21 @@ export const EmployeeSelection: Prisma.EmployeesSelect = {
     id: true,
     code: true,
     email: true,
-    fullname: true,
+    name: true,
     age: true,
-    phone_number: true,
+    phone: true,
     description: true,
     avatar: true,
-    type: true,
 };
 
 export const EmployeeSelectionAll: Prisma.EmployeesSelect = {
     ...EmployeeSelection,
     education: true,
-    finance: true,
-    identity: true,
+    employee_finance: true,
     address: true,
     emergency_contact: true,
-    contract: true,
-    // bank_account: true,
+    employee_contract: true,
+    BankAccounts: true,
     social_insurance: true,
 };
 
@@ -36,13 +34,7 @@ export const getSelection = (includeRelations: boolean): Prisma.EmployeesSelect 
 export class EmployeeRepo {
     private static db = DatabaseAdapter.getInstance().employees;
 
-    private static SEARCHABLE_FIELDS: (keyof Prisma.EmployeesWhereInput)[] = [
-        'code',
-        'email',
-        'fullname',
-        'phone_number',
-        'description',
-    ];
+    private static SEARCHABLE_FIELDS: (keyof Prisma.EmployeesWhereInput)[] = ['code', 'email', 'description'];
 
     private static buildSearchCondition(keyword?: string): Prisma.EmployeesWhereInput | undefined {
         if (!keyword) return undefined;
@@ -150,23 +142,17 @@ export class EmployeeRepo {
                 ...data,
 
                 education: mapNestedInput(data.education),
-                finance: mapNestedInput(data.finance),
-                identity: mapNestedInput(data.identity),
+                employee_finance: mapNestedInput(data.finance),
                 address: mapNestedInput(data.address),
                 emergency_contact: mapNestedInput(data.emergency_contact),
-                contract: mapNestedInput(data.contract),
+                employee_contract: mapNestedInput(data.contract),
                 social_insurance: mapNestedInput(data.social_insurance),
-                user_position: mapNestedInput(data.user_position),
             },
             include: {
                 education: true,
-                finance: true,
-                identity: true,
                 address: true,
                 emergency_contact: true,
-                contract: true,
                 social_insurance: true,
-                user_position: true,
             },
         });
     }
@@ -192,13 +178,11 @@ export class EmployeeRepo {
             data: {
                 ...data,
                 education: mapNestedInput(data.education),
-                finance: mapNestedInput(data.finance),
-                identity: mapNestedInput(data.identity),
+                employee_finance: mapNestedInput(data.finance),
                 address: mapNestedInput(data.address),
                 emergency_contact: mapNestedInput(data.emergency_contact),
-                contract: mapNestedInput(data.contract),
+                employee_contract: mapNestedInput(data.contract),
                 social_insurance: mapNestedInput(data.social_insurance),
-                user_position: mapNestedInput(data.user_position),
             },
             select: {
                 id: true,

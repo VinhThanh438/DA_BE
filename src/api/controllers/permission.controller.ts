@@ -10,7 +10,7 @@ export class PermissionController {
             const data = await PermissionService.create(body);
             res.sendJson(data);
         } catch (error) {
-            logger.error('PermissionController.create: ', error);
+            logger.error(`PermissionController.create: `, error);
             next(error);
         }
     }
@@ -20,7 +20,7 @@ export class PermissionController {
             const data = await PermissionService.getAll();
             res.sendJson(data);
         } catch (error) {
-            logger.error('PermissionController.getAll: ', error);
+            logger.error(`PermissionController.getAll: `, error);
             next(error);
         }
     }
@@ -29,7 +29,7 @@ export class PermissionController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionController.update: ', error);
+            logger.error(`PermissionController.update: `, error);
             next(error);
         }
     }
@@ -38,7 +38,7 @@ export class PermissionController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionController.delete: ', error);
+            logger.error(`PermissionController.delete: `, error);
             next(error);
         }
     }
@@ -47,7 +47,7 @@ export class PermissionController {
         try {
             res.sendJson();
         } catch (error) {
-            logger.error('PermissionController.getById: ', error);
+            logger.error(`PermissionController.getById: `, error);
             next(error);
         }
     }

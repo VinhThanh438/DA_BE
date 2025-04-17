@@ -29,5 +29,48 @@ export interface MailOptions {
 
 export enum PartnerType {
     CUSTOMER = 'customer',
-    SUPPLIER = 'supplier'
+    SUPPLIER = 'supplier',
+    DELIVERY = 'delivery',
 }
+
+export enum BankType {
+    EMPLOYEE = 'employee',
+    PARTNER = 'partner',
+}
+export enum OrganizationType {
+    HEAD_QUARTER = 'headquarter',
+    COMPANY = 'company',
+    DEPARTMENT = 'department',
+}
+
+export enum PrefixCode {
+    ORGANIZATION = 'TC',
+    EMPLOYEE = 'NV',
+    USER = 'ND',
+    PARTNER = 'PN',
+    PRODUCT = 'SP',
+    QUOTATION = 'BG',
+    ORDER = 'DH',
+    INVOICE = 'HD',
+    WAREHOUSE = 'KH',
+    INVENTORY = 'INV',
+    PRODUCTION = 'XS',
+    FINANCE_RECORD = 'FN',
+    OTHER = 'OTH',
+}
+
+export const ModelPrefixMap: Record<string, PrefixCode> = {
+    ORGANIZATION: PrefixCode.ORGANIZATION,
+    EMPLOYEE: PrefixCode.EMPLOYEE,
+    USER: PrefixCode.USER,
+    PARTNER: PrefixCode.PARTNER,
+    PRODUCT: PrefixCode.PRODUCT,
+    QUOTATION: PrefixCode.QUOTATION,
+    ORDER: PrefixCode.ORDER,
+    INVOICE: PrefixCode.INVOICE,
+    WAREHOUSE: PrefixCode.WAREHOUSE,
+    INVENTORY: PrefixCode.INVENTORY,
+    PRODUCTION: PrefixCode.PRODUCTION,
+    FINANCERECORD: PrefixCode.FINANCE_RECORD,
+    OTHER: PrefixCode.OTHER,
+};

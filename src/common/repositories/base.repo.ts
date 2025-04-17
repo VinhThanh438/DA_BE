@@ -1,10 +1,11 @@
 import { IPaginationInfo, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import { log } from 'node:console';
 
 /**
  * Note:
- * - T: Represents the Prisma model type (e.g., Something)
- * - S: Represents the Prisma select type (e.g., Prisma.SomethingSelect)
- * - W: Represents the Prisma WhereInput type (e.g., Prisma.SomethingWhereInput)
+ * @param T: Represents the Prisma model type (e.g., Something)
+ * @param S: Represents the Prisma select type (e.g., Prisma.SomethingSelect)
+ * @param W: Represents the Prisma WhereInput type (e.g., Prisma.SomethingWhereInput)
  */
 export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     // Abstract properties to be implemented by subclasses
@@ -15,20 +16,22 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     public async paginate(
         { page, limit, args }: IPaginationInput,
         includeRelations: boolean = false,
+        query: object = {},
     ): Promise<IPaginationResponse> {
-        const currentPage = page ?? 1;
-        const size = limit ?? 10;
+        const currentPage = Number(page) ?? 1;
+        const size = Number(limit) ?? 10;
         const skip = (currentPage - 1) * size;
 
         const [data, totalRecords] = await Promise.all([
             this.db.findMany({
+                where: query,
                 select: includeRelations ? this.detailSelect : this.defaultSelect,
                 skip,
                 take: size,
                 orderBy: { id: 'desc' },
                 ...(args && { where: args as W }), // Apply optional where conditions
             }),
-            this.db.count({ where: args as W }),
+            this.db.count({ where: { ...(args as W), ...query } }),
         ]);
 
         const totalPages = Math.ceil(totalRecords / size);
@@ -46,6 +49,25 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
 
     public async findOne(where: W = {} as W, includeRelations: boolean = false): Promise<Partial<T> | null> {
         return this.db.findFirst({
+            where,
+            select: includeRelations ? this.detailSelect : this.defaultSelect,
+        });
+    }
+
+    public async getLastRecord(): Promise<Partial<T> | null> {
+        return this.db.findFirst({
+            orderBy: {
+                id: 'desc',
+            },
+            select: {
+                id: true,
+                code: true,
+            },
+        });
+    }
+
+    public async findMany(where: W = {} as W, includeRelations: boolean = false): Promise<Partial<T> | null> {
+        return this.db.findMany({
             where,
             select: includeRelations ? this.detailSelect : this.defaultSelect,
         });

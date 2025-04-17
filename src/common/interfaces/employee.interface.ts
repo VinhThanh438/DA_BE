@@ -1,13 +1,11 @@
 export interface ICreateEmployee {
     code?: string;
     email?: string;
-    fullname?: string;
+    name?: string;
     age?: number;
-    phone_number?: string;
+    phone?: string;
     description?: string;
     avatar?: string;
-    type: string;
-    files?: any;
 
     // education_id?: number;
     // finance_id?: number;
@@ -46,7 +44,6 @@ export interface ICreateFinance {
     status: string;
     type: FinanceType;
 }
-
 
 export type IdentityType = 'cccd' | 'hc';
 

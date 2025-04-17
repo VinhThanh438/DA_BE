@@ -1,4 +1,4 @@
-import { RequestStatus } from "@config/app.constant";
+import { RequestStatus } from '@config/app.constant';
 
 export interface IPaginationInfo {
     total_pages: number;
@@ -33,7 +33,7 @@ export interface ICreateAndUpdateResponse {
 }
 
 export interface IIdResponse {
-    id: number
+    id: number;
 }
 
 export interface SendMailData {

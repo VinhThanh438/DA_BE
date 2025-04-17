@@ -1,0 +1,27 @@
+enum QuoteOrderType {
+  quotation
+  order
+}
+
+model QuotationOrderDetails {
+  id       Int            @id @default(autoincrement())
+  quantity Int?
+  price    Decimal?
+  discount Float?
+  vat      Float? // %vat
+  note     String?
+  type     QuoteOrderType @default(quotation)
+
+  product_id   Int?
+  order_id     Int?
+  quotation_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  product   Products?   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  order     Orders?     @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  quotation Quotations? @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+
+  @@map("quotation_order_details")
+}

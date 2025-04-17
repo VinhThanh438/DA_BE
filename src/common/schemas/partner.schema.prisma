@@ -1,48 +1,73 @@
 enum PartnerType {
-    customer // khach hang
-    supplier // nha cung cap
+  customer // khach hang
+  supplier // nha cung cap
+  delivery // giao hang
+  default
 }
 
 model Partners {
-  id           Int     @id @default(autoincrement())
-  code         String  @default(cuid())
-  name         String
-  phone        String?
-  address      String?
-  note         String?
-  tax          String?
-  type         PartnerType
-  sale_staff_id      Int?
+  id      Int         @id @default(autoincrement())
+  code    String      @default(cuid())
+  name    String
+  phone   String?
+  address String?
+  note    String?
+  email   String?
+  tax     String?
+  type    PartnerType @default(default) // loai doi tac
+
+  max_dept_amount Decimal? // so tien no toi da
+  max_dept_day    Int? // so ngay no toi da
+  current_dept    Decimal? // du no dau
+
+  // thong tin lien he
+  representative_name  String?
+  representative_phone String?
+  representative_title String? // xung ho
+  representative_email String?
+
+  organization_id  Int?
   partner_group_id Int?
-  emergency_contact_id Int?
+  clause_id        Int? // dieu khoan
+  sale_staff_id    Int? // nhan vien ban hang
 
-  payment_term  String?
-  max_dept_amount   Int?
-  max_dept_day      Int?
+  is_default Boolean @default(false)
 
-  is_default   Boolean @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
-
-  partner_group    PartnerGroups?   @relation(fields: [partner_group_id], references: [id], onDelete: Cascade)
-  sale_staff    Employees?   @relation(fields: [sale_staff_id], references: [id], onDelete: Cascade)
-  emergency_contact    EmergencyContacts?   @relation(fields: [emergency_contact_id], references: [id], onDelete: Cascade)
+  partner_group     PartnerGroups?      @relation(fields: [partner_group_id], references: [id], onDelete: Cascade)
+  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  clause            Clauses?            @relation(fields: [clause_id], references: [id], onDelete: Cascade)
+  sale_staff        Employees?          @relation(fields: [sale_staff_id], references: [id], onDelete: Cascade)
+  BankAccounts      BankAccounts[]
+  Invoice           Invoices[]
+  Quotations        Quotations[]
+  Orders            Orders[]
+  OrderContracts    OrderContracts[]
+  Inventories       Inventories[]       @relation("PartnerRelation")
+  Deliveries        Inventories[]       @relation("DeliveryRelation")
+  Productions       Productions[]
+  FinanceRecords    FinanceRecords[]
+  TransactionOrders TransactionOrders[]
 
   @@map("partners")
-  BankAccounts BankAccounts[]
-  Invoice Invoices[]
-  Imports Imports[]
-  OrderExpense OrderExpenses[]
-  Exports Exports[]
-  Quotations Quotations[]
-  Orders Orders[]
 }
 
 model PartnerGroups {
-  id            Int    @id @default(autoincrement())
-  name          String
-
-  @@map("partner_groups")
+  id       Int         @id @default(autoincrement())
+  name     String
+  type     PartnerType @default(default) // loai doi tac
   Partners Partners[]
+  @@map("partner_groups")
+}
+
+// Dieu khoan
+model Clauses {
+  id       Int        @id @default(autoincrement())
+  name     String @unique
+  content  String?
+  Partners Partners[]
+
+  @@map("clauses")
 }

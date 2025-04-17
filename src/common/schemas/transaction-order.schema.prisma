@@ -1,0 +1,31 @@
+// Dung de luu tat ca cac thong tin giao dich tren he thong
+enum TransactionOrderType {
+  in
+  out
+}
+
+model TransactionOrders {
+  id      Int                   @id @default(autoincrement())
+  time_at DateTime              @default(now())
+  type    TransactionOrderType?
+  amount  Decimal?
+  note    String?
+
+  partner_id        Int? // Doi tac
+  employee_id       Int? // nhan vien giao dich
+  organization_id   Int?
+  order_id          Int? // Don hang
+  bank_id           Int? // Tai khoan giao dich
+  finance_record_id Int? // Phieu thu chi
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  partner        Partners?       @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  employee       Employees?      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  organization   Organizations?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  bank           BankAccounts?   @relation(fields: [bank_id], references: [id], onDelete: Cascade)
+  finance_record FinanceRecords? @relation(fields: [finance_record_id], references: [id], onDelete: Cascade)
+
+  @@map("transaction_orders")
+}

@@ -11,8 +11,8 @@ export class Router {
         // push job here
         queues.push(
             // DeleteFileDailyJob,
-            SendConfirmMailJob,
-            SendPendingMailJob
+            // SendConfirmMailJob,
+            // SendPendingMailJob
         );
 
         return Promise.all(queues.map((queue) => queue.register()));

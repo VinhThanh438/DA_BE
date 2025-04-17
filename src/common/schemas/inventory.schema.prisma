@@ -1,0 +1,57 @@
+enum InventoryType {
+  purchase_in // Nhập từ NCC
+  finished_in // Nhập thành phẩm
+  normal_out // Xuất kho thường
+  material_out // Xuất nguyên vật liệu
+}
+
+model Inventories {
+  id            Int           @id @default(autoincrement())
+  time_at       DateTime      @default(now())
+  code          String        @unique
+  type          InventoryType
+  note          String? // Ghi chú đơn hàng
+  files         Json?         @default("[]")
+  license_plate String? // Biển số xe vận chuyển
+
+  employee_id     Int? // Nhân viên nhập kho
+  partner_id      Int? // Nhà cung cấp / Khách hàng
+  delevery_id     Int? // Don vi van chuyen
+  organization_id Int? // Đơn vị mua hàng
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization          Organizations?          @relation(fields: [organization_id], references: [id])
+  partner               Partners?               @relation("PartnerRelation", fields: [partner_id], references: [id])
+  delivery              Partners?               @relation("DeliveryRelation", fields: [delevery_id], references: [id])
+  employee              Employees?              @relation(fields: [employee_id], references: [id])
+  InventoryDetails      InventoryDetails[]
+  TransactionWarehouses TransactionWarehouses[]
+
+  @@map("inventories")
+}
+
+model InventoryDetails {
+  id       Int      @id @default(autoincrement())
+  quantity Int? // Số lượng
+  price    Decimal? // Đơn giá
+  discount Int? // Giảm giá (%)
+  vat      Int? // % VAT
+  note     String?
+
+  product_id      Int
+  inventory_id    Int
+  warehouse_id    Int?
+  organization_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  warehouse    WareHouses?    @relation(fields: [warehouse_id], references: [id])
+  product      Products?      @relation(fields: [product_id], references: [id])
+  inventory    Inventories?   @relation(fields: [inventory_id], references: [id])
+  organization Organizations? @relation(fields: [organization_id], references: [id])
+
+  @@map("inventory_details")
+}

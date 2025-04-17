@@ -1,114 +1,45 @@
-enum ImportType {
-  purchased   // Nhập từ NCC
-  finished    // Nhập thành phẩm
-}
-
-enum ExportType {
-  inventory   // Xuất kho thường
-  material    // Xuất nguyên vật liệu
-}
-
 model WareHouses {
-  id         Int       @id @default(autoincrement())
-  code       String    @default(cuid())
-  name       String
-  phone      String?
-  address    String?
-  note       String?
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  id      Int     @id @default(autoincrement())
+  code    String  @default(cuid())
+  name    String
+  phone   String?
+  address String?
+  note    String?
+
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  InventoryDetails      InventoryDetails[]
+  TransactionWarehouses TransactionWarehouses[]
 
   @@map("ware_houses")
-  ImportDetails ImportDetails[]
-  ExportDetails ExportDetails[]
 }
 
-model Imports {
-  id               Int         @id @default(autoincrement())
-  imported_at      DateTime    @default(now())
-  code             String      @unique
-  delivery         String?      // Đơn vị vận chuyển
-  transportation_number String? // Số xe vận chuyển
-  organization_id  Int?         // Đơn vị mua hàng
-  partner_id       Int?         // Nhà cung cấp / Khách hàng
-  employee_id      Int?         // Nhân viên nhập kho
-  type             ImportType
-  files             Json?        @default("[]")
-  note             String?      // Ghi chú đơn hàng
-
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
-
-  organization        Organizations?    @relation(fields: [organization_id], references: [id])
-  partner        Partners?              @relation(fields: [partner_id], references: [id])
-  employee        Employees?            @relation(fields: [employee_id], references: [id])
-
-  @@map("imports")
-  ImportDetails ImportDetails[]
-  OrderImportDetails OrderImportDetails[]
+enum TransactionWarehouseType {
+  in
+  out
 }
 
-model ImportDetails {
-  id               Int         @id @default(autoincrement())
-  product_id       Int
-  import_id       Int
-  warehouse_id     Int?
-  quantity         Int?          // Số lượng
-  price            Decimal?      // Đơn giá
-  discount         Int?         // Giảm giá (%)
-  vat              Int?         // Thuế VAT
-  note             String?
+model TransactionWarehouses {
+  id       Int                      @id @default(autoincrement())
+  time_at  DateTime                 @default(now())
+  quantity Int                      @default(0)
+  type     TransactionWarehouseType
+  note     String?
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  organization_id Int?
+  warehouse_id    Int?
+  product_id      Int?
+  order_id        Int?
+  inventory_id    Int?
 
-  warehouse        WareHouses?  @relation(fields: [warehouse_id], references: [id])
-  product        Products?  @relation(fields: [product_id], references: [id])
-  import        Imports?  @relation(fields: [import_id], references: [id])
-  @@map("import_details")
-}
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  warehouse    WareHouses?    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
 
-model Exports {
-  id               Int         @id @default(autoincrement())
-  exported_at      DateTime    @default(now())
-  code             String      @unique
-  organization_id  Int?
-  partner_id       Int?
-  employee_id      Int?
-  delivery         String?      // Đơn vị vận chuyển
-  transportation_number String? // Số xe vận chuyển
-  note             String?
-  type             ExportType
-  files             Json?        @default("[]")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  organization        Organizations?    @relation(fields: [organization_id], references: [id])
-  partner        Partners?              @relation(fields: [partner_id], references: [id])
-  employee        Employees?            @relation(fields: [employee_id], references: [id])
-
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
-
-  @@map("exports")
-  ExportDetails ExportDetails[]
-  OrderExportDetails OrderExportDetails[]
-}
-
-model ExportDetails {
-  id               Int         @id @default(autoincrement())
-  export_id        Int
-  product_id       Int
-  warehouse_id     Int?
-  quantity         Int?          // Số lượng
-  price            Decimal?      // Đơn giá
-  discount         Int?         // Giảm giá (%)
-  vat              Int?         // Thuế VAT
-  note             String?
-
-  export        Exports? @relation(fields: [export_id], references: [id])
-  warehouse        WareHouses? @relation(fields: [warehouse_id], references: [id])
-  product        Products? @relation(fields: [product_id], references: [id])
-
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  @@map("export_details")
+  @@map("transaction_warehouses")
 }

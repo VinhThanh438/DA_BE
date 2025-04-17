@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import logger from '@common/logger';
 import { PartnerGroupService } from '@common/services/partner-group.service';
 import { IPaginationInput } from '@common/interfaces/common.interface';
+import { IPaginationInputPartnerGroup } from '@common/interfaces/partner.interface';
 
 export class PartnerGroupController {
     public static async create(req: Request, res: Response, next: NextFunction) {
@@ -10,18 +11,18 @@ export class PartnerGroupController {
             const result = await PartnerGroupService.create(body);
             res.sendJson(result);
         } catch (error) {
-            logger.error('PartnerGroupController.create: ', error);
+            logger.error(`PartnerGroupController.create: `, error);
             next(error);
         }
     }
 
     public static async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const { page, limit } = req.query as IPaginationInput;
-            const data = await PartnerGroupService.paginate({ page, limit });
+            const { page, limit, type } = req.query as IPaginationInputPartnerGroup;
+            const data = await PartnerGroupService.paginate({ page, limit }, type || '');
             res.sendJson(data);
         } catch (error) {
-            logger.error('PartnerGroupController.getAll: ', error);
+            logger.error(`PartnerGroupController.getAll: `, error);
             next(error);
         }
     }
@@ -33,7 +34,7 @@ export class PartnerGroupController {
             const result = await PartnerGroupService.update(id, body);
             res.sendJson(result);
         } catch (error) {
-            logger.error('PartnerGroupController.update: ', error);
+            logger.error(`PartnerGroupController.update: `, error);
             next(error);
         }
     }
@@ -44,7 +45,7 @@ export class PartnerGroupController {
             const result = await PartnerGroupService.delete(id);
             res.sendJson(result);
         } catch (error) {
-            logger.error('PartnerGroupController.delete: ', error);
+            logger.error(`PartnerGroupController.delete: `, error);
             next(error);
         }
     }
@@ -55,7 +56,7 @@ export class PartnerGroupController {
             const result = await PartnerGroupService.findById(id);
             res.sendJson(result);
         } catch (error) {
-            logger.error('PartnerGroupController.getById: ', error);
+            logger.error(`PartnerGroupController.getById: `, error);
             next(error);
         }
     }

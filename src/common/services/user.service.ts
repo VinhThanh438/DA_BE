@@ -2,9 +2,10 @@ import { Prisma, Users } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, StatusCode } from '@common/errors';
 import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
-import { ICreateUser } from '@common/interfaces/user.interface';
+import { ICreateUser, IEventUserFirstLoggin } from '@common/interfaces/user.interface';
 import { UserRepo } from '@common/repositories/user.repo';
 import { EmployeeService } from './employee.service';
+import { ADMIN_USER_NAME } from '@common/environment';
 
 export class UserService {
     public static async findOne(
@@ -31,10 +32,10 @@ export class UserService {
     }
 
     public static async create(body: ICreateUser): Promise<IIdResponse> {
-        const existUser = await UserRepo.findOne({ username: body.username });
+        const existUser = await UserRepo.findOne({ username: body.username, email: body.email });
         if (existUser) {
             throw new APIError({
-                message: 'user.common.exist',
+                message: 'common.not-found',
                 status: StatusCode.BAD_REQUEST,
             });
         }
@@ -47,6 +48,16 @@ export class UserService {
             });
         }
         const data = await UserRepo.create(body);
+        return { id: data.id };
+    }
+
+    public static async seedAdmin(body: ICreateUser): Promise<IIdResponse> {
+        const data = await UserRepo.create(body);
+        return { id: data.id };
+    }
+
+    public static async updateLogginStatus(body: IEventUserFirstLoggin): Promise<IIdResponse> {
+        const data = await UserRepo.update({ id: body.id }, { is_first_loggin: false, device_uid: [body.device] });
         return { id: data.id };
     }
 

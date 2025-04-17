@@ -1,46 +1,47 @@
 model Contracts {
-  id                Int   @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  code              String    @unique                   // Số hợp đồng
-  tax               String?                             // Mã số thuế
-  sign_date         DateTime?                           // Ngày ký
-  contract_value    Decimal?                            // giá trị hợp đồng
-  delivery_date     DateTime?                           // Hạn giao hàng
+  code           String    @unique // Số hợp đồng
+  tax            String? // Mã số thuế
+  sign_date      DateTime? // Ngày ký
+  contract_value Decimal? // giá trị hợp đồng
+  delivery_date  DateTime? // Hạn giao hàng
 
-  files             Json?        @default("[]")
-  status            ContractStatus  @default(doing)
-  
-  partner_id        Int
-  employee_id       Int?  // Người ký
-  organization_id   Int?  // Đơn vị ký
+  files  Json?          @default("[]")
+  status ContractStatus @default(doing)
 
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  partner_id      Int
+  employee_id     Int? // Người ký
+  organization_id Int? // Đơn vị ký
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   ContractDetails ContractDetails[]
+
   @@map("contracts")
-  OrderContractDetails OrderContractDetails[]
 }
 
 model ContractDetails {
-    id          Int     @id @default(autoincrement())
-    contract_id Int
-    product_id  Int
-    quantity    Int
-    price       Decimal
-    vat         Float
-    note        String?
+  id          Int     @id @default(autoincrement())
+  contract_id Int
+  product_id  Int
+  quantity    Int
+  price       Decimal
+  vat         Float
+  note        String?
 
-    created_at         DateTime @default(now())
-    updated_at         DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-    contract    Contracts?   @relation(fields: [contract_id], references: [id], onDelete: Cascade)
-    product    Products?   @relation(fields: [product_id], references: [id], onDelete: Cascade)
-    @@map("contract_details")
+  contract Contracts? @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  product  Products?  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("contract_details")
 }
 
 enum ContractStatus {
-    doing
-    completed
-    cancelled
+  doing
+  completed
+  cancelled
 }

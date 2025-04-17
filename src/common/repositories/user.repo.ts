@@ -13,6 +13,9 @@ export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
 export const UserSelection: Prisma.UsersSelect = {
     ...UserSelectionWithoutPassword,
     password: true,
+    is_first_loggin: true,
+    is_default: true,
+    is_disabled: true,
 };
 
 export const UserSelectionAll: Prisma.UsersSelect = {

@@ -1,59 +1,60 @@
 model Users {
-  id           Int     @id @default(autoincrement())
-  code         String  @default(cuid())
-  email        String?
-  username     String  @unique
-  password     String
-  device_uid   String[] @default([])
+  id                  Int      @id @default(autoincrement())
+  code                String   @default(cuid())
+  email               String? // === email trong employee hoac tu them email khac
+  username            String   @unique
+  password            String
+  device_uid          String[] @default([])
   permission_group_id Int?
-  employee_id  Int?
+  employee_id         Int?
+  organization_id     Int? // truong nay chi dung de sort user theo to chuc neu can lay thong tin organ thi join qua employee
 
-  is_disabled  Boolean @default(false)
-  is_deleted   Boolean @default(false)
-  is_default   Boolean @default(false)
+  is_disabled Boolean @default(false)
+  is_deleted  Boolean @default(false)
+  is_default  Boolean @default(false)
+  is_first_loggin Boolean @default(true)
 
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  employee    Employees? @relation(fields: [employee_id], references: [id])
+  employee               Employees?        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  permission_group       PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: Cascade)
+  DeviceRequests         DeviceRequests[]  @relation("DeviceRequestUser")
+  ApprovedDeviceRequests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
+  Tokens                 Tokens[]
 
-  permission_group    PermissionGroups?   @relation(fields: [permission_group_id], references: [id], onDelete: Cascade)
   @@map("users")
-  DeviceRequests DeviceRequests[] @relation("DeviceRequestUser")
-  ApprovedDeviceRequests DeviceRequests[] @relation("DeviceRequestApprovedBy")
-  Organization Organizations[]
-  Tokens Tokens[]
 }
 
 model Tokens {
-  id            Int    @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   user_id       Int
-  refresh_token String @unique
+  refresh_token String  @unique
   ip_address    String?
   user_agent    String?
   device_uid    String?
 
-  created_at    DateTime  @default(now())
+  created_at DateTime @default(now())
 
-  user    Users?   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([refresh_token])
   @@map("tokens")
 }
 
 model DeviceRequests {
-  id            Int             @id @default(autoincrement())
-  user_id       Int
-  device_uid    String
-  ip_address    String?
-  user_agent    String?
-  status        RequestStatus   @default(pending)
-  approved_id   Int?
-  created_at    DateTime        @default(now())
-  updated_at    DateTime        @updatedAt
+  id          Int           @id @default(autoincrement())
+  user_id     Int
+  device_uid  String
+  ip_address  String?
+  user_agent  String?
+  status      RequestStatus @default(pending)
+  approved_id Int?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
 
-  user          Users           @relation("DeviceRequestUser", fields: [user_id], references: [id])
-  approved_by Users?          @relation("DeviceRequestApprovedBy", fields: [approved_id], references: [id])
+  user        Users  @relation("DeviceRequestUser", fields: [user_id], references: [id])
+  approved_by Users? @relation("DeviceRequestApprovedBy", fields: [approved_id], references: [id])
 
   @@map("device_requests")
 }

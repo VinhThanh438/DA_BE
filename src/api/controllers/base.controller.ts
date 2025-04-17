@@ -1,48 +1,82 @@
-import { NextFunction, Request, Response } from 'express';
+import { IPaginationInput } from '@common/interfaces/common.interface';
 import logger from '@common/logger';
+import { BaseService } from '@common/services/base.service';
+import { Request, Response, NextFunction } from 'express';
 
-export class BaseController {
-    public static async create(req: Request, res: Response, next: NextFunction) {
+export abstract class BaseController<T = any> {
+    constructor(protected readonly service: BaseService<T, any, any>) {}
+
+    public async paginate(req: Request, res: Response, next: NextFunction) {
         try {
-            res.sendJson();
+            const query = req.query as IPaginationInput;
+            const data = await this.service.paginate(query);
+            res.sendJson(data);
         } catch (error) {
-            logger.error('BaseController.create: ', error);
+            logger.error(`${this.constructor.name}.paginate: `, error);
             next(error);
         }
     }
 
-    public static async getAll(req: Request, res: Response, next: NextFunction) {
+    public async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            res.sendJson();
+            const query = req.query as IPaginationInput;
+            const data = await this.service.paginate(query);
+            res.sendJson(data);
         } catch (error) {
-            logger.error('BaseController.getAll: ', error);
+            logger.error(`${this.constructor.name}.paginate: `, error);
             next(error);
         }
     }
 
-    public static async update(req: Request, res: Response, next: NextFunction) {
+    public async getById(req: Request, res: Response, next: NextFunction) {
         try {
-            res.sendJson();
+            const id = Number(req.params.id);
+            const data = await this.service.findById(id);
+            res.sendJson(data);
         } catch (error) {
-            logger.error('BaseController.update: ', error);
+            logger.error(`${this.constructor.name}.getById: `, error);
             next(error);
         }
     }
 
-    public static async delete(req: Request, res: Response, next: NextFunction) {
+    public async getCode(req: Request, res: Response, next: NextFunction) {
         try {
-            res.sendJson();
+            const code = await this.service.getCode();
+            res.sendJson(code);
         } catch (error) {
-            logger.error('BaseController.delete: ', error);
+            logger.error(`${this.constructor.name}.getCode: `, error);
             next(error);
         }
     }
 
-    public static async getById(req: Request, res: Response, next: NextFunction) {
+    public async create(req: Request, res: Response, next: NextFunction) {
         try {
-            res.sendJson();
+            const data = await this.service.create(req.body);
+            res.sendJson(data);
         } catch (error) {
-            logger.error('BaseController.getById: ', error);
+            logger.error(`${this.constructor.name}.create: `, error);
+            next(error);
+        }
+    }
+
+    public async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const data = await this.service.update(id, req.body);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.update: `, error);
+            next(error);
+        }
+    }
+
+    public async delete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const data = await this.service.delete(id);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.delete: `, error);
             next(error);
         }
     }

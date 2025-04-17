@@ -1,8 +1,8 @@
 model ProductionOrders {
-    id                Int   @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-    created_at    DateTime  @default(now())
-    updated_at    DateTime  @updatedAt
-    OrderProductionDetails OrderProductionDetails[]
-    @@map("production_orders")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("production_orders")
 }

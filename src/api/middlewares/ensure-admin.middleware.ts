@@ -1,20 +1,24 @@
+import { ADMIN_MAIL, ADMIN_PASSWORD, ADMIN_USER_NAME } from '@common/environment';
 import logger from '@common/logger';
 import { UserService } from '@common/services/user.service';
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 
 export class EnsureAdminAccountMiddleware {
     static async handleOnStartup() {
         try {
-            const adminExists = await UserService.findOne({ username: 'admin' });
+            const adminExists = await UserService.findOne({ username: ADMIN_USER_NAME, email: ADMIN_MAIL });
             if (!adminExists) {
-                await UserService.create({
-                    username: 'admin',
-                    password: '123456',
-                    email: 'vuthanhvinh438@gmail.com',
-                    employee_id: 0
+                // create default device user ID
+                const deviceUID = crypto.randomBytes(20).toString('hex');
+                const result = await UserService.seedAdmin({
+                    username: ADMIN_USER_NAME,
+                    password: ADMIN_PASSWORD,
+                    email: ADMIN_MAIL,
                 });
+                if (!result) logger.info('Admin account already exists!');
+                else logger.info(`Default admin account create: id: ${result.id}, device_uid: ${deviceUID}`);
             }
-            logger.info('Default admin account created');
         } catch (error) {
             logger.error('Failed to ensure admin account:', error);
         }
