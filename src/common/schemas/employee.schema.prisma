@@ -1,13 +1,20 @@
+enum Gender {
+  male
+  female
+  other
+}
+
 model Employees {
   id              Int       @id @default(autoincrement())
   code            String    @default(cuid())
   email           String?
   name            String?
-  gender          Boolean?  @default(true) // true == male, false == female => Dan ong luon luon dung
+  gender          Gender    @default(other)
   age             Int?
-  marital_status  Boolean? // tinh trang hon nhan
-  working_status  Boolean? // trang thai lam viec
+  marital_status String? // tinh trang hon nhan
+  working_status  String?
   employee_status String? // trang thai nhan su
+  base_salary Decimal? // Luong co ban
   date_of_birth   DateTime? @default(now())
   phone           String?
   tax             String?
@@ -40,37 +47,40 @@ model Employees {
   is_deleted  Boolean @default(false)
   is_default  Boolean @default(false)
   is_disabled Boolean @default(false)
+  has_user_account Boolean @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  education         Educations?
-  employee_finance  EmployeeFinances?
-  address           Address?
-  emergency_contact EmergencyContacts?
-  employee_contract EmployeeContracts?
-  social_insurance  SocialInsurances?
+  educations         Educations[]
+  employee_finances  EmployeeFinances[]
+  addresses            Address[]
+  emergency_contacts EmergencyContacts[]
+  employee_contracts EmployeeContracts[]
+  insurances  Insurances[]
 
-  Users             Users[]
-  Partners          Partners[]
-  Invoice           Invoices[]
-  Quotations        Quotations[]
-  Orders            Orders[]
-  BankAccounts      BankAccounts[]
-  OrderContracts    OrderContracts[]
-  Inventories       Inventories[]
-  Productions       Productions[]
-  FinanceRecords    FinanceRecords[]
-  TransactionOrders TransactionOrders[]
+  users              Users[]
+  partners           Partners[]
+  invoices           Invoices[]
+  quotations         Quotations[]
+  orders             Orders[]
+  bank_accounts      BankAccounts[]
+  inventories        Inventories[]
+  finance_records    FinanceRecords[]
+  transaction_orders TransactionOrders[]
+
+  job_position  JobPositions?   @relation(fields: [job_position_id], references: [id], onDelete: Cascade)
+  organizations Organizations[]
 
   @@map("employees")
-  Organizations Organizations[]
+  productions Productions[]
+  contracts Contracts[]
+  purchase_requests PurchaseRequests[]
 }
 
 enum AddressType {
   tt // Thường trú
-  qq // Quê quán
-  tttv // Tạm trú tạm vắng
+  ht // nơi ở hiện tại 
 }
 
 enum FinanceType {
@@ -80,12 +90,12 @@ enum FinanceType {
 
 model Educations {
   id          Int       @id @default(autoincrement())
-  employee_id Int       @unique
+  employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   education_level String? // trinh do van hoa
   training_level  String? // trinh do dao tao
-  graduated_place String // noi tot nghiep
+  graduated_place String? // noi tot nghiep
   faculty         String? // khoa
   major           String? // chuyen nganh
   graduation_year Int?
@@ -98,7 +108,7 @@ model Educations {
 
 model EmployeeFinances {
   id          Int       @id @default(autoincrement())
-  employee_id Int       @unique
+  employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   name   String?
@@ -115,7 +125,7 @@ model EmployeeFinances {
 
 model Address {
   id          Int       @id @default(autoincrement())
-  employee_id Int       @unique
+  employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   country  String?      @default("Việt Nam")
@@ -133,14 +143,15 @@ model Address {
 
 model EmployeeContracts {
   id          Int       @id @default(autoincrement())
-  employee_id Int       @unique
+  employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   code       String
   type       String?
   start_date DateTime?
   end_date   DateTime?
-  status     String?
+  salary    Decimal?
+  is_applied     Boolean? @default(false) // da ap dung hop dong
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -149,9 +160,9 @@ model EmployeeContracts {
 }
 
 // Bao hiem
-model SocialInsurances {
+model Insurances {
   id          Int       @id @default(autoincrement())
-  employee_id Int       @unique
+  employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   is_participating Boolean   @default(false) // Tham gia bhxh: tham gia/khong tham gia
@@ -163,13 +174,13 @@ model SocialInsurances {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("social_insurances")
+  @@map("insurances")
 }
 
 // Thong tin lien he
 model EmergencyContacts {
   id           Int     @id @default(autoincrement())
-  employee_id  Int?    @unique
+  employee_id  Int?
   name         String?
   email        String?
   relationship String?

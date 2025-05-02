@@ -18,7 +18,10 @@
                 "error": "Lỗi upload",
                 "mismatch": "Số lượng file không khớp với số lượng key",
                 "failed": "Upload file không thành công!"
-            }
+            },
+            "foreign-key-constraint-violation": "Lỗi khóa ngoại không tồn tại",
+            "resource-not-found": "Tài nguyên không tồn tại!",
+            "developer-error": "Lỗi hệ thống do lập trình viên gây ra, vui lòng kiểm tra lại mã nguồn."
         },
         "auth": {
             "signup": {
@@ -35,7 +38,7 @@
             "common": {
                 "token-missing": "Không tìm thấy token",
                 "account-locked": "Tài khoản của bạn đã bị khóa, truy cập bị từ chối!",
-                "session-expired":"Phiên đăng nhập đã hết hạn hoặc người dùng đã đăng xuất!",
+                "session-expired": "Phiên đăng nhập đã hết hạn hoặc người dùng đã đăng xuất!",
                 "invalid-token": "Token không hợp lệ!"
             }
         },
@@ -56,9 +59,32 @@
                 "not-found": "Người dùng không tồn tại!"
             }
         },
+        "employee": {
+            "common": {
+                "exist": "Nhân viên đã tồn tại!",
+                "not-found": "Nhân viên không tồn tại!"
+            }
+        },
+        "position": {
+            "common": {
+                "exist": "Chức vụ đã tồn tại!",
+                "not-found": "Chức vụ không tồn tại!"
+            }
+        },
+        "organization": {
+            "common": {
+                "exist": "Tổ chức đã tồn tại!",
+                "not-found": "Tổ chức không tồn tại!"
+            }
+        },
         "socket": {
             "error": {
                 "not-init": "Socket server chưa được khởi tạo!"
+            }
+        },
+        "product": {
+            "common": {
+                "not-found": "Sản phẩm không tồn tại!"
             }
         }
     }

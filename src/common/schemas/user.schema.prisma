@@ -1,3 +1,4 @@
+
 model Users {
   id                  Int      @id @default(autoincrement())
   code                String   @default(cuid())
@@ -9,19 +10,19 @@ model Users {
   employee_id         Int?
   organization_id     Int? // truong nay chi dung de sort user theo to chuc neu can lay thong tin organ thi join qua employee
 
-  is_disabled Boolean @default(false)
-  is_deleted  Boolean @default(false)
-  is_default  Boolean @default(false)
+  is_disabled     Boolean @default(false)
+  is_deleted      Boolean @default(false)
+  is_default      Boolean @default(false)
   is_first_loggin Boolean @default(true)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee               Employees?        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  permission_group       PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: Cascade)
-  DeviceRequests         DeviceRequests[]  @relation("DeviceRequestUser")
-  ApprovedDeviceRequests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
-  Tokens                 Tokens[]
+  employee                 Employees?        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  permission_group         PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: Cascade)
+  device_requests          DeviceRequests[]  @relation("DeviceRequestUser")
+  approved_device_requests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
+  tokens                   Tokens[]
 
   @@map("users")
 }

@@ -1,4 +1,4 @@
-# BE_DA
+# BE_THEP_DONG_ANH
 
 ## Project Architecture
 
@@ -75,6 +75,80 @@ Dễ dàng triển khai triến lược multiple entrypoint khi cần scale hệ
 + Nếu device_id không khớp trong hệ thống (thiết bị mới) -> Hệ thống gửi thông báo chờ về mail cho user (mail trong bảng `employee`)
 -> tạo một bản ghi vào `device_request` chờ quản trị viên duyệt. Nếu quản trị viên chấp nhận, đăng xuất tất cả các thiết bị đang truy cập vào tài khoản đó và cập nhật lại device_id cho user sau đó gửi lại một mail cho user để xác nhận. Từ chối cũng sẽ gửi một mail từ chối về
 + Nếu device_id khớp với device_id trong user => pass
++ Nếu accept thiết bị mới -> logout tất cả các thiết bị cũ (revoke tokens)
 
 ### Token
 - Sử dụng device_id để làm secret cho token
+
+### Truy vấn với prisma
+- Sử dụng layout repo để truy vấn tập trung và tương tác với database, các repo sẽ được kế thừa từ base repo. Hãy tham khảo các đoạn code sử dụng layout extend từ base repo để thực hiện truy vấn với db mà không cần config thêm các logic truy vấn
+- Sự tách biệt logic truy vấn với logic của app để làm rõ các tính toán trên tầng service, giữ cho tầng service chỉ để phục vụ các bussiness logic liên quan tới luồng chính của app và xử lý bắt lỗi.
+
+## Lưu ý:
+### validator layout ảnh hưởng tới input data truyền lên
+- Mọi request thừa khi truyền lên sẽ bị lọc hết ở tầng validate nếu không được khai báo trong validate. để đảm bảo input không bị thừa nhiều nên cần lưu ý nếu có trường nào cần sử dụng từ client truyền lên thì phải khai báo trong validate và để optional - allow empty để không bị required.
+
+```ts
+import Joi from 'joi';
+
+export const wrapSchema = (schema: Joi.ObjectSchema): Joi.ObjectSchema =>
+    schema.options({
+        abortEarly: false,
+        allowUnknown: true,
+        stripUnknown: true,
+    });
+```
+
+- Khai báo mẫu:
+```ts
+import { wrapSchema } from '@common/helpers/wrap-schema.helper';
+import { OrganizationType } from '@config/app.constant';
+import { Joi, schema } from 'express-validation';
+import { values } from 'lodash';
+
+export const create: schema = {
+    body: wrapSchema(
+        Joi.object({
+            name: Joi.string().required().min(1).max(300),
+            code: Joi.string().required().min(1).max(100),
+            responsibility: Joi.string().optional().allow(null, '').min(1).max(100),
+            file: Joi.object().optional().allow(null, ''),
+            type: Joi.string()
+                .required()
+                .valid(...values([OrganizationType.COMPANY, OrganizationType.DEPARTMENT])),
+            parent_id: Joi.number().required(),
+            leader_id: Joi.number().allow(null, ''),
+        }),
+    ),
+};
+
+export const update: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
+    body: wrapSchema(
+        Joi.object({
+            name: Joi.string().required().min(1).max(300),
+            code: Joi.string().required().min(1).max(100),
+            responsibility: Joi.string().optional().allow(null, '').min(1).max(100),
+            file: Joi.object().optional().allow(null, ''),
+            type: Joi.string()
+                .required()
+                .valid(...values([OrganizationType.COMPANY, OrganizationType.DEPARTMENT])),
+            parent_id: Joi.number().required(),
+            leader_id: Joi.number().required(),
+        }),
+    ),
+};
+```
+
+- Với format time input sẽ có định dạng chung là YYYY-MM-DD ở dạng string, những đối tượng thời gian này sẽ được tự động truyển thành iso timestamp UTC+0  ở layer validate. VD:
+```ts
+invoice_date: Joi.string().isoDate().optional().allow(null),
+```
+--- Con thư viện từ đời Napoleon này cũng pro phết =))
+
+## DOCUMENTS
+[`Document link`](https://drive.google.com/drive/folders/1YTbmTn_Sus2NhwOx1hN9RDytSQiwCWR8)

@@ -9,7 +9,6 @@ export class SendConfirmMailJob {
     static async register(): Promise<Queue<unknown>> {
         logger.info(`Listening to queue: ${JOB_NAME}`);
         const queue = await QueueService.getQueue<IJobSendConfirmEmailData>(JOB_NAME);
-
         await queue.process(this.handler);
         return queue;
     }

@@ -6,7 +6,7 @@ export interface ICreateBank {
     account_number?: string;
     name: string;
     partner_id?: number | null;
-}
+    [key: string]: any;}
 
 export interface IUpdateBank extends ICreateBank {}
 export interface IPaginationInputBank extends IPaginationInput {

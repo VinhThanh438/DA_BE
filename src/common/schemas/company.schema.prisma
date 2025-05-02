@@ -6,56 +6,60 @@ enum OrganizationType {
 
 model Organizations {
   id             Int     @id @default(autoincrement())
-  code           String?  @default(cuid())
+  code           String? @default(cuid())
   name           String
   responsibility String?
   files          Json?   @default("[]")
   establishment  String?
-  
-  type           OrganizationType @default(company)
-  parent_id      Int?
-  leader_id      Int?
 
-  is_deleted     Boolean @default(false)
+  type      OrganizationType @default(company)
+  parent_id Int?
+  leader_id Int?
 
-  created_at            DateTime                @default(now())
-  updated_at            DateTime                @updatedAt
+  is_deleted Boolean @default(false)
 
-  leader Employees?         @relation(fields: [leader_id], references: [id])
-  parent Organizations?     @relation("OrganizationHierarchy", fields: [parent_id], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  leader           Employees?      @relation(fields: [leader_id], references: [id])
+  parent           Organizations?  @relation("OrganizationHierarchy", fields: [parent_id], references: [id])
   sub_organization Organizations[] @relation("OrganizationHierarchy")
 
-  job_position          JobPositions[]
-  Partners              Partners[]
-  Quotations            Quotations[]
-  Orders                Orders[]
-  OrderContracts        OrderContracts[]
-  Invoices              Invoices[]
-  Inventories           Inventories[]
-  InventoryDetails      InventoryDetails[]
-  Productions           Productions[]
-  MaterialStandards     MaterialStandards[]
-  MaterialBudgets       MaterialBudgets[]
-  FinanceRecords        FinanceRecords[]
-  TransactionOrders     TransactionOrders[]
-  TransactionWarehouses TransactionWarehouses[]
+  job_position           JobPositions[]
+  partners               Partners[]
+  quotations             Quotations[]
+  orders                 Orders[]
+  invoices               Invoices[]
+  inventories            Inventories[]
+  inventory_details      InventoryDetails[]
+  productions            Productions[]
+  material_standards     MaterialStandards[]
+  material_budgets       MaterialBudgets[]
+  finance_records        FinanceRecords[]
+  transaction_orders     TransactionOrders[]
+  transaction_warehouses TransactionWarehouses[]
+  quotation_requests       QuotationRequests[]
+  order_expenses         OrderExpenses[]
 
   @@map("organizations")
+  contracts Contracts[]
+  purchase_requests PurchaseRequests[]
 }
 
 model Positions {
-  id           Int            @id @default(autoincrement())
-  name         String
-  level        String?
-  description  String?
-  JobPositions JobPositions[]
+  id          Int     @id @default(autoincrement())
+  name        String
+  level       String?
+  description String?
+
+  job_positions JobPositions[]
 
   @@map("positions")
 }
 
 model JobPositions {
   id              Int     @id @default(autoincrement())
-  organization_id Int
+  organization_id Int?
   position_id     Int?
   level           String?
   name            String
@@ -64,8 +68,9 @@ model JobPositions {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization Organizations @relation(fields: [organization_id], references: [id])
+  organization Organizations? @relation(fields: [organization_id], references: [id])
   position     Positions?    @relation(fields: [position_id], references: [id], onDelete: Cascade)
+  employees    Employees[]
 
   @@map("job_positions")
 }

@@ -1,0 +1,47 @@
+// De nghi mua hang ( vat tu )
+model PurchaseRequests {
+  id           Int       @id @default(autoincrement())
+  code         String    @default(cuid())
+  status       PurchaseRequestStatus @default(pending)
+  files        Json?           @default("[]")
+  note            String?
+
+  employee_id     Int?
+  production_id   Int?
+  order_id        Int?
+  organization_id Int?
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  production    Productions?    @relation(fields: [production_id], references: [id], onDelete: Cascade)
+  employee    Employees?    @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  order    Orders?    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  organization    Organizations?    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("purchase_requests")
+  purchase_request_details PurchaseRequestDetails[]
+}
+
+model PurchaseRequestDetails {
+  id           Int       @id @default(autoincrement())
+  quantity     Int       @default(0)
+  note            String?
+
+  purchase_request_id Int
+  product_id          Int?
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  product    Products?    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  purchase_request    PurchaseRequests?    @relation(fields: [purchase_request_id], references: [id], onDelete: Cascade)
+
+  @@map("purchase_request_details")
+}
+
+enum PurchaseRequestStatus {
+  pending
+  confirmed
+  rejected
+}

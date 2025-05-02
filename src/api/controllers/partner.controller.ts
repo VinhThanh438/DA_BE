@@ -4,20 +4,33 @@ import { PartnerService } from '@common/services/partner.service';
 import { ICreatePartner, IPaginationInputPartner, IUpdatePartner } from '@common/interfaces/partner.interface';
 
 export class PartnerController {
-    public static async create(req: Request, res: Response, next: NextFunction) {
+    protected service: PartnerService;
+    public static instance: PartnerController;
+    private constructor() {
+        this.service = PartnerService.getInstance();
+    }
+    public static getInstance() {
+        if (!this.instance) {
+            this.instance = new PartnerController();
+        }
+        return this.instance;
+    }
+    public async create(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as ICreatePartner;
-            const result = await PartnerService.create(body);
+
+            const result = await this.service.createPartner(body);
+
             res.sendJson(result);
         } catch (error) {
             logger.error(`PartnerController.create: `, error);
             next(error);
         }
     }
-    public static async getAll(req: Request, res: Response, next: NextFunction) {
+    public async getAll(req: Request, res: Response, next: NextFunction) {
         try {
             const { page, limit, type, organization_id } = req.query as IPaginationInputPartner;
-            const data = await PartnerService.getAll({ page, limit }, type || '', organization_id || null);
+            const data = await this.service.getAllPartner({ page, limit }, type || '', organization_id || null);
             res.sendJson(data);
         } catch (error) {
             logger.error(`PartnerController.getAll: `, error);
@@ -25,11 +38,11 @@ export class PartnerController {
         }
     }
 
-    public static async update(req: Request, res: Response, next: NextFunction) {
+    public async update(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
             const body = req.body as IUpdatePartner;
-            const result = await PartnerService.update(id, body);
+            const result = await this.service.updatePartner(id, body);
             res.sendJson(result);
         } catch (error) {
             logger.error(`PartnerController.update: `, error);
@@ -37,10 +50,10 @@ export class PartnerController {
         }
     }
 
-    public static async delete(req: Request, res: Response, next: NextFunction) {
+    public async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
-            const result = await PartnerService.delete(id);
+            const result = await this.service.deletePartner(id);
             res.sendJson(result);
         } catch (error) {
             logger.error(`PartnerController.delete: `, error);
@@ -48,10 +61,10 @@ export class PartnerController {
         }
     }
 
-    public static async getById(req: Request, res: Response, next: NextFunction) {
+    public async getById(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
-            const result = await PartnerService.findById(id);
+            const result = await this.service.findByIdPartner(id);
             res.sendJson(result);
         } catch (error) {
             logger.error(`PartnerController.getById: `, error);

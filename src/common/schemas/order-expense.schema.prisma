@@ -1,0 +1,28 @@
+model OrderExpenses {
+  id             Int     @id @default(autoincrement())
+  code           String    @default(cuid())
+  time_at        DateTime @default(now())
+  description    String?
+  payment_method String?
+  amount Decimal?
+  transaction_person String?
+  address        String?
+  attached_documents String?
+  type    OrderExpenseType
+  files Json?    @default("[]")
+
+  organization_id      Int?
+  order_id             Int?
+
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  order Orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("order_expenses")
+}
+
+enum OrderExpenseType {
+  order_income
+  order_expense
+  income
+  expense
+}

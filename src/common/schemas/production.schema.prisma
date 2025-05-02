@@ -1,8 +1,9 @@
+// Lenh san xuat theo don hang (Lenh san xuat tong)
 model Productions {
   id      Int      @id @default(autoincrement())
   code    String   @default(cuid())
   time_at DateTime @default(now())
-  note    String?
+  files           Json?    @default("[]")
 
   organization_id Int?
   order_id        Int?
@@ -14,11 +15,12 @@ model Productions {
   partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: Cascade)
   employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  ProductionDetails ProductionDetails[]
+  created_at         DateTime            @default(now())
+  updated_at         DateTime            @updatedAt
 
   @@map("productions")
+  production_details ProductionDetails[]
+  purchase_requests PurchaseRequests[]
 }
 
 model ProductionDetails {
@@ -26,13 +28,12 @@ model ProductionDetails {
   quantity        Int      @default(0)
   completion_date DateTime @default(now())
   note            String?
-  files           Json?    @default("[]")
 
   production_id Int?
   product_id    Int?
 
-  production Productions? @relation(fields: [production_id], references: [id], onDelete: Cascade)
   product    Products?    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  production Productions? @relation(fields: [production_id], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

@@ -7,15 +7,12 @@ model BankAccounts {
   account_number String? @unique
   name           String?
   branch         String?
-
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
   employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: Cascade)
   partner           Partners?           @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  Invoice           Invoices[]
-  TransactionOrders TransactionOrders[]
+  invoices           Invoices[]
+  transaction_orders TransactionOrders[]
 
   @@map("bank_accounts")
 }
-

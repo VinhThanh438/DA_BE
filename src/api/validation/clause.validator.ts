@@ -7,6 +7,8 @@ export const createClause = {
         Joi.object<ICreateClause>({
             name: Joi.string().required(),
             content: Joi.string().optional().allow(null, ''),
+            max_dept_amount: Joi.number().optional().allow(null),
+            max_dept_day: Joi.number().optional().allow(null),
         }),
     ),
 };
@@ -16,6 +18,8 @@ export const updateClause = {
         Joi.object<IUpdateClause>({
             name: Joi.string().optional(),
             content: Joi.string().optional().allow(null, ''),
+            max_dept_amount: Joi.number().optional().allow(null),
+            max_dept_day: Joi.number().optional().allow(null),
         }),
     ),
 };

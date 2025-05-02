@@ -99,6 +99,7 @@ export class ExpressServer {
 
     private setupStandardMiddlewares(server: Express) {
         server.use(cookieParser());
+        server.use(this.setSecureCookieMiddleware());
         server.use(
             bodyParser.json({
                 verify: (req: any, res, buf) => {
@@ -110,8 +111,23 @@ export class ExpressServer {
     }
 
     private configureRoutes(server: Express) {
-        server.use(PublicPath.PUBLIC_IMAGES, express.static('public/images'));
+        server.use(PublicPath.PUBLIC_FILES, express.static('uploads'));
         server.use('/api/v1', routes);
+    }
+
+    private setSecureCookieMiddleware() {
+        return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+            res.secureCookie = (name: string, value: string, options: express.CookieOptions = {}) => {
+                const defaultOptions: express.CookieOptions = {
+                    secure: true,
+                    sameSite: 'none',
+                    httpOnly: true,
+                };
+                const mergedOptions = { ...defaultOptions, ...options };
+                res.cookie(name, value, mergedOptions);
+            };
+            next();
+        };
     }
 
     private setupErrorHandlers(server: Express) {

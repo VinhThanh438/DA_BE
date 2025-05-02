@@ -12,8 +12,11 @@ declare global {
         interface Response {
             t: (key: string, options?: any) => string;
             sendJson(data?: unknown): this;
+            secureCookie: (name: string, value: string, options?: import('express').CookieOptions) => void;
         }
     }
+
+    type DateString = `${number}-${number}-${number}`;
 }
 
 export {};

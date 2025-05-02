@@ -1,15 +1,18 @@
 import { PartnerGroupController } from '@api/controllers/partner-group.controller';
-import express from 'express'
-const router = express.Router()
+import { validateRequest } from '@api/middlewares/validate.middleware';
+import { queryById } from '@api/validation/common.validator';
+import { create, queryFilter, update } from '@api/validation/partner-group.validator';
+import express from 'express';
+const router = express.Router();
 
-router.get('/', PartnerGroupController.getAll);
+router.get('/', validateRequest(queryFilter), PartnerGroupController.getAll);
 
-router.get('/:id', PartnerGroupController.getById);
+router.get('/:id', validateRequest(queryById), PartnerGroupController.getById);
 
-router.post('/', PartnerGroupController.create);
+router.post('/', validateRequest(create), PartnerGroupController.create);
 
-router.put('/:id', PartnerGroupController.update);
+router.put('/:id', validateRequest(update), PartnerGroupController.update);
 
-router.delete('/:id', PartnerGroupController.delete);
+router.delete('/:id', validateRequest(queryById), PartnerGroupController.delete);
 
-export default router
+export default router;

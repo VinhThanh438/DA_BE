@@ -1,17 +1,16 @@
-model WareHouses {
+model Warehouses {
   id      Int     @id @default(autoincrement())
   code    String  @default(cuid())
   name    String
   phone   String?
   address String?
   note    String?
-
   created_at            DateTime                @default(now())
   updated_at            DateTime                @updatedAt
-  InventoryDetails      InventoryDetails[]
-  TransactionWarehouses TransactionWarehouses[]
+  inventory_details      InventoryDetails[]
+  transaction_warehouses TransactionWarehouses[]
 
-  @@map("ware_houses")
+  @@map("warehouses")
 }
 
 enum TransactionWarehouseType {
@@ -31,15 +30,14 @@ model TransactionWarehouses {
   product_id      Int?
   order_id        Int?
   inventory_id    Int?
-
   organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  warehouse    WareHouses?    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
   product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
   order        Orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade)
   inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
+  @@index([id,product_id])
   @@map("transaction_warehouses")
 }

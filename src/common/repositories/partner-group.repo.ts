@@ -15,4 +15,5 @@ export class PartnerGroupRepo extends BaseRepo<PartnerGroups, Prisma.PartnerGrou
     protected db = DatabaseAdapter.getInstance().partnerGroups;
     protected defaultSelect = PartnerGroupSelection;
     protected detailSelect = PartnerGroupSelectionAll;
+    protected modelKey: keyof Prisma.TransactionClient = 'partnerGroups';
 }

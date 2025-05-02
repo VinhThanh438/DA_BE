@@ -1,8 +1,9 @@
 enum InventoryType {
-  purchase_in // Nhập từ NCC
-  finished_in // Nhập thành phẩm
-  normal_out // Xuất kho thường
-  material_out // Xuất nguyên vật liệu
+  purchase_in // nhap kho hang mua
+  finished_in // nhap kho thanh pham
+  material_in // nhap kho nguyen vat lieu
+  normal_out // xuat kho hang ban
+  material_out // xuat kho nguyen vat lieu
 }
 
 model Inventories {
@@ -10,24 +11,28 @@ model Inventories {
   time_at       DateTime      @default(now())
   code          String        @unique
   type          InventoryType
-  note          String? // Ghi chú đơn hàng
+  note          String? 
   files         Json?         @default("[]")
-  license_plate String? // Biển số xe vận chuyển
+  license_plate String? 
 
-  employee_id     Int? // Nhân viên nhập kho
-  partner_id      Int? // Nhà cung cấp / Khách hàng
-  delevery_id     Int? // Don vi van chuyen
-  organization_id Int? // Đơn vị mua hàng
-
+  employee_id     Int? 
+  supplier_id      Int? 
+  customer_id       Int?
+  delivery_id     Int?
+  organization_id Int? 
+  order_id        Int?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization          Organizations?          @relation(fields: [organization_id], references: [id])
-  partner               Partners?               @relation("PartnerRelation", fields: [partner_id], references: [id])
-  delivery              Partners?               @relation("DeliveryRelation", fields: [delevery_id], references: [id])
-  employee              Employees?              @relation(fields: [employee_id], references: [id])
-  InventoryDetails      InventoryDetails[]
-  TransactionWarehouses TransactionWarehouses[]
+  organization          Organizations?          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  employee              Employees?              @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  inventory_details      InventoryDetails[]
+  transaction_warehouses TransactionWarehouses[]
+  order   Orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  supplier Partners? @relation("Supplier", fields: [supplier_id], references: [id], onDelete: Cascade)
+  customer Partners? @relation("Customer", fields: [customer_id], references: [id], onDelete: Cascade)
+  delivery Partners? @relation("Delivery", fields: [delivery_id], references: [id], onDelete: Cascade)
+
 
   @@map("inventories")
 }
@@ -37,21 +42,18 @@ model InventoryDetails {
   quantity Int? // Số lượng
   price    Decimal? // Đơn giá
   discount Int? // Giảm giá (%)
-  vat      Int? // % VAT
   note     String?
-
+   
   product_id      Int
   inventory_id    Int
   warehouse_id    Int?
-  organization_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  warehouse    WareHouses?    @relation(fields: [warehouse_id], references: [id])
-  product      Products?      @relation(fields: [product_id], references: [id])
-  inventory    Inventories?   @relation(fields: [inventory_id], references: [id])
-  organization Organizations? @relation(fields: [organization_id], references: [id])
-
+  warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
   @@map("inventory_details")
+  organizations Organizations[]
 }

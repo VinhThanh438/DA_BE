@@ -1,11 +1,11 @@
 import { BankAccounts, Prisma } from '.prisma/client';
 import { BaseRepo } from './base.repo';
-import { DefaultArgs } from '@prisma/client/runtime/library';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { BankType } from '@config/app.constant';
 
 export const BankAccountSelection: Prisma.BankAccountsSelect = {
+    id: true,
     bank: true,
     account_number: true,
     name: true,
@@ -21,6 +21,7 @@ export class BankRepo extends BaseRepo<BankAccounts, Prisma.BankAccountsSelect, 
     protected db = DatabaseAdapter.getInstance().bankAccounts;
     protected defaultSelect = BankAccountSelection;
     protected detailSelect = BankAccountSelectionAll;
+    protected modelKey = 'bankAccounts' as const;
 
     public async getAll(
         body: IPaginationInput,

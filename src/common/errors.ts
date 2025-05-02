@@ -64,3 +64,10 @@ export enum ErrorCode {
     SERVER_ERROR = 500,
     SERVER_AUTH_ERROR = 501, // and not know why
 }
+
+export enum ErrorKey {
+    NOT_FOUND = 'not_found',
+    INVALID = 'invalid',
+    REQUIRED = 'required',
+    EXISTED = 'existed',
+}

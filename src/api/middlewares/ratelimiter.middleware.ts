@@ -49,6 +49,7 @@ export class RateLimiterMiddleware {
                 RateLimiterMiddleware.handleRateLimitError(req, res, minute);
             },
             ...this.commonOptions,
+            skip: (req: Request) => req.method !== 'POST',
         };
 
         return rateLimit(options);

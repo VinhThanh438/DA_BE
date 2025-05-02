@@ -20,7 +20,7 @@ export class UploadMiddleware {
         return (req: Request, res: Response, next: NextFunction) => {
             let folderPath: string;
 
-            folderPath = path.join(__dirname, '../../../uploads/file');
+            folderPath = path.join(__dirname, '../../../uploads');
 
             if (!fs.existsSync(folderPath)) {
                 fs.mkdirSync(folderPath, { recursive: true });
@@ -31,20 +31,22 @@ export class UploadMiddleware {
                     cb(null, folderPath);
                 },
                 filename: (req, file, cb) => {
-                    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+                    const uniqueSuffix = `${file.originalname}-${Date.now()}${path.extname(file.originalname)}`;
                     cb(null, uniqueSuffix);
                 },
             });
 
-            const upload = multer({ storage }).array('files', 10);
+            const upload = multer({ storage }).any();
 
             upload(req, res, async (err) => {
                 if (err) {
-                    logger.error('Upload error:', err);
-                    throw new APIError({
-                        message: 'common.upload.error',
-                        status: StatusCode.SERVER_ERROR,
-                    });
+                    logger.error('UploadMiddleware error:', err);
+                    return next(
+                        new APIError({
+                            message: 'common.upload.error',
+                            status: StatusCode.SERVER_ERROR,
+                        }),
+                    );
                 }
 
                 const files = req.files as Express.Multer.File[];
@@ -54,11 +56,13 @@ export class UploadMiddleware {
                     keys = keys ? [keys] : [];
                 }
 
-                if (files.length !== keys.length) {
-                    throw new APIError({
-                        message: 'common.upload.mismatch',
-                        status: StatusCode.BAD_REQUEST,
-                    });
+                if (!files || files.length !== keys.length) {
+                    return next(
+                        new APIError({
+                            message: 'common.upload.mismatch',
+                            status: StatusCode.BAD_REQUEST,
+                        }),
+                    );
                 }
 
                 try {
@@ -68,13 +72,16 @@ export class UploadMiddleware {
                         const fileUrl = `/uploads/${file.filename}`;
                         uploadedUrls[keys[index]] = fileUrl;
                     });
-                    res.sendJson(uploadedUrls);
+
+                    res.json(uploadedUrls);
                 } catch (error) {
-                    logger.error('Error during upload processing:', error);
-                    throw new APIError({
-                        message: 'common.upload.failed',
-                        status: StatusCode.SERVER_ERROR,
-                    });
+                    logger.error('UploadMiddleware: Error during upload processing:', error);
+                    return next(
+                        new APIError({
+                            message: 'common.upload.failed',
+                            status: StatusCode.SERVER_ERROR,
+                        }),
+                    );
                 }
             });
         };

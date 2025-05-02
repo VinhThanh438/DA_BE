@@ -1,24 +1,33 @@
 model Invoices {
-  id             Int     @id @default(autoincrement())
-  tax            String?
+  id             Int           @id @default(autoincrement())
+  code           String        @unique
+  status         InvoiceStatus @default(draft)
   payment_method String?
-  invoice_number String?
-  order_code     String?
-  order_date     String?
-  files          Json?   @default("[]")
-
-  bank_id         Int?
-  sale_id         Int?
-  partner_id      Int?
+  invoice_date   DateTime?
+  files          Json?         @default("[]")
+  bank_id         Int? // Tài khoản ngân hàng
+  employee_id     Int? // Nhân viên bán hàng
+  partner_id      Int? // Khách hàng
   organization_id Int?
+  contract_id     Int? // Hợp đồng
+  order_id        Int? // Đơn hàng
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  bank_account BankAccounts?  @relation(fields: [bank_id], references: [id], onDelete: Cascade)
-  sale         Employees?     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  bank_account    BankAccounts?   @relation(fields: [bank_id], references: [id], onDelete: Cascade)
+  contract        Contracts?      @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  order    Orders?  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  invoice_details CommonDetails[]
 
   @@map("invoices")
+}
+
+enum InvoiceStatus {
+  draft
+  released
 }

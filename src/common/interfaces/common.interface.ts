@@ -1,10 +1,10 @@
 import { RequestStatus } from '@config/app.constant';
 
 export interface IPaginationInfo {
-    total_pages: number;
-    total_records: number;
+    totalPages: number;
+    totalRecords: number;
     size: number;
-    current_page: number;
+    currentPage: number;
 }
 
 export interface IPaginationResponse<T = any> {
@@ -14,17 +14,20 @@ export interface IPaginationResponse<T = any> {
 
 export interface IFilterArgs {
     id?: number[];
-    startAt?: Date;
-    endAt?: Date;
+    startAt?: DateString;
+    endAt?: DateString;
     keyword?: string;
+    [key: string]: any;
 }
 
 export interface IPaginationInput {
     page?: number;
     limit?: number;
     args?: IFilterArgs;
-    startAt?: string;
-    endAt?: string;
+    startAt?: DateString;
+    endAt?: DateString;
+    keyword?: string;
+    [key: string]: any;
 }
 
 export interface ICreateAndUpdateResponse {
@@ -47,3 +50,13 @@ export interface IJobSendConfirmEmailData extends SendMailData {
 }
 
 export type IJobSendPendingEmailData = SendMailData;
+
+export interface ICommonDetails {
+    product_id: number;
+    quantity: number;
+    discount?: number;
+    price: number;
+    vat?: number;
+    note?: string;
+    key?: string;
+}

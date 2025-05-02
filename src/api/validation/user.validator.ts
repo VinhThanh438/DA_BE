@@ -7,6 +7,8 @@ export const createUser: schema = {
         Joi.object({
             username: Joi.string().required().min(1).max(50),
             password: Joi.string().required().min(6).max(45),
+            email: Joi.string().optional().allow(null, '').min(6).max(45),
+            employee_id: Joi.number().required(),
         }),
     ),
 };
@@ -18,8 +20,9 @@ export const updateUser: schema = {
     body: wrapSchema(
         Joi.object({
             username: Joi.string().required().min(1).max(50),
-            password: Joi.string().required().min(6).max(45),
-            email: Joi.string().required().min(6).max(45),
+            password: Joi.string().optional().min(6).max(45),
+            email: Joi.string().optional().allow(null, '').min(6).max(45),
+            employee_id: Joi.number().required(),
         }),
     ),
 };

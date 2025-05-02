@@ -8,5 +8,11 @@ export interface ICreateUser {
 
 export interface IEventUserFirstLoggin {
     id: number;
-    device: string;
+    device?: string;
+    status: boolean;
+}
+
+export interface IUpdateEmployeeAccountStatus {
+    employeeId: number;
+    status: boolean;
 }

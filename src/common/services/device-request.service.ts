@@ -5,11 +5,16 @@ import { ICreateDeviceRequest } from '@common/interfaces/auth.interface';
 import { ICreateAndUpdateResponse, IJobSendConfirmEmailData } from '@common/interfaces/common.interface';
 import { DeviceRequestRepo } from '@common/repositories/device-request.repo';
 import { RequestStatus } from '@config/app.constant';
-import { UserService } from './user.service';
 import { SEND_CONFIRM_MAIL_JOB } from '@config/job.constant';
 import { QueueService } from './queue.service';
+import eventbus from '@common/eventbus';
+import { IEventUserFirstLoggin } from '@common/interfaces/user.interface';
+import { EVENT_USER_FIRST_LOGGIN } from '@config/event.constant';
+import { UserRepo } from '@common/repositories/user.repo';
 
 export class DeviceRequestService {
+    private static userRepo = new UserRepo();
+
     public static async getAll(): Promise<DeviceRequests[]> {
         return DeviceRequestRepo.getAll();
     }
@@ -51,15 +56,15 @@ export class DeviceRequestService {
             });
         }
 
-        // send email
-        const userData = await UserService.findOne({ id: data.userId });
+        const userData = await this.userRepo.findOne({ id: data.userId });
         if (!userData) {
             throw new APIError({
                 message: 'user.common.not-found',
                 status: StatusCode.REQUEST_NOT_FOUND,
             });
         }
-        
+
+        // send email
         await (
             await QueueService.getQueue<IJobSendConfirmEmailData>(SEND_CONFIRM_MAIL_JOB)
         ).add({
@@ -67,6 +72,13 @@ export class DeviceRequestService {
             name: userData?.username,
             status,
         });
+
+        // allow user loggin without device id
+        eventbus.emit(EVENT_USER_FIRST_LOGGIN, {
+            id: userData.id,
+            device: undefined,
+            status: true,
+        } as IEventUserFirstLoggin);
 
         return data;
     }

@@ -21,4 +21,10 @@ export class TokenRepo {
             data,
         });
     }
+
+    public static async deleteMany(where: Prisma.TokensWhereInput): Promise<Prisma.BatchPayload> {
+        return this.db.deleteMany({
+            where,
+        });
+    }
 }

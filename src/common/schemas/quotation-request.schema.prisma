@@ -1,0 +1,33 @@
+enum QuotationRequestType {
+    employee
+    supplier
+}
+
+enum QuotationRequestStatus {
+    rejected
+    accepted
+    pending
+}
+
+model QuotationRequests {
+  id                Int                    @id @default(autoincrement())
+  organization_id   Int?
+  requester_name    String
+  organization_name String
+  receiver_name     String?
+  phone             String?
+  tax               String?
+  email             String?
+  address           String?
+  note              String?
+  status            QuotationRequestStatus @default(pending)
+  files             Json?                  @default("[]")
+  type              QuotationRequestType   @default(employee)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization Organizations? @relation(fields: [organization_id], references: [id])
+
+  @@map("quotation_requests")
+}

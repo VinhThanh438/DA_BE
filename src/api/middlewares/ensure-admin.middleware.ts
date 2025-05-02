@@ -5,13 +5,14 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 
 export class EnsureAdminAccountMiddleware {
+    private static userService = UserService.getInstance();
+
     static async handleOnStartup() {
         try {
-            const adminExists = await UserService.findOne({ username: ADMIN_USER_NAME, email: ADMIN_MAIL });
+            const adminExists = await this.userService.findUser({ username: ADMIN_USER_NAME, email: ADMIN_MAIL });
             if (!adminExists) {
-                // create default device user ID
                 const deviceUID = crypto.randomBytes(20).toString('hex');
-                const result = await UserService.seedAdmin({
+                const result = await this.userService.seedAdmin({
                     username: ADMIN_USER_NAME,
                     password: ADMIN_PASSWORD,
                     email: ADMIN_MAIL,

@@ -1,6 +1,6 @@
 import express from 'express';
 import authRoutes from '@api/routes/auth.route';
-import commonRoutes from '@api/routes/common.route';
+import otherRoutes from '@api/routes/other.route';
 import employeeRoutes from '@api/routes/employee.route';
 import userRoutes from '@api/routes/user.route';
 import permissionRoutes from '@api/routes/permission.route';
@@ -13,15 +13,28 @@ import positionRoutes from '@api/routes/position.route';
 import jobPositionRoutes from '@api/routes/job-position.route';
 import bankRoutes from '@api/routes/bank.route';
 import clauseRoutes from '@api/routes/clause.route';
+import warehouseRoutes from '@api/routes/warehouse.route';
+import unitRoutes from '@api/routes/unit.route';
+import productRoutes from '@api/routes/product.route';
+import quotationRoutes from '@api/routes/quotation.route';
+import quotationRequestRoutes from '@api/routes/quotation-request.route';
+import purchaseRequestRoutes from '@api/routes/purchase-request.route';
+import productGroupRoutes from '@api/routes/product-group.route';
+import contractRoutes from '@api/routes/contract.route';
+import invoiceRoutes from '@api/routes/invoice.route';
+import productionRoutes from '@api/routes/production.route';
+import orderRoutes from '@api/routes/order.route';
+import orderExpenseRoutes from '@api/routes/order-expense.route';
+import inventoryRoutes from '@api/routes/inventory.route';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
 
 const router = express.Router();
 
-router.use('/common', commonRoutes);
 router.use(UserDeviceMiddleware.getUserDevice);
 router.use('/auth', authRoutes);
 router.use(AuthMiddleware.authenticate);
+router.use('/', otherRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/user', userRoutes);
 router.use('/bank', bankRoutes);
@@ -33,6 +46,19 @@ router.use('/partner-group', partnerGroupRoutes);
 router.use('/organization', organizationRoutes);
 router.use('/position', positionRoutes);
 router.use('/job-position', jobPositionRoutes);
-
 router.use('/clause', clauseRoutes);
+router.use('/warehouse', warehouseRoutes);
+router.use('/quotation-request', quotationRequestRoutes);
+router.use('/purchase-request', purchaseRequestRoutes);
+router.use('/product', productRoutes);
+router.use('/product-group', productGroupRoutes);
+router.use('/unit', unitRoutes);
+router.use('/quotation', quotationRoutes);
+router.use('/contract', contractRoutes);
+router.use('/invoice', invoiceRoutes);
+router.use('/production', productionRoutes);
+router.use('/order', orderRoutes);
+router.use('/order-expense', orderExpenseRoutes);
+router.use('/inventory', inventoryRoutes);
+
 export default router;

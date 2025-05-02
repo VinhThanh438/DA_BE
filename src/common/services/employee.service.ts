@@ -1,79 +1,63 @@
-import { Employees } from '.prisma/client';
-import { APIError } from '@common/error/api.error';
-import { ErrorCode } from '@common/errors';
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import { Employees, Prisma } from '.prisma/client';
+import { IIdResponse } from '@common/interfaces/common.interface';
 import { ICreateEmployee } from '@common/interfaces/employee.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
+import { JobPositionRepo } from '@common/repositories/job-position.repo';
+import { BaseService } from './base.service';
+import { OrganizationRepo } from '@common/repositories/organization.repo';
 
-export class EmployeeService {
-    public static async paginate(body: IPaginationInput): Promise<IPaginationResponse> {
-        const data = await EmployeeRepo.paginate(body);
-        return data;
+export class EmployeeService extends BaseService<Employees, Prisma.EmployeesSelect, Prisma.EmployeesWhereInput> {
+    private static instance: EmployeeService;
+    private jobPositionRepo = new JobPositionRepo();
+    private organizationRepo = new OrganizationRepo();
+
+    private constructor() {
+        super(new EmployeeRepo());
     }
 
-    public static async findById(id: number): Promise<Employees> {
-        const data = await EmployeeRepo.findOne({ id }, true);
-        if (!data) {
-            throw new APIError({
-                message: 'common.not-found',
-                status: ErrorCode.BAD_REQUEST,
-            });
+    public static getInstance(): EmployeeService {
+        if (!this.instance) {
+            this.instance = new EmployeeService();
         }
-        return data as Employees;
+        return this.instance;
     }
 
-    public static async delete(id: number): Promise<IIdResponse> {
-        const data = await EmployeeRepo.isExist({ id });
-        if (!data) {
-            throw new APIError({
-                message: 'common.not-found',
-                status: ErrorCode.BAD_REQUEST,
-            });
-        }
-        const result = await EmployeeRepo.delete(id);
-        return { id: result.id as number };
+    public async updateEmployee(id: number, request: ICreateEmployee): Promise<IIdResponse> {
+        await this.findById(id)
+
+        await this.isExist({
+            code: request.code,
+            attendance_code: request.attendance_code,
+            identity_code: request.identity_code,
+            passport_code: request.passport_code,
+            id
+        }, true);
+
+        await this.validateForeignKeys(request, {
+            organization_id: this.organizationRepo,
+            job_position_id: this.jobPositionRepo,
+        });
+        
+        await this.repo.create(request);
+
+        return { id };
     }
 
-    public static async update(id: number, body: ICreateEmployee): Promise<IIdResponse> {
-        const data = await EmployeeRepo.isExist({ id });
-        if (!data) {
-            throw new APIError({
-                message: 'common.not-found',
-                status: ErrorCode.BAD_REQUEST,
-            });
-        }
-        const result = await EmployeeRepo.update({ id }, body);
-        return { id: result.id as number };
-    }
+    public async createEmployee(request: Partial<ICreateEmployee>): Promise<IIdResponse> {
+        await this.isExist({
+            code: request.code,
+            attendance_code: request.attendance_code,
+            identity_code: request.identity_code,
+            passport_code: request.passport_code,
+        });
 
-    public static async create(body: ICreateEmployee): Promise<IIdResponse> {
-        const isExist = await EmployeeRepo.isExist({ code: body.code });
-        if (isExist) {
-            throw new APIError({
-                message: 'common.existed',
-                status: ErrorCode.BAD_REQUEST,
-            });
-        }
+        await this.validateForeignKeys(request, {
+            organization_id: this.organizationRepo,
+            job_position_id: this.jobPositionRepo
+        })
 
-        const dataInput = {
-            code: body.code,
-            email: body.email,
-            name: body.name,
-            age: body.age,
-            phone: body.phone,
-            description: body.description,
-            avatar: body.avatar,
+        const data = await this.repo.create(request);
 
-            education: body.education,
-            finance: body.finance,
-            identity: body.identity,
-            address: body.address,
-            emergency_contact: body.emergency_contact,
-            contract: body.contract,
-            social_insurance: body.social_insurance,
-            user_position: body.user_position,
-        };
-        const data = await EmployeeRepo.create(dataInput);
-        return { id: data.id };
+        return { id: data };
     }
 }

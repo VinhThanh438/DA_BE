@@ -5,8 +5,11 @@ import { IPaginationInputClause } from '@common/interfaces/clause.interface';
 import { IPaginationResponse } from '@common/interfaces/common.interface';
 
 export const ClauseSelection: Prisma.ClausesSelect = {
+    id: true,
     name: true,
     content: true,
+    max_dept_amount: true,
+    max_dept_day: true,
 };
 export const ClauseSelectionAll: Prisma.ClausesSelect = {
     ...ClauseSelection,
@@ -19,6 +22,7 @@ export class ClauseRepo extends BaseRepo<Clauses, Prisma.ClausesSelect, Prisma.C
     protected db = DatabaseAdapter.getInstance().clauses;
     protected defaultSelect = ClauseSelection;
     protected detailSelect = ClauseSelectionAll;
+    protected modelKey: keyof Prisma.TransactionClient = 'clauses';
 
     public async getAll(
         body: IPaginationInputClause,

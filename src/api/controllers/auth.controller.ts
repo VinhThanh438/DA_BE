@@ -9,8 +9,8 @@ export class AuthController {
             const body = req.body as ILoginRequest;
             Object.assign(body, req.userDevice);
             const data = await AuthService.login(body);
-            res.cookie('access_token', 'Bearer ' + data.access_token);
-            res.cookie('refresh_token', data.refresh_token);
+            res.secureCookie('access_token', 'Bearer ' + data.access_token);
+            res.secureCookie('refresh_token', data.refresh_token);
             res.sendJson(data);
         } catch (error) {
             logger.error(`AuthController.create: `, error);
@@ -27,6 +27,17 @@ export class AuthController {
             res.sendJson();
         } catch (error) {
             logger.error(`AuthController.logout: `, error);
+            next(error);
+        }
+    }
+
+    public static async getInfo(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.user.id as number;
+            const user = await AuthService.getInfo(id);
+            res.sendJson(user);
+        } catch (error) {
+            logger.error(`AuthController.getInfo: `, error);
             next(error);
         }
     }

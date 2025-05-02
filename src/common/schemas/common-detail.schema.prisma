@@ -1,20 +1,25 @@
-enum QuoteOrderType {
-  quotation
-  order
-}
+// enum CommonDetailType {
+//   quotation
+//   order
+//   contract
+//   invoice
+// }
 
-model QuotationOrderDetails {
-  id       Int            @id @default(autoincrement())
+model CommonDetails {
+  id       Int      @id @default(autoincrement())
   quantity Int?
   price    Decimal?
   discount Float?
   vat      Float? // %vat
   note     String?
-  type     QuoteOrderType @default(quotation)
+  // type     CommonDetailType
 
-  product_id   Int?
+  product_id Int?
+
   order_id     Int?
   quotation_id Int?
+  contract_id  Int?
+  invoice_id   Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -22,6 +27,8 @@ model QuotationOrderDetails {
   product   Products?   @relation(fields: [product_id], references: [id], onDelete: Cascade)
   order     Orders?     @relation(fields: [order_id], references: [id], onDelete: Cascade)
   quotation Quotations? @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+  contract  Contracts?  @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  invoice   Invoices?   @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
 
-  @@map("quotation_order_details")
+  @@map("common_details")
 }

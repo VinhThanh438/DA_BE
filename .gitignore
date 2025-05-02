@@ -139,6 +139,10 @@ dist
 uploads
 *.uploads
 
+# temp
+temp
+*.temp
+
 # base folders
 # src/api/base
 # src/common/base

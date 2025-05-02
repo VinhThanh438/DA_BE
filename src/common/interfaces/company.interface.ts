@@ -1,8 +1,9 @@
 export interface ICreateAndUpdate {
     name: string;
+    type: PartnerType;
 }
 
-import { Organizations, Prisma } from '.prisma/client';
+import { Organizations, PartnerType, Prisma } from '.prisma/client';
 import { OrganizationType } from '@config/app.constant';
 
 export interface IOrganizationTypes
@@ -18,7 +19,7 @@ export interface ICreateOrganization {
     name: string;
     code: string;
     responsibility?: string;
-    files?: any;
+    files?: string[];
     establishment?: DateString;
     type: OrganizationType;
     leader_id: number;

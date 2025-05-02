@@ -23,6 +23,8 @@ export class AuthEvent {
         eventbus.on(EVENT_USER_FIRST_LOGGIN, this.updateLogginStatusHandler);
     }
 
+    private static userService = UserService.getInstance();
+
     private static async tokenExpiredHandler(id: number): Promise<void> {
         try {
             await AuthService.deleteToken(id);
@@ -52,7 +54,10 @@ export class AuthEvent {
 
     private static async updateLogginStatusHandler(data: IEventUserFirstLoggin): Promise<void> {
         try {
-            const result = await UserService.updateLogginStatus(data);
+            if (data.status) {
+                await AuthService.revokeAllTokens(data.id);
+            }
+            const result = await this.userService.updateLoginStatus(data);
             logger.info(`AuthEvent.updateLogginStatusHandler: User first loggin status updated id: ${result.id}`);
         } catch (error: any) {
             logger.error(`AuthEvent.updateLogginStatusHandler:`, error.message);

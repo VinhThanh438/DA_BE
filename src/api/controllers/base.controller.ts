@@ -39,16 +39,6 @@ export abstract class BaseController<T = any> {
         }
     }
 
-    public async getCode(req: Request, res: Response, next: NextFunction) {
-        try {
-            const code = await this.service.getCode();
-            res.sendJson(code);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.getCode: `, error);
-            next(error);
-        }
-    }
-
     public async create(req: Request, res: Response, next: NextFunction) {
         try {
             const data = await this.service.create(req.body);

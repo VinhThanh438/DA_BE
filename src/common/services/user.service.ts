@@ -1,27 +1,32 @@
 import { Prisma, Users } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
-import { ErrorCode, StatusCode } from '@common/errors';
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
-import { ICreateUser, IEventUserFirstLoggin } from '@common/interfaces/user.interface';
+import { StatusCode } from '@common/errors';
+import { IIdResponse } from '@common/interfaces/common.interface';
+import { ICreateUser, IEventUserFirstLoggin, IUpdateEmployeeAccountStatus } from '@common/interfaces/user.interface';
 import { UserRepo } from '@common/repositories/user.repo';
-import { EmployeeService } from './employee.service';
-import { ADMIN_USER_NAME } from '@common/environment';
+import { BaseService } from './base.service';
+import logger from '@common/logger';
+import eventbus from '@common/eventbus';
+import { EVENT_USER_CREATED_OR_DELETED } from '@config/event.constant';
+import { EmployeeRepo } from '@common/repositories/employee.repo';
 
-export class UserService {
-    public static async findOne(
-        where: Prisma.UsersWhereInput,
-        select?: Prisma.UsersSelect,
-    ): Promise<Partial<Users | null>> {
-        return UserRepo.findOne(where, select);
+export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
+    private static instance: UserService;
+    private employeeRepo: EmployeeRepo = new EmployeeRepo();
+
+    private constructor() {
+        super(new UserRepo());
     }
 
-    public static async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
-        const data = await UserRepo.paginate(query);
-        return data;
+    public static getInstance(): UserService {
+        if (!this.instance) {
+            this.instance = new UserService();
+        }
+        return this.instance;
     }
 
-    public static async findById(id: number): Promise<Partial<Users>> {
-        const data = await UserService.findOne({ id });
+    public async findById(id: number): Promise<Partial<Users>> {
+        const data = await this.findOne({ id }, true);
         if (!data) {
             throw new APIError({
                 message: 'common.not-found',
@@ -31,57 +36,87 @@ export class UserService {
         return data;
     }
 
-    public static async create(body: ICreateUser): Promise<IIdResponse> {
-        const existUser = await UserRepo.findOne({ username: body.username, email: body.email });
+    public async createUser(body: ICreateUser): Promise<IIdResponse> {
+        const existUser = await this.repo.findOne({ username: body.username, email: body.email });
         if (existUser) {
             throw new APIError({
-                message: 'common.not-found',
+                message: 'user.already-exists',
                 status: StatusCode.BAD_REQUEST,
             });
         }
 
-        const employee = await EmployeeService.findById(body.employee_id as number);
+        const employee = await this.employeeRepo.findOne({ id: body.employee_id });
         if (!employee) {
             throw new APIError({
+                message: 'employee.not-found',
+                status: StatusCode.BAD_REQUEST,
+            });
+        }
+
+        const id = await this.repo.create(body);
+        if (body.employee_id) {
+            eventbus.emit(EVENT_USER_CREATED_OR_DELETED, {
+                employeeId: body.employee_id,
+                status: true,
+            } as IUpdateEmployeeAccountStatus);
+        }
+        return { id };
+    }
+
+    public async seedAdmin(body: ICreateUser): Promise<IIdResponse> {
+        const id = await this.repo.create(body);
+        return { id };
+    }
+
+    public async updateLoginStatus(body: IEventUserFirstLoggin): Promise<IIdResponse> {
+        const id = await this.repo.update(
+            { id: body.id },
+            {
+                is_first_loggin: body.status,
+                device_uid: [body.device ?? ''],
+            },
+        );
+        return { id };
+    }
+
+    public async findUser(data: Prisma.UsersWhereInput, isDefaultSelect = false): Promise<Partial<Users> | null> {
+        try {
+            const result = await this.repo.findOne(data, isDefaultSelect);
+            return result;
+        } catch (error) {
+            logger.error(`${this.constructor.name}.findUser: `, error);
+            throw error;
+        }
+    }
+
+    public async updateUser(id: number, body: ICreateUser): Promise<IIdResponse> {
+        const user = await this.repo.isExist({ id });
+        if (!user) {
+            throw new APIError({
                 message: 'common.not-found',
                 status: StatusCode.BAD_REQUEST,
             });
         }
-        const data = await UserRepo.create(body);
-        return { id: data.id };
+
+        const updatedId = await this.repo.update({ id }, body);
+        return { id: updatedId };
     }
 
-    public static async seedAdmin(body: ICreateUser): Promise<IIdResponse> {
-        const data = await UserRepo.create(body);
-        return { id: data.id };
-    }
-
-    public static async updateLogginStatus(body: IEventUserFirstLoggin): Promise<IIdResponse> {
-        const data = await UserRepo.update({ id: body.id }, { is_first_loggin: false, device_uid: [body.device] });
-        return { id: data.id };
-    }
-
-    public static async delete(id: number): Promise<IIdResponse> {
-        const data = await UserRepo.isExist({ id });
-        if (!data) {
+    public async deleteUser(id: number): Promise<IIdResponse> {
+        const user = await this.repo.findOne({ id }, true);
+        if (!user) {
             throw new APIError({
                 message: 'common.not-found',
-                status: ErrorCode.BAD_REQUEST,
+                status: StatusCode.BAD_REQUEST,
             });
         }
-        const result = await UserRepo.delete(id);
-        return { id: result.id as number };
-    }
-
-    public static async update(id: number, body: ICreateUser): Promise<IIdResponse> {
-        const data = await UserRepo.isExist({ id });
-        if (!data) {
-            throw new APIError({
-                message: 'common.not-found',
-                status: ErrorCode.BAD_REQUEST,
-            });
+        if (user.employee_id) {
+            eventbus.emit(EVENT_USER_CREATED_OR_DELETED, {
+                employeeId: user.employee_id,
+                status: false,
+            } as IUpdateEmployeeAccountStatus);
         }
-        const result = await UserRepo.update({ id }, body);
-        return { id: result.id as number };
+        const deletedId = await this.repo.delete({ id });
+        return { id: deletedId };
     }
 }

@@ -18,7 +18,7 @@ async function main() {
             files: [
                 {
                     name: 'giay-phep-kinh-doanh.pdf',
-                    url: 'https://example.com/uploads/giay-phep-kinh-doanh.pdf',
+                    path: 'https://example.com/uploads/giay-phep-kinh-doanh.pdf',
                 },
             ],
             establishment: '2015-08-20',

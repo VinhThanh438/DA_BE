@@ -10,7 +10,7 @@ model Orders {
   address    String?
   phone      String?
   note       String?
-  order_date DateTime
+  order_date DateTime @default(now())
   files      Json?     @default("[]")
 
   employee_id     Int?
@@ -21,36 +21,17 @@ model Orders {
   employee     Employees?     @relation(fields: [employee_id], references: [id])
   organization Organizations? @relation(fields: [organization_id], references: [id])
 
-  created_at              DateTime                @default(now())
-  updated_at              DateTime                @updatedAt
-  Quotation_order_datails QuotationOrderDetails[]
-  Productions             Productions[]
-  TransactionWarehouses   TransactionWarehouses[]
+  created_at             DateTime                @default(now())
+  updated_at             DateTime                @updatedAt
+  order_details          CommonDetails[]
+  transaction_warehouses TransactionWarehouses[]
 
   @@map("orders")
-}
-
-model OrderContracts {
-  id             Int      @id @default(autoincrement())
-  code           String   @default(cuid())
-  tax            String?
-  contract_value Decimal? // Gia tri hop dong
-  status         String?
-  files          Json?    @default("[]")
-
-  sign_date     DateTime? // Ngay ky
-  delivery_date DateTime? // Ngay giao
-
-  organization_id Int?
-  partner_id      Int?
-  employee_id     Int?
-
-  organization Organizations? @relation(fields: [organization_id], references: [id])
-  partner      Partners?      @relation(fields: [partner_id], references: [id])
-  employee     Employees?     @relation(fields: [employee_id], references: [id])
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@map("order_contract_details")
+  order_expenses OrderExpenses[]
+  productions Productions[]
+  receipts Receipts[]
+  contracts Contracts[]
+  invoices Invoices[]
+  inventories Inventories[]
+  purchase_requests PurchaseRequests[]
 }

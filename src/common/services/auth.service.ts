@@ -1,4 +1,4 @@
-import { Prisma, Tokens } from '.prisma/client';
+import { Prisma, Tokens, Users } from '.prisma/client';
 import { ADMIN_USER_NAME } from '@common/environment';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, StatusCode } from '@common/errors';
@@ -20,6 +20,8 @@ import { REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
 import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGGIN, EVENT_USER_LOGIN } from '@config/event.constant';
 
 export class AuthService {
+    private static userRepo: UserRepo = new UserRepo();
+
     public static async login(body: ILoginRequest): Promise<ILoginResponse> {
         if (!body.device && body.username !== ADMIN_USER_NAME) {
             throw new APIError({
@@ -28,7 +30,7 @@ export class AuthService {
             });
         }
 
-        const user = await UserRepo.findOne({ username: body.username });
+        const user = await this.userRepo.getDetailInfo({ username: body.username });
 
         if (!user) {
             throw new APIError({
@@ -62,6 +64,7 @@ export class AuthService {
             eventbus.emit(EVENT_USER_FIRST_LOGGIN, {
                 id: user.id,
                 device: body.device,
+                status: false,
             } as IEventUserFirstLoggin);
         }
 
@@ -88,7 +91,7 @@ export class AuthService {
         const userToken = await TokenRepo.findOne({ refresh_token: refreshToken });
         if (!userToken) {
             throw new APIError({
-                message: 'common.not-found',
+                message: 'user.common.not-found',
                 status: ErrorCode.REQUEST_UNAUTHORIZED,
             });
         }
@@ -99,6 +102,19 @@ export class AuthService {
 
     public static async getUserToken(data: Prisma.TokensWhereInput): Promise<Tokens> {
         const user = await TokenRepo.findOne(data);
+
+        if (!user) {
+            throw new APIError({
+                message: 'auth.login.not-found',
+                status: StatusCode.BAD_REQUEST,
+            });
+        }
+
+        return user;
+    }
+
+    public static async getInfo(id: number): Promise<Partial<Users>> {
+        const user = await this.userRepo.findOne({ id });
 
         if (!user) {
             throw new APIError({
@@ -128,5 +144,9 @@ export class AuthService {
             user_agent: data.ua,
             ip_address: data.ip,
         });
+    }
+
+    public static async revokeAllTokens(userId: number): Promise<void> {
+        await TokenRepo.deleteMany({ user_id: userId });
     }
 }

@@ -3,8 +3,9 @@ import { NODE_ENV } from '@common/environment';
 import { ValidationError } from 'express-validation';
 import logger from '@common/logger';
 import { pick } from 'lodash';
-import { ErrorCode, StatusCode } from '@common/errors';
+import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { APIError } from '@common/error/api.error';
+import { Prisma } from '@prisma/client';
 
 export class ResponseMiddleware {
     /**
@@ -25,13 +26,32 @@ export class ResponseMiddleware {
             message = req.i18n.t(err.message);
         }
 
+        if (err.message.includes('Foreign key constraint violated')) {
+            const violatedConstraint = err.message.match(/`([^`]+)_fkey/);
+            const key = violatedConstraint ? violatedConstraint[1] : 'unknown_key';
+
+            logger.error('Foreign Key constraint violation error:', {
+                errorDetails: JSON.stringify(err),
+                violatedConstraint: key,
+                ...pick(req, ['originalUrl', 'body', 'rawHeaders']),
+            });
+
+            err.message = req.i18n.t('common.foreign-key-constraint-violation', {
+                key: key,
+            });
+            err.status = StatusCode.BAD_REQUEST;
+        }
+
+        // if (err.status === StatusCode.SERVER_ERROR) {
+        //     err.message = req.i18n.t(`common.status.${StatusCode.SERVER_ERROR}`);
+        // }
+
         const response: any = {
-            error_code: errorCode,
-            status_code: err.status,
-            message: err.message ? req.i18n.t(err.message) : req.i18n.t(`common.status.${StatusCode.SERVER_ERROR}`),
+            errorCode: errorCode,
+            statusCode: err.status,
+            message: err.message ? req.i18n.t(err.message) : err.message,
             stack: err.stack,
             errors: ResponseMiddleware.formatValidationErrors(err.errors),
-            message_data: messageData,
         };
 
         if (NODE_ENV !== 'development') {
@@ -46,9 +66,10 @@ export class ResponseMiddleware {
      * Formats validation errors from a raw error object into a structured format.
      *
      * @param {any} errors - An object containing validation errors to be formatted.
-     * @returns {Record<string, any>} - A structured object with grouped validation errors.
+     * @returns {errors<string>[]} - A structured object with grouped validation errors.
      */
     static formatValidationErrors(errors: any): string[] {
+        if (errors && Array.isArray(errors)) return errors;
         if (!errors || typeof errors !== 'object') return [];
 
         const formattedErrors: string[] = [];
@@ -57,18 +78,55 @@ export class ResponseMiddleware {
             if (!errorObject || typeof errorObject !== 'object') return;
 
             Object.entries(errorObject).forEach(([errorKey, error]: [string, any]) => {
-                if (typeof error === 'object' && error?.message && error?.context?.key) {
-                    const formattedMessage = `${error.context.key}.${error.message.replace(/^"[^"]+"\s/, '')}`.replace(
-                        /\s+/g,
-                        '_',
-                    );
-                    formattedErrors.push(formattedMessage);
+                if (typeof error === 'object') {
+                    const path = error?.path;
+                    const type = error?.type;
+
+                    let errorType = ErrorKey.INVALID;
+                    if (type === 'any.required') {
+                        errorType = ErrorKey.REQUIRED;
+                    }
+
+                    if (Array.isArray(path)) {
+                        const formattedMessage = `${path.join('.')}.${errorType}`;
+                        formattedErrors.push(formattedMessage);
+                    } else if (error?.context?.key !== undefined) {
+                        const formattedMessage = `${key}.${error.context.key}.${errorType}`;
+                        formattedErrors.push(formattedMessage);
+                    } else {
+                        formattedErrors.push(`${key}.${errorType}`);
+                    }
+                } else if (typeof error === 'string') {
+                    formattedErrors.push(`${key}.${ErrorKey.INVALID}`);
                 }
             });
         });
 
         return formattedErrors;
     }
+
+    // static parseDecimalFromStringToNumber() {
+    //     return async (params: any, next: any) => {
+    //         const result = await next(params);
+    //         return ResponseMiddleware._convertDecimalFields(result);
+    //     };
+    // }
+
+    // private static _convertDecimalFields(obj: any): any {
+    //     if (Array.isArray(obj)) {
+    //         return obj.map((item) => ResponseMiddleware._convertDecimalFields(item));
+    //     } else if (obj !== null && typeof obj === 'object') {
+    //         for (const key of Object.keys(obj)) {
+    //             const value = obj[key];
+    //             if (value instanceof Prisma.Decimal) {
+    //                 obj[key] = value.toNumber();
+    //             } else if (typeof value === 'object' && value !== null) {
+    //                 obj[key] = ResponseMiddleware._convertDecimalFields(value);
+    //             }
+    //         }
+    //     }
+    //     return obj;
+    // }
 
     /**
      * Convert error if it's not APIError
@@ -117,7 +175,7 @@ export class ResponseMiddleware {
      */
     static notFound(req: Request, res: Response, next: NextFunction): void {
         const err = new APIError({
-            message: 'common.not-found',
+            message: 'common.resource-not-found',
             status: StatusCode.REQUEST_NOT_FOUND,
             stack: '',
             errorCode: ErrorCode.REQUEST_NOT_FOUND,

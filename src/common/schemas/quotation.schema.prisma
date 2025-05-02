@@ -5,27 +5,34 @@ enum QuotationStatus {
   rejected
 }
 
-model Quotations {
-  id      Int             @id @default(autoincrement())
-  tax     String?
-  name    String?
-  phone   String?
-  email   String?
-  address String?
-  note    String?
-  status  QuotationStatus @default(pending)
-  files   Json?           @default("[]")
+enum QuatationType {
+  customer
+  supplier
+}
 
-  approved_id     Int?
+model Quotations {
+  id           Int       @id @default(autoincrement())
+  code         String    @default(cuid())
+  time_at      DateTime? @default(now())
+  expired_date DateTime?
+  note         String?
+  type         QuatationType @default(supplier) // loại báo giá
+
+  status       QuotationStatus @default(pending)
+  files        Json?           @default("[]")
+  is_confirmed Boolean?        @default(false)
+
+  employee_id     Int? // nhan vien bao gia
+  partner_id      Int? // Khach hang
   organization_id Int?
 
   organization Organizations? @relation(fields: [organization_id], references: [id])
-  approved_by  Employees?     @relation(fields: [approved_id], references: [id])
+  employee     Employees?     @relation(fields: [employee_id], references: [id])
+  partner      Partners?      @relation(fields: [partner_id], references: [id])
 
-  created_at              DateTime                @default(now())
-  updated_at              DateTime                @updatedAt
-  Partners                Partners[]
-  Quotation_order_datails QuotationOrderDetails[]
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+  quotation_details CommonDetails[]
 
-  @@map("quotation_requests")
+  @@map("quotations")
 }

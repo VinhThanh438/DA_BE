@@ -2,6 +2,7 @@ import moment, { Moment } from 'moment-timezone';
 
 export class TimeHelper {
     private static timezone: string = 'Asia/Ho_Chi_Minh';
+
     /**
      * Get current timezone
      */
@@ -17,41 +18,70 @@ export class TimeHelper {
     }
 
     /**
-     * Format time
+     * Format time to string
      */
     public static format(date: Date | string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): string {
-        return moment(date).tz(this.timezone).format(formatStr);
+        return this.parse(date).format(formatStr);
     }
 
     /**
-     * Parse from timezone to UTC
+     * Convert to UTC from local timezone
      */
     public static toUTC(date: Date | string): Moment {
-        return moment.tz(date, this.timezone).utc();
+        return this.parse(date).utc();
     }
 
     /**
-     * Compare two datetime values based on the current timezone
-    */
+     * Compare 2 dates in current timezone
+     */
     public static isSame(
         date1: Date | string,
         date2: Date | string,
         granularity: moment.unitOfTime.StartOf = 'second',
     ): boolean {
-        return moment(date1).tz(this.timezone).isSame(moment(date2).tz(this.timezone), granularity);
+        return this.parse(date1).isSame(this.parse(date2), granularity);
     }
 
     /**
-     * Check if a time is within a specific range
-    */
+     * Check if date is within a range
+     */
     public static isBetween(
         date: Date | string,
         start: Date | string,
         end: Date | string,
         granularity: moment.unitOfTime.StartOf = 'second',
     ): boolean {
-        return moment(date)
-            .tz(this.timezone)
-            .isBetween(moment(start).tz(this.timezone), moment(end).tz(this.timezone), granularity, '[]');
+        return this.parse(date).isBetween(this.parse(start), this.parse(end), granularity, '[]');
+    }
+
+    /**
+     * Parse input safely into Moment object in correct timezone
+     */
+    public static parse(date: Date | string): Moment {
+        if (typeof date === 'string') {
+            const formats = ['YYYY-M-D', 'YYYY-MM-DD', 'YYYY/M/D', 'YYYY/MM/DD'];
+            const parsed = moment.tz(date, formats, true, this.timezone);
+            if (parsed.isValid()) return parsed;
+        }
+
+        return moment.tz(date, this.timezone);
+    }
+    public static parseDay(date: Date | string): Moment {
+        return moment.utc(date);
+    }
+
+    /**
+     * Parse input to native Date object
+     */
+    public static parseToDate(date?: DateString): Date | undefined {
+        if (!date) return undefined;
+        const parsed = this.parse(date);
+        return parsed.isValid() ? parsed.toDate() : undefined;
+    }
+    public static parseStartOfDayDate(date: DateString, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
+        return moment.utc(date).startOf('day').toDate();
+    }
+    public static parseEndOfDayDate(date: DateString, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
+        return moment.utc(date).endOf('day').toDate();
     }
 }

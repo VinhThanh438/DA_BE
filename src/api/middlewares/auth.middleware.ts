@@ -49,10 +49,10 @@ export class AuthMiddleware {
 
                 req.user = user;
 
-                const userData = await UserService.findOne({ id: user.id });
+                const userData = await UserService.getInstance().findOne({ id: user.id });
                 if (!userData) {
                     throw new APIError({
-                        message: 'common.not-found',
+                        message: 'user.common.not-found',
                         status: StatusCode.BAD_REQUEST,
                     });
                 }

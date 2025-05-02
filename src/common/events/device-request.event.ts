@@ -5,7 +5,7 @@ import { QueueService } from '@common/services/queue.service';
 import { EVENT_DEVICE_PENDING_APPROVAL } from '@config/event.constant';
 import { SEND_PENDING_MAIL_JOB } from '@config/job.constant';
 
-export class DevicePendingApprovalEvent {
+export class DeviceRequetsEvent {
     /**
      * Register device pending approval event
      */

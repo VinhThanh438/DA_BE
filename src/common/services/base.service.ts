@@ -1,28 +1,93 @@
 import { APIError } from '@common/error/api.error';
-import { ErrorCode } from '@common/errors';
-import { generateUniqueCode } from '@common/helpers/generate-unique-code.helper';
+import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
+import { filterDataExclude } from '@common/helpers/filter-data.helper';
+import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import logger from '@common/logger';
 import { BaseRepo } from '@common/repositories/base.repo';
-import { ModelPrefixMap, PrefixCode } from '@config/app.constant';
+import { Prisma } from '@prisma/client';
 
 export abstract class BaseService<T, S, W> {
-    private readonly prefixCode: PrefixCode;
+    protected db = DatabaseAdapter.getInstance();
 
-    constructor(protected readonly repo: BaseRepo<T, any, W>) {
-        this.prefixCode = this.resolvePrefixCode();
-    }
+    constructor(protected readonly repo: BaseRepo<T, any, W>) {}
+    
+    protected async validateForeignKeys<T extends { [key: string]: any }>(
+        data: T[] | T,
+        foreignKeysAndRepos: Record<
+            string,
+            { findOne: (params: any, isSelectDetail: boolean, tx?: Prisma.TransactionClient) => Promise<any> }
+        >,
+        tx?: Prisma.TransactionClient,
+    ): Promise<void> {
+        if (!data || Object.keys(foreignKeysAndRepos).length === 0) return;
 
-    private resolvePrefixCode(): PrefixCode {
-        const className = this.constructor.name;
-        const entityName = className.replace(/Service$/, '').toUpperCase();
-        const prefix = ModelPrefixMap[entityName];
+        const invalidMessages: string[] = [];
 
-        if (!prefix) {
-            return ModelPrefixMap[PrefixCode.OTHER];
+        const dataArray = Array.isArray(data) ? data : [data];
+
+        for (const item of dataArray) {
+            for (const [foreignKey, repo] of Object.entries(foreignKeysAndRepos)) {
+                const foreignKeyValue = item[foreignKey];
+                if (foreignKeyValue != null) {
+                    const existingRecord = await repo.findOne({ id: foreignKeyValue }, false, tx);
+                    if (!existingRecord) {
+                        const errorKey =
+                            item.key != null ? `${foreignKey}.not_found.${item.key}` : `${foreignKey}.not_found`;
+                        invalidMessages.push(errorKey);
+                    }
+                }
+            }
         }
 
-        return prefix;
+        if (invalidMessages.length > 0) {
+            throw new APIError({
+                status: StatusCode.BAD_REQUEST,
+                message: 'common.foreign-key-constraint-violation',
+                errors: invalidMessages,
+            });
+        }
+    }
+
+    protected async isExist(
+        data: { [key: string]: any },
+        includeSelf: boolean = false,
+        tx?: Prisma.TransactionClient,
+    ): Promise<void> {
+        if (!data || Object.keys(data).length === 0) return;
+        if (includeSelf && !data.id) {
+            logger.warn(`${this.constructor.name}.isExist: Missing id in update method`);
+            throw new APIError({
+                status: StatusCode.SERVER_ERROR,
+                message: 'common.developer-error',
+            });
+        }
+
+        const existMessages: string[] = [];
+
+        for (const [field, value] of Object.entries(data)) {
+            if (value != null) {
+                const filter = includeSelf ? { [field]: value, NOT: { id: data.id } } : { [field]: value };
+
+                const existedRecord = await this.repo.findOne(filter as W, false, tx);
+                if (existedRecord) {
+                    existMessages.push(`${field}.existed`);
+                }
+            }
+        }
+
+        if (existMessages.length > 0) {
+            throw new APIError({
+                status: StatusCode.BAD_REQUEST,
+                message: 'common.existed',
+                errors: existMessages,
+            });
+        }
+    }
+
+    protected filterData(data: any, excludedFields: string[], listFields: string[]): any[] {
+        const result = filterDataExclude(data, excludedFields, listFields);
+        return Array.isArray(result) ? result : [result];
     }
 
     public async create(data: Partial<T>): Promise<IIdResponse> {
@@ -49,6 +114,7 @@ export abstract class BaseService<T, S, W> {
                 throw new APIError({
                     message: 'common.not-found',
                     status: ErrorCode.BAD_REQUEST,
+                    errors: [`id.${ErrorKey.NOT_FOUND}`],
                 });
             }
             return data;
@@ -58,7 +124,7 @@ export abstract class BaseService<T, S, W> {
         }
     }
 
-    public async getAll(): Promise<Partial<T> | null> {
+    public async getAll(): Promise<Partial<T>[]> {
         try {
             const data = await this.repo.findMany();
             return data;
@@ -68,33 +134,18 @@ export abstract class BaseService<T, S, W> {
         }
     }
 
-    public async getCode(): Promise<string> {
+    public async findOne(data: W, isDefaultSelect = false): Promise<Partial<T> | null> {
         try {
-            const lastRecord = (await this.repo.getLastRecord()) as { code?: string } | null;
-
-            return generateUniqueCode({
-                lastCode: lastRecord?.code || null,
-                prefix: this.prefixCode,
-            });
-        } catch (error) {
-            logger.error(`${this.constructor.name}.getCode: `, error);
-            throw error;
-        }
-    }
-
-    public async findOne(data: W): Promise<Partial<T> | null> {
-        try {
-            const result = await this.repo.findOne(data as W, true);
+            const result = await this.repo.findOne(data as W, isDefaultSelect);
             if (!result) {
-                logger.warn(`${this.constructor.name}.findById: `, data);
                 throw new APIError({
-                    message: 'common.not-found',
+                    message: 'common.not_found',
                     status: ErrorCode.BAD_REQUEST,
                 });
             }
             return result;
         } catch (error) {
-            logger.error(`${this.constructor.name}.findById: `, error);
+            logger.error(`${this.constructor.name}.findOne: `, error);
             throw error;
         }
     }
@@ -108,13 +159,14 @@ export abstract class BaseService<T, S, W> {
         }
     }
 
-    public async update(id: number, data: Partial<T>): Promise<IIdResponse> {
+    public async update(id: number, data: Partial<T>, ...args: any[]): Promise<IIdResponse> {
         try {
             const existed = await this.findById(id);
             if (!existed) {
                 throw new APIError({
                     message: 'common.not-found',
                     status: ErrorCode.BAD_REQUEST,
+                    errors: [`id.${ErrorKey.NOT_FOUND}`],
                 });
             }
             const dataId = await this.repo.update({ id } as W, data);
@@ -132,6 +184,7 @@ export abstract class BaseService<T, S, W> {
                 throw new APIError({
                     message: 'common.not-found',
                     status: ErrorCode.BAD_REQUEST,
+                    errors: [`id.${ErrorKey.NOT_FOUND}`],
                 });
             }
             const dataId = await this.repo.delete({ id } as W);

@@ -1,4 +1,5 @@
-FROM node:22.12.0 as base
+FROM node:23.11.0-slim as base
+# FROM node:22.12.0 as base
 
 WORKDIR /app
 
@@ -13,10 +14,10 @@ RUN npx prisma generate
 RUN yarn build
 
 
-FROM base as backend_service
+FROM base as be_thep_dong_anh
 
 WORKDIR /app
 
-EXPOSE 4000
+EXPOSE 4200
 
 CMD [ "npm", "start" ]

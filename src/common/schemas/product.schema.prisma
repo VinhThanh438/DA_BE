@@ -1,40 +1,36 @@
 model Products {
   id               Int         @id @default(autoincrement())
+  image            String?
   name             String
   code             String      @default(cuid())
   vat              Float?
-  packing_standard Float?
+  packing_standard String?
   note             String?
-  type             ProductType
-
   product_group_id Int?
   unit_id          Int?
-
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
   product_group ProductGroups? @relation(fields: [product_group_id], references: [id])
   unit          Units?         @relation(fields: [unit_id], references: [id])
 
-  productUnits            ProductUnits[]
-  ContractDetails         ContractDetails[]
-  Quotation_order_datails QuotationOrderDetails[]
-  InventoryDetails        InventoryDetails[]
-  ProductionDetails       ProductionDetails[]
-  Products                MaterialStandards[]     @relation("ProductRelation")
-  Materials               MaterialStandards[]     @relation("MaterialRelation")
-  MaterialBudgets         MaterialBudgets[]
-  TransactionWarehouses   TransactionWarehouses[]
-
+  extra_units               ProductUnits[]
+  common_details            CommonDetails[]
+  inventory_details         InventoryDetails[]
+  production_details        ProductionDetails[]
+  products                  MaterialStandards[]     @relation("ProductRelation")
+  materials                 MaterialStandards[]     @relation("MaterialRelation")
+  material_budgets          MaterialBudgets[]
+  transaction_warehouses    TransactionWarehouses[]
   @@map("products")
+  purchase_request_details PurchaseRequestDetails[]
 }
 
 model Units {
   id   Int    @id @default(autoincrement())
   name String
 
-  productUnits ProductUnits[]
-  Product      Products[]
+  product_units ProductUnits[]
+  products      Products[]
 
   @@map("units")
 }
@@ -44,21 +40,15 @@ model ProductGroups {
   name     String
   products Products[]
 
-  @@map("product_types")
+  @@map("product_groups")
 }
 
 model ProductUnits {
   id         Int @id @default(autoincrement())
   product_id Int
   unit_id    Int
-
-  product Products @relation(fields: [product_id], references: [id])
+  conversion_rate Int
+  product Products @relation(fields: [product_id], references: [id], onDelete: Cascade)
   unit    Units    @relation(fields: [unit_id], references: [id])
-
   @@map("product_units")
-}
-
-enum ProductType {
-  material // Vật tư
-  product // Hàng hóa
 }

@@ -25,4 +25,5 @@ export class JobPositionRepo extends BaseRepo<JobPositions, Prisma.JobPositionsS
     protected db = DatabaseAdapter.getInstance().jobPositions;
     protected defaultSelect = JobPositionSelection;
     protected detailSelect = JobPositionSelectionAll;
+    protected modelKey = 'jobPositions' as const;
 }

@@ -8,28 +8,23 @@ enum PartnerType {
 model Partners {
   id      Int         @id @default(autoincrement())
   code    String      @default(cuid())
-  name    String
+  name    String    
   phone   String?
-  address String?
   note    String?
   email   String?
   tax     String?
-  type    PartnerType @default(default) // loai doi tac
-
-  max_dept_amount Decimal? // so tien no toi da
-  max_dept_day    Int? // so ngay no toi da
-  current_dept    Decimal? // du no dau
-
-  // thong tin lien he
-  representative_name  String?
-  representative_phone String?
-  representative_title String? // xung ho
-  representative_email String?
+  type    PartnerType @default(default) 
+  addresses Json?           @default("[]")
+  representatives  Json?    @default("[]") 
+  // representative_name  String?
+  // representative_phone String?
+  // representative_title String? 
+  // representative_email String?
 
   organization_id  Int?
   partner_group_id Int?
-  clause_id        Int? // dieu khoan
-  sale_staff_id    Int? // nhan vien ban hang
+  clause_id        Int? 
+  sale_staff_id    Int?
 
   is_default Boolean @default(false)
 
@@ -40,34 +35,43 @@ model Partners {
   organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   clause            Clauses?            @relation(fields: [clause_id], references: [id], onDelete: Cascade)
   sale_staff        Employees?          @relation(fields: [sale_staff_id], references: [id], onDelete: Cascade)
-  BankAccounts      BankAccounts[]
-  Invoice           Invoices[]
-  Quotations        Quotations[]
-  Orders            Orders[]
-  OrderContracts    OrderContracts[]
-  Inventories       Inventories[]       @relation("PartnerRelation")
-  Deliveries        Inventories[]       @relation("DeliveryRelation")
-  Productions       Productions[]
-  FinanceRecords    FinanceRecords[]
-  TransactionOrders TransactionOrders[]
+  bank_accounts      BankAccounts[]
+  invoices           Invoices[]
+  quotations        Quotations[]
+  orders            Orders[]
+  productions       Productions[]
+  finance_records    FinanceRecords[]
+  transaction_orders TransactionOrders[]
 
   @@map("partners")
+  inventory_as_supplier Inventories[] @relation("Supplier")
+  inventory_as_customer Inventories[] @relation("Customer")
+  inventory_as_delivery Inventories[] @relation("Delivery")
+  @@unique([name, type])
+  depts Depts[]
+  contracts Contracts[]
 }
+
 
 model PartnerGroups {
   id       Int         @id @default(autoincrement())
   name     String
   type     PartnerType @default(default) // loai doi tac
-  Partners Partners[]
+  partners Partners[]
+
   @@map("partner_groups")
 }
 
 // Dieu khoan
 model Clauses {
   id       Int        @id @default(autoincrement())
-  name     String @unique
+  name     String     @unique
   content  String?
-  Partners Partners[]
+
+  max_dept_amount Decimal? // so tien no toi da
+  max_dept_day    Int? // so ngay no toi da
+
+  partners Partners[]
 
   @@map("clauses")
 }

@@ -18,7 +18,10 @@
                 "error": "Upload error",
                 "mismatch": "The number of files does not match the number of keys",
                 "failed": "File upload failed!"
-            }
+            },
+            "foreign-key-constraint-violation": "Foreign key constraint violation: referenced key does not exist",
+            "resource-not-found": "Resource not found!",
+            "developer-error": 	"Developer error: Please review the source code."
         },
         "auth": {
             "signup": {
@@ -28,7 +31,7 @@
                 "wrong-password": "Incorrect password!",
                 "not-found": "User not found!",
                 "invalid-password": "Incorrect password, please try again!",
-                "device-conflic": "Your account is currently logged in on another device!",
+                "device-conflict": "Your account is currently logged in on another device!",
                 "device-not-found": "Device not found!",
                 "device-pending-approval": "You're signing in from a new device. Please wait for the administrator to approve your access."
             },
@@ -56,9 +59,32 @@
                 "not-found": "User not found!"
             }
         },
+        "employee": {
+            "common": {
+                "exist": "Employee existed!",
+                "not-found": "Employee not found!"
+            }
+        },
+        "position": {
+            "common": {
+                "exist": "Position existed!",
+                "not-found": "Position not found!"
+            }
+        },
+        "organization": {
+            "common": {
+                "exist": "Organization existed!",
+                "not-found": "Organization not found!"
+            }
+        },
         "socket": {
             "error": {
                 "not-init": "Socket server is not initialized!"
+            }
+        },
+        "product": {
+            "common": {
+                "not-found": "Product not found!"
             }
         }
     }

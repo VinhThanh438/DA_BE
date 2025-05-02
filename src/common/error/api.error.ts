@@ -3,7 +3,7 @@ import { errors } from 'express-validation';
 
 interface APIErrorParams {
     message: string;
-    errors?: errors;
+    errors?: errors | string[]; // Allow errors to be either an 'errors' object or a string array
     stack?: string;
     errorCode?: number;
     status?: number;
@@ -18,7 +18,7 @@ export class APIError extends Error {
     public status: number;
     public errorCode?: number;
     public isPublic: boolean;
-    public errors?: errors;
+    public errors?: errors | string[];
     // eslint-disable-next-line @typescript-eslint/ban-types
     public messageData?: object;
     public statusCode: number;
@@ -29,7 +29,7 @@ export class APIError extends Error {
      */
     constructor({
         message,
-        errors: errs,
+        errors,
         stack,
         errorCode,
         status = StatusCode.SERVER_ERROR,
@@ -37,10 +37,11 @@ export class APIError extends Error {
         messageData = null,
     }: APIErrorParams) {
         super(message);
+
         this.stack = stack;
         this.status = status;
         this.isPublic = isPublic;
-        this.errors = errs;
+        this.errors = errors;
         this.statusCode = status;
 
         if (errorCode === undefined || errorCode === 0) {

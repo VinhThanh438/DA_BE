@@ -8,8 +8,8 @@ model PermissionGroups {
 
   is_default Boolean @default(false)
 
-  permission_detail PermissionDetails[]
-  users             Users[]
+  permission_details PermissionDetails[]
+  users              Users[]
 
   @@map("permission_groups")
 }
@@ -24,7 +24,7 @@ model Permissions {
 
   is_default Boolean @default(false)
 
-  permission_detail PermissionDetails[]
+  permission_details PermissionDetails[]
 
   @@map("permissions")
 }

@@ -1,10 +1,14 @@
 services:
   postgresql:
     container_name: postgresql
-    image: postgres:latest
+    build:
+      context: .
+      dockerfile: postgres.Dockerfile
+    image: custom-postgres:latest
     volumes:
       - postgresql_data:/var/lib/postgresql/data
       - postgresql_log:/var/log/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_USER=${DB_USER_NAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -12,8 +16,8 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - backend_network
-    restart: always    
+      - be_thep_dong_anh_network
+    restart: always  
 
   redis:
     container_name: redis
@@ -23,11 +27,11 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - backend_network
+      - be_thep_dong_anh_network
     restart: always
 
-  backend_service:
-    image: backend_service
+  be_thep_dong_anh:
+    image: be_thep_dong_anh
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -41,13 +45,13 @@ services:
     env_file:
       - .env
     networks:
-      - backend_network
+      - be_thep_dong_anh_network
     ports:
-      - "4000:4000"
+      - "4200:4200"
     restart: always
 
 networks:
-  backend_network:
+  be_thep_dong_anh_network:
     driver: bridge
 
 volumes:

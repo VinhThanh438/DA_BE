@@ -1,0 +1,38 @@
+model Depts {
+  id Int @id @default(autoincrement())
+
+  remaining_amount Decimal?
+
+  partner_id      Int?
+
+  status DeptStatus @default(not_due_yet)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  partner           Partners?      @relation(fields: [partner_id], references: [id])
+
+  @@map("depts")
+  receipts Receipts[]
+}
+
+model Receipts {
+    id Int @id @default(autoincrement())
+    code String @default(cuid())
+
+    dept_id         Int?
+    order_id        Int?
+
+    dept           Depts?      @relation(fields: [dept_id], references: [id])
+    order          Orders?      @relation(fields: [order_id], references: [id])
+    
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    
+    @@map("receipts")
+}
+
+enum DeptStatus {
+    not_due_yet
+    over_due
+}

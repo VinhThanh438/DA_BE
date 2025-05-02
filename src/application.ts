@@ -8,7 +8,8 @@ import { WorkerServer } from '@worker/server';
 import { SocketServer } from '@socket/server';
 import { AuthEvent } from '@common/events/auth.event';
 import { MailAdapter } from '@common/infrastructure/mail.adapter';
-import { DevicePendingApprovalEvent } from '@common/events/device-pending-approval.event';
+import { DeviceRequetsEvent } from '@common/events/device-request.event';
+import { UserEvent } from '@common/events/user.event';
 
 /**
  * Wrapper around the Node process, ExpressServer abstraction and complex dependencies such as services that ExpressServer needs.
@@ -98,6 +99,7 @@ export class Application {
      */
     private static async registerEvents() {
         AuthEvent.register();
-        DevicePendingApprovalEvent.register();
+        DeviceRequetsEvent.register();
+        UserEvent.register();
     }
 }
