@@ -73,15 +73,15 @@ export class TimeHelper {
     /**
      * Parse input to native Date object
      */
-    public static parseToDate(date?: DateString): Date | undefined {
+    public static parseToDate(date?: string): Date | undefined {
         if (!date) return undefined;
         const parsed = this.parse(date);
         return parsed.isValid() ? parsed.toDate() : undefined;
     }
-    public static parseStartOfDayDate(date: DateString, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
+    public static parseStartOfDayDate(date: string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
         return moment.utc(date).startOf('day').toDate();
     }
-    public static parseEndOfDayDate(date: DateString, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
+    public static parseEndOfDayDate(date: string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
         return moment.utc(date).endOf('day').toDate();
     }
 }

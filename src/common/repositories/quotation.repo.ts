@@ -14,8 +14,12 @@ export const QuotationSelection: Prisma.QuotationsSelect = {
     status: true,
     type: true,
     files: true,
+    quotation_files: true,
+    message: true,
     is_confirmed: true,
     partner_id: true,
+    purchase_request_id: true,
+    rejected_reason: true,
 };
 
 export const QuotationSelectionAll: Prisma.QuotationsSelect = {
@@ -26,7 +30,7 @@ export const QuotationSelectionAll: Prisma.QuotationsSelect = {
     partner: {
         select: PartnerSelection,
     },
-    quotation_details: {
+    details: {
         select: CommonDetailSelectionAll,
     },
 };
@@ -36,4 +40,6 @@ export class QuotationRepo extends BaseRepo<Quotations, Prisma.QuotationsSelect,
     protected defaultSelect = QuotationSelection;
     protected detailSelect = QuotationSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'quotations';
+    protected timeFieldDefault: string = 'time_at';
+    protected searchableFields = ['code'];
 }

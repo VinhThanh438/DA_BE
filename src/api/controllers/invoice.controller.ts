@@ -43,4 +43,16 @@ export class InvoiceController extends BaseController<Invoices> {
             next(error);
         }
     }
+
+    public async updateChildEntity(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const body = req.body as IInvoice
+            const data = await this.service.updateInvoiceEntity(id, body);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.update: `, error);
+            next(error);
+        }
+    }
 }

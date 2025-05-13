@@ -1,7 +1,6 @@
 import { OrderExpenses, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 
 export const OrderExpenseSelection: Prisma.OrderExpensesSelect = {
     id: true,
@@ -25,5 +24,6 @@ export class OrderExpenseRepo extends BaseRepo<OrderExpenses, Prisma.OrderExpens
     protected db = DatabaseAdapter.getInstance().orderExpenses;
     protected defaultSelect = OrderExpenseSelection;
     protected detailSelect = OrderExpenseSelectionAll;
+    protected timeFieldDefault: string = 'time_at';
     protected modelKey: keyof Prisma.TransactionClient = 'orderExpenses';
 }

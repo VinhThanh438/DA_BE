@@ -30,9 +30,9 @@ export const updateUser: schema = {
 export const filterUser: schema = {
     query: wrapSchema(
         Joi.object({
-            page: Joi.number().required().min(1),
-            size: Joi.number().required().min(1),
-            keyword: Joi.string().optional().allow(null, ''),
+            page: Joi.number().optional().min(1).default(1),
+            size: Joi.number().optional().min(1).default(10),
+            // keyword: Joi.string().optional().allow(null, ''),
         }),
     ),
 };

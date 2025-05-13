@@ -18,8 +18,8 @@ model Users {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee                 Employees?        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  permission_group         PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: Cascade)
+  employee                 Employees?        @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  permission_group         PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: SetNull)
   device_requests          DeviceRequests[]  @relation("DeviceRequestUser")
   approved_device_requests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
   tokens                   Tokens[]
@@ -49,7 +49,7 @@ model DeviceRequests {
   device_uid  String
   ip_address  String?
   user_agent  String?
-  status      RequestStatus @default(pending)
+  status      PrsRequestStatus @default(pending)
   approved_id Int?
   created_at  DateTime      @default(now())
   updated_at  DateTime      @updatedAt
@@ -60,7 +60,7 @@ model DeviceRequests {
   @@map("device_requests")
 }
 
-enum RequestStatus {
+enum PrsRequestStatus {
   pending
   approved
   rejected

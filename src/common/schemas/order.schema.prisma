@@ -1,29 +1,40 @@
-enum OrderType {
+enum PrsOrderType {
   purchase // Đơn đặt mua hàng
   production // Đơn hàng sản xuất
+  commercial // Don ban thuong mai
+}
+
+enum PrsOrderStatus {
+  rejected
+  confirmed
+  pending
 }
 
 model Orders {
   id         Int       @id @default(autoincrement())
   code       String    @default(cuid())
-  type       OrderType @default(purchase)
+  type       PrsOrderType @default(purchase)
   address    String?
   phone      String?
   note       String?
-  order_date DateTime @default(now())
+  status     PrsOrderStatus?  @default(pending)
+  rejected_reason String?
+  time_at DateTime @default(now())
   files      Json?     @default("[]")
 
   employee_id     Int?
   partner_id      Int?
   organization_id Int?
+  representative_id Int?
 
   partner      Partners?      @relation(fields: [partner_id], references: [id])
   employee     Employees?     @relation(fields: [employee_id], references: [id])
   organization Organizations? @relation(fields: [organization_id], references: [id])
+  representative Representatives? @relation(fields: [representative_id], references: [id])
 
   created_at             DateTime                @default(now())
   updated_at             DateTime                @updatedAt
-  order_details          CommonDetails[]
+  details          CommonDetails[]
   transaction_warehouses TransactionWarehouses[]
 
   @@map("orders")

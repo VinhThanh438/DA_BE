@@ -1,6 +1,7 @@
 import { wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { IPurchaseRequest, IPurchaseRequestDetail } from '@common/interfaces/purchase-request.interface';
 import { PurchaseRequestStatus } from '@config/app.constant';
+import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
 
 export const create: schema = {
@@ -11,7 +12,8 @@ export const create: schema = {
                 .valid(...Object.values(PurchaseRequestStatus))
                 .optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
-            files: Joi.array().items(Joi.string()).optional().default([]),
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            time_at: Joi.string().isoDate().optional().allow(null),
 
             employee_id: Joi.number().optional(),
             production_id: Joi.number().optional(),
@@ -21,7 +23,8 @@ export const create: schema = {
             details: Joi.array()
                 .items(
                     Joi.object<IPurchaseRequestDetail>({
-                        product_id: Joi.number().required(),
+                        material_id: Joi.number().required(),
+                        unit_id: Joi.number().optional().allow(null, ''),
                         quantity: Joi.number().min(0).required(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
@@ -40,4 +43,30 @@ export const update: schema = {
         }),
     ),
     body: create.body,
+};
+
+export const approve: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
+    body: wrapSchema(
+        Joi.object({
+            status: Joi.string()
+                .valid(...values([PurchaseRequestStatus.REJECTED, PurchaseRequestStatus.CONFIRMED]))
+                .required(),
+        }).when(
+            Joi.object({
+                status: Joi.valid(PurchaseRequestStatus.REJECTED),
+            }).unknown(),
+            {
+                then: Joi.object({
+                    rejected_reason: Joi.string().required(),
+                }),
+                otherwise: Joi.object({
+                }),
+            },
+        ),
+    ),
 };

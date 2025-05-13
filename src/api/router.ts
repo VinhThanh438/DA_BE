@@ -24,8 +24,11 @@ import contractRoutes from '@api/routes/contract.route';
 import invoiceRoutes from '@api/routes/invoice.route';
 import productionRoutes from '@api/routes/production.route';
 import orderRoutes from '@api/routes/order.route';
+import billOfMaterialRoutes from '@api/routes/bill-of-material.route';
 import orderExpenseRoutes from '@api/routes/order-expense.route';
 import inventoryRoutes from '@api/routes/inventory.route';
+import representativeRoutes from '@api/routes/representative.route';
+import excelRouter from '@api/routes/excel.route';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
 
@@ -58,7 +61,10 @@ router.use('/contract', contractRoutes);
 router.use('/invoice', invoiceRoutes);
 router.use('/production', productionRoutes);
 router.use('/order', orderRoutes);
+router.use('/bill-of-material', billOfMaterialRoutes);
 router.use('/order-expense', orderExpenseRoutes);
 router.use('/inventory', inventoryRoutes);
+router.use('/representative', representativeRoutes);
+router.use('/excel', excelRouter);
 
 export default router;

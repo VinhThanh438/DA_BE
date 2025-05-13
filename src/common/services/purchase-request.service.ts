@@ -58,17 +58,18 @@ export class PurchaseRequestService extends BaseService<
                 await this.validateForeignKeys(
                     details,
                     {
-                        product_id: this.productRepo,
+                        material_id: this.productRepo,
                     },
                     tx,
                 );
 
                 const mappedDetails = details.map((item) => {
-                    const { product_id, ...rest } = item;
+                    const { material_id, unit_id, ...rest } = item;
                     return {
                         ...rest,
                         purchase_request: purchaseRequestId ? { connect: { id: purchaseRequestId } } : undefined,
-                        product: product_id ? { connect: { id: product_id } } : undefined,
+                        material: material_id ? { connect: { id: material_id } } : undefined,
+                        unit: unit_id ? { connect: { id: unit_id } } : undefined,
                     };
                 });
 
@@ -113,11 +114,12 @@ export class PurchaseRequestService extends BaseService<
                     );
 
                     const mappedDetails = details.map((item) => {
-                        const { product_id, ...rest } = item;
+                        const { material_id, unit_id, ...rest } = item;
                         return {
                             ...rest,
                             purchase_request: id ? { connect: { id } } : undefined,
-                            product: product_id ? { connect: { id: product_id } } : undefined,
+                            product: material_id ? { connect: { id: material_id } } : undefined,
+                            unit: unit_id ? { connect: { id: unit_id } } : undefined,
                         };
                     });
 

@@ -10,6 +10,7 @@ export interface IProduction {
 
     details: {
         product_id: number;
+        unit_id?: number;
         quantity: number;
         completion_date?: DateString;
         note?: string;

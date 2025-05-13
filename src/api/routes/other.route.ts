@@ -10,8 +10,6 @@ router.post('/uploads', UploadMiddleware.uploadFiles(), CommonController.uploadF
 
 router.get('/code', validateRequest(getCode), CommonController.getCode);
 
-router.get('/get-list-bank', CommonController.getListBank);
-
 router.post('/check-bank-account', CommonController.checkBankAccount);
 
 export default router;

@@ -3,35 +3,42 @@ model Contracts {
 
   code           String    @unique // Số hợp đồng
   tax            String? // Mã số thuế
-  sign_date      DateTime? // Ngày ký
+  time_at      DateTime? // Ngày ký
   contract_date      DateTime? @default(now()) // Ngày hợp đồng
   contract_value Decimal? // giá trị hợp đồng
   delivery_date  DateTime? // Hạn giao hàng
 
+  type           PrsContractType @default(order)
+
   files  Json?          @default("[]")
-  status ContractStatus @default(doing)
+  status PrsContractStatus @default(doing)
 
   order_id       Int? // Đơn hàng
-  partner_id      Int
+  partner_id      Int?
   employee_id     Int? // Người ký
   organization_id Int? // Đơn vị ký
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  order  Orders?   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  partner  Partners?   @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  employee  Employees?   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  organization  Organizations?   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  order  Orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  partner  Partners?   @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee  Employees?   @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization  Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
-  contract_details CommonDetails[]
+  details CommonDetails[]
   invoices         Invoices[]
 
   @@map("contracts")
 }
 
-enum ContractStatus {
+enum PrsContractStatus {
   doing
   completed
   cancelled
+}
+
+ enum PrsContractType {
+  order
+  purchase
 }

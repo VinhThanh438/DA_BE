@@ -12,22 +12,25 @@ export interface IPaginationResponse<T = any> {
     pagination: IPaginationInfo;
 }
 
-export interface IFilterArgs {
+export interface IArrayDataInput {
+    [key: string]: any;
+}
+
+export interface IFilterArgs extends IArrayDataInput {
     id?: number[];
     startAt?: DateString;
     endAt?: DateString;
     keyword?: string;
-    [key: string]: any;
+    timeField?: string;
 }
 
-export interface IPaginationInput {
+export interface IPaginationInput extends IArrayDataInput {
     page?: number;
-    limit?: number;
+    size?: number;
     args?: IFilterArgs;
     startAt?: DateString;
     endAt?: DateString;
     keyword?: string;
-    [key: string]: any;
 }
 
 export interface ICreateAndUpdateResponse {
@@ -52,11 +55,27 @@ export interface IJobSendConfirmEmailData extends SendMailData {
 export type IJobSendPendingEmailData = SendMailData;
 
 export interface ICommonDetails {
+    id?: number;
     product_id: number;
+    unit_id?: number;
     quantity: number;
     discount?: number;
     price: number;
     vat?: number;
+    commission?: number;
     note?: string;
     key?: string;
+
+    order_id?: number;
+    quotation_id?: number;
+    contract_id?: number;
+    invoice_id?: number;
+    inventory_id?: number;
+    warehouse_id?: number;
+}
+
+export interface IUpdateChildAction {
+    add?: any[];
+    update?: any[];
+    delete?: number[];
 }

@@ -1,318 +1,182 @@
-import { wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { ICreateEmployee, IQueryFilterEmployee } from '@common/interfaces/employee.interface';
+import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
+import { IEmployee, IUpdateEmployee } from '@common/interfaces/employee.interface';
 import { Gender } from '@config/app.constant';
-import { AddressType, FinanceType } from '@prisma/client/default';
+import { PrsAddressType, PrsFinanceType } from '@prisma/client';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
+import { ObjectSchema } from 'joi';
+import { queryFilter as baseQueryFilter } from './common.validator';
+
+const EmployeeFinance = {
+    id: Joi.number().optional().min(1),
+    name: Joi.string().optional().allow(null, '').max(100),
+    amount: Joi.number().optional(),
+    note: Joi.string().optional().allow(null, '').max(255),
+    status: Joi.string().optional().allow(null, '').max(50),
+    type: Joi.string()
+        .valid(...Object.values(PrsFinanceType))
+        .optional()
+        .allow(null, ''),
+    key: Joi.string().allow(null, ''),
+};
+
+const EmployeeContract = {
+    id: Joi.number().optional().min(1),
+    code: Joi.string().optional().max(50).allow(null, ''),
+    type: Joi.string().optional().allow(null, '').max(50),
+    salary: Joi.number().optional().allow(null, ''),
+    start_date: Joi.string().isoDate().optional().allow(null),
+    end_date: Joi.string().isoDate().optional().allow(null),
+    is_applied: Joi.boolean().optional().allow(null),
+    key: Joi.string().allow(null, ''),
+    file: Joi.string().optional().allow(null, ''),
+};
+
+const EmployeeBody = {
+    code: Joi.string().optional().allow(null, '').max(50),
+    email: Joi.string().email().optional().allow(null, ''),
+    name: Joi.string().optional().allow(null, '').max(100),
+    gender: Joi.string()
+        .valid(...values(Gender))
+        .optional()
+        .default(Gender.OTHER),
+    marital_status: Joi.string().optional().allow(null, ''),
+    working_status: Joi.string().optional().allow(null, ''),
+    employee_status: Joi.string().optional().allow(null, '').max(100),
+    date_of_birth: Joi.string().isoDate().optional().allow(null),
+    phone: Joi.string().optional().allow(null, '').max(20),
+    tax: Joi.string().optional().allow(null, '').max(50),
+    ethnicity: Joi.string().optional().allow(null, '').max(100),
+    religion: Joi.string().optional().allow(null, '').max(100),
+    attendance_code: Joi.string().optional().allow(null, '').max(50),
+    description: Joi.string().optional().allow(null, '').max(255),
+    bank: Joi.string().optional().allow(null, '').max(255),
+    bank_code: Joi.string().optional().allow(null, '').max(255),
+    bank_branch: Joi.string().optional().allow(null, '').max(255),
+    avatar: Joi.string().optional().allow(null, ''),
+    base_salary: Joi.number().optional().allow(null, ''),
+
+    // Identity
+    identity_code: Joi.string().optional().allow(null, '').max(20),
+    identity_issued_place: Joi.string().optional().allow(null, '').max(100),
+    identity_issued_date: Joi.string().isoDate().optional().allow(null),
+    identity_expired_date: Joi.string().isoDate().optional().allow(null),
+    indentity_files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+
+    // Passport
+    passport_code: Joi.string().optional().allow(null, '').max(20),
+    passport_issued_place: Joi.string().optional().allow(null, '').max(100),
+    passport_issued_date: Joi.string().isoDate().optional().allow(null),
+    passport_expired_date: Joi.string().isoDate().optional().allow(null),
+    passport_files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+
+    organization_id: Joi.number().integer().optional(),
+    job_position_id: Joi.number().integer().optional(),
+
+    trial_date: Joi.string().isoDate().optional().allow(null),
+    official_date: Joi.string().isoDate().optional().allow(null),
+
+    // Education
+    educations: Joi.array()
+        .items(
+            Joi.object({
+                education_level: Joi.string().optional().allow(null, '').max(100),
+                training_level: Joi.string().optional().allow(null, '').max(100),
+                graduated_place: Joi.string().optional().allow(null, '').max(255),
+                faculty: Joi.string().optional().allow(null, '').max(100),
+                major: Joi.string().optional().allow(null, '').max(100),
+                graduation_year: Joi.number().integer().optional().allow(null, ''),
+                key: Joi.string().allow(null, ''),
+                files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            }),
+        )
+        .optional()
+        .allow(null),
+
+    // Finance (EmployeeFinances)
+    employee_finances: Joi.array().items(Joi.object(EmployeeFinance)).optional().allow(null),
+
+    // Address
+    addresses: Joi.array()
+        .items(
+            Joi.object({
+                country: Joi.string().optional().allow(null, '').max(100).default('Việt Nam'),
+                province: Joi.string().optional().allow(null, '').max(100),
+                district: Joi.string().optional().allow(null, '').max(100),
+                ward: Joi.string().optional().allow(null, '').max(100),
+                details: Joi.string().optional().allow(null, '').max(255),
+                type: Joi.string()
+                    .valid(...Object.values(PrsAddressType))
+                    .optional()
+                    .allow(null, ''),
+                key: Joi.string().allow(null, ''),
+            }),
+        )
+        .optional()
+        .allow(null),
+
+    // Emergency Contact
+    emergency_contacts: Joi.array()
+        .items(
+            Joi.object({
+                name: Joi.string().optional().allow(null, '').max(100),
+                email: Joi.string().email().optional().allow(null, ''),
+                relationship: Joi.string().optional().allow(null, '').max(50),
+                address: Joi.string().optional().allow(null, '').max(255),
+                phone: Joi.string().optional().allow(null, '').max(20),
+                key: Joi.string().allow(null, ''),
+            }),
+        )
+        .optional()
+        .allow(null),
+
+    // Employee Contracts
+    employee_contracts: Joi.array().items(Joi.object(EmployeeContract)).optional().allow(null),
+
+    // Insurance
+    insurances: Joi.array()
+        .items(
+            Joi.object({
+                is_participating: Joi.boolean().default(false),
+                rate: Joi.number().optional().allow(null, ''),
+                insurance_number: Joi.string().optional().allow(null, '').max(50),
+                insurance_salary: Joi.number().optional().allow(null, ''),
+                start_date: Joi.string().isoDate().optional().allow(null),
+                key: Joi.string().allow(null, ''),
+            }),
+        )
+        .optional()
+        .allow(null),
+};
 
 export const createEmployee: schema = {
+    body: wrapSchema(Joi.object<IEmployee>(EmployeeBody)),
+};
+
+export const updateEmployee: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
     body: wrapSchema(
-        Joi.object<ICreateEmployee>({
-            code: Joi.string().required().max(50), // Required, generated by cuid() in model
-            email: Joi.string().email().optional().allow(null, ''), // Optional
-            name: Joi.string().optional().allow(null, '').max(100), // Optional
-            gender: Joi.string()
-                .valid(...values(Gender))
-                .optional()
-                .default(Gender.OTHER),
-            marital_status: Joi.string().optional().allow(null, ''), // Optional
-            working_status: Joi.string().optional().allow(null, ''), // Optional
-            employee_status: Joi.string().optional().allow(null, '').max(100), // Optional
-            date_of_birth: Joi.string().isoDate().optional().allow(null), // Optional
-            phone: Joi.string().optional().allow(null, '').max(20), // Optional, added max length
-            tax: Joi.string().optional().allow(null, '').max(50), // Optional, added max length
-            ethnicity: Joi.string().optional().allow(null, '').max(100), // Optional
-            religion: Joi.string().optional().allow(null, '').max(100), // Optional
-            attendance_code: Joi.string().optional().allow(null, '').max(50), // Optional
-            description: Joi.string().optional().allow(null, '').max(255), // Optional
-            avatar: Joi.string().optional().allow(null, ''), // Optional
-            base_salary: Joi.number().optional().allow(null, ''), // Optional
+        Joi.object<IUpdateEmployee>({
+            ...EmployeeBody,
+            employee_finances_add: Joi.array().items(Joi.object(EmployeeFinance)).optional().allow(null),
+            employee_finances_update: Joi.array().items(Joi.object(EmployeeFinance)).optional().allow(null),
+            employee_finances_delete: Joi.array().items(Joi.number()).optional().default([]),
 
-            // Identity
-            identity_code: Joi.string().optional().allow(null, '').max(20), // Optional, added max length
-            identity_issued_place: Joi.string().optional().allow(null, '').max(100), // Optional
-            identity_issued_date: Joi.string().isoDate().optional().allow(null), // Optional
-            identity_expired_date: Joi.string().isoDate().optional().allow(null), // Optional
-            indentity_files: Joi.array().items(Joi.string()).optional().default([]),
-
-            // Passport
-            passport_code: Joi.string().optional().allow(null, '').max(20), // Optional, added max length
-            passport_issued_place: Joi.string().optional().allow(null, '').max(100), // Optional
-            passport_issued_date: Joi.string().isoDate().optional().allow(null), // Optional
-            passport_expired_date: Joi.string().isoDate().optional().allow(null), // Optional
-            passport_files: Joi.array().items(Joi.string()).optional().default([]),
-
-            organization_id: Joi.number().integer().optional(), // Optional
-            job_position_id: Joi.number().integer().optional(), // Optional
-
-            trial_date: Joi.string().isoDate().optional().allow(null), // Optional
-            official_date: Joi.string().isoDate().optional().allow(null), // Optional
-
-            // Education
-            educations: Joi.array()
-                .items(
-                    Joi.object({
-                        education_level: Joi.string().optional().allow(null, '').max(100),
-                        training_level: Joi.string().optional().allow(null, '').max(100),
-                        graduated_place: Joi.string().required().max(255),
-                        faculty: Joi.string().optional().allow(null, '').max(100),
-                        major: Joi.string().optional().allow(null, '').max(100),
-                        graduation_year: Joi.number().integer().optional().min(1900).max(new Date().getFullYear()),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Finance (EmployeeFinances)
-            employee_finances: Joi.array()
-                .items(
-                    Joi.object({
-                        name: Joi.string().optional().allow(null, '').max(100),
-                        amount: Joi.number().optional(),
-                        note: Joi.string().optional().allow(null, '').max(255),
-                        status: Joi.string().optional().allow(null, '').max(50),
-                        type: Joi.string()
-                            .valid(...Object.values(FinanceType))
-                            .optional()
-                            .allow(null, ''),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Address
-            addresses: Joi.array()
-                .items(
-                    Joi.object({
-                        country: Joi.string().optional().allow(null, '').max(100).default('Việt Nam'),
-                        province: Joi.string().optional().allow(null, '').max(100),
-                        district: Joi.string().optional().allow(null, '').max(100),
-                        ward: Joi.string().optional().allow(null, '').max(100),
-                        details: Joi.string().optional().allow(null, '').max(255),
-                        type: Joi.string()
-                            .valid(...Object.values(AddressType))
-                            .optional()
-                            .allow(null, ''),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Emergency Contact
-            emergency_contacts: Joi.array()
-                .items(
-                    Joi.object({
-                        name: Joi.string().optional().allow(null, '').max(100),
-                        email: Joi.string().email().optional().allow(null, ''),
-                        relationship: Joi.string().optional().allow(null, '').max(50),
-                        addresses: Joi.string().optional().allow(null, '').max(255),
-                        phone: Joi.string().optional().allow(null, '').max(20),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Employee Contracts
-            employee_contracts: Joi.array()
-                .items(
-                    Joi.object({
-                        code: Joi.string().required().max(50),
-                        type: Joi.string().optional().allow(null, '').max(50),
-                        salary: Joi.number().optional().allow(null, ''),
-                        start_date: Joi.string().isoDate().optional().allow(null),
-                        end_date: Joi.string().isoDate().optional().allow(null),
-                        is_applied: Joi.boolean().required().default(false),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Insurance
-            insurances: Joi.array()
-                .items(
-                    Joi.object({
-                        is_participating: Joi.boolean().default(false),
-                        rate: Joi.number().optional(),
-                        insurance_number: Joi.string().optional().allow(null, '').max(50),
-                        insurance_salary: Joi.number().optional(),
-                        start_date: Joi.string().isoDate().optional().allow(null),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
+            employee_contracts_add: Joi.array().items(Joi.object(EmployeeContract)).optional().allow(null),
+            employee_contracts_update: Joi.array().items(Joi.object(EmployeeContract)).optional().allow(null),
+            employee_contracts_delete: Joi.array().items(Joi.number()).optional().default([]),
         }),
     ),
 };
 
 export const queryFilter: schema = {
     query: wrapSchema(
-        Joi.object<IQueryFilterEmployee>({
-            isCreateUser: Joi.boolean().optional().default(false),
-            page: Joi.number().optional().allow(null, '').min(1),
-            limit: Joi.number().optional().allow(null, '').min(1),
-            keyword: Joi.string().optional().allow(null, ''),
-        }),
-    ),
-};
-
-export const updateEmployee: schema = {
-    params: wrapSchema(
-        Joi.object({
-            id: Joi.number().required(), // Required for update
-        }),
-    ),
-    body: wrapSchema(
-        Joi.object<ICreateEmployee>({
-            code: Joi.string().optional().max(50), // Optional for update
-            email: Joi.string().email().optional().allow(null, ''), // Optional
-            name: Joi.string().optional().allow(null, '').max(100), // Optional
-            gender: Joi.string()
-                .valid(...Object.values(Gender))
-                .optional()
-                .default(Gender.OTHER), // Optional
-            marital_status: Joi.string().optional().allow(null, ''), // Optional
-            working_status: Joi.string().optional().allow(null, ''), // Optional
-            employee_status: Joi.string().optional().allow(null, '').max(100), // Optional
-            date_of_birth: Joi.string().isoDate().optional().allow(null), // Optional
-            phone: Joi.string().optional().allow(null, '').max(20), // Optional
-            tax: Joi.string().optional().allow(null, '').max(50), // Optional
-            ethnicity: Joi.string().optional().allow(null, '').max(100), // Optional
-            religion: Joi.string().optional().allow(null, '').max(100), // Optional
-            attendance_code: Joi.string().optional().allow(null, '').max(50), // Optional
-            description: Joi.string().optional().allow(null, '').max(255), // Optional
-            avatar: Joi.string().optional().allow(null, ''), // Optional
-            base_salary: Joi.number().optional().allow(null, ''), // Optional
-
-            // Identity
-            identity_code: Joi.string().optional().allow(null, '').max(20), // Optional
-            identity_issued_place: Joi.string().optional().allow(null, '').max(100), // Optional
-            identity_issued_date: Joi.string().isoDate().optional().allow(null), // Optional
-            identity_expired_date: Joi.string().isoDate().optional().allow(null), // Optional
-            indentity_files: Joi.array().items(Joi.string()).optional().default([]),
-
-            // Passport
-            passport_code: Joi.string().optional().allow(null, '').max(20), // Optional
-            passport_issued_place: Joi.string().optional().allow(null, '').max(100), // Optional
-            passport_issued_date: Joi.string().isoDate().optional().allow(null), // Optional
-            passport_expired_date: Joi.string().isoDate().optional().allow(null), // Optional
-            passport_files: Joi.array().items(Joi.string()).optional().default([]),
-
-            organization_id: Joi.number().integer().optional(), // Optional
-            job_position_id: Joi.number().integer().optional(), // Optional
-
-            trial_date: Joi.string().isoDate().optional().allow(null), // Optional
-            official_date: Joi.string().isoDate().optional().allow(null), // Optional
-
-            // Education - array
-            educations: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        education_level: Joi.string().optional().allow(null, '').max(100),
-                        training_level: Joi.string().optional().allow(null, '').max(100),
-                        graduated_place: Joi.string().optional().allow(null, '').max(255),
-                        faculty: Joi.string().optional().allow(null, '').max(100),
-                        major: Joi.string().optional().allow(null, '').max(100),
-                        graduation_year: Joi.number().integer().optional().min(1900).max(new Date().getFullYear()),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Finance - array
-            employee_finances: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        name: Joi.string().optional().allow(null, '').max(100),
-                        amount: Joi.number().optional(),
-                        note: Joi.string().optional().allow(null, '').max(255),
-                        status: Joi.string().optional().allow(null, '').max(50),
-                        type: Joi.string()
-                            .valid(...Object.values(FinanceType))
-                            .optional()
-                            .allow(null, ''),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Address - array
-            addresses: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        country: Joi.string().optional().allow(null, '').max(100),
-                        province: Joi.string().optional().allow(null, '').max(100),
-                        district: Joi.string().optional().allow(null, '').max(100),
-                        ward: Joi.string().optional().allow(null, '').max(100),
-                        details: Joi.string().optional().allow(null, '').max(255),
-                        type: Joi.string()
-                            .valid(...Object.values(AddressType))
-                            .optional()
-                            .allow(null, ''),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Emergency Contact - array
-            emergency_contacts: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        name: Joi.string().optional().allow(null, '').max(100),
-                        email: Joi.string().email().optional().allow(null, ''),
-                        relationship: Joi.string().optional().allow(null, '').max(50),
-                        addresses: Joi.string().optional().allow(null, '').max(255),
-                        phone: Joi.string().optional().allow(null, '').max(20),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Contract - array
-            employee_contracts: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        code: Joi.string().optional().allow(null, '').max(50),
-                        type: Joi.string().optional().allow(null, '').max(50),
-                        salary: Joi.number().optional().allow(null, ''),
-                        start_date: Joi.string().isoDate().optional().allow(null),
-                        end_date: Joi.string().isoDate().optional().allow(null),
-                        status: Joi.string().optional().allow(null, '').max(50),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
-
-            // Insurance - array
-            insurances: Joi.array()
-                .items(
-                    Joi.object({
-                        id: Joi.number().required(),
-                        is_participating: Joi.boolean().optional(),
-                        rate: Joi.number().optional(),
-                        insurance_number: Joi.string().optional().allow(null, '').max(50),
-                        insurance_salary: Joi.number().optional(),
-                        start_date: Joi.string().isoDate().optional().allow(null),
-                        key: Joi.string().allow(null, ''),
-                    }),
-                )
-                .optional()
-                .allow(null),
+        extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
+            isCreateUser: Joi.boolean().optional().allow('').default(false),
         }),
     ),
 };

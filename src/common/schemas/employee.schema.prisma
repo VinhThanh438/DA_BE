@@ -1,4 +1,4 @@
-enum Gender {
+enum PrsGender {
   male
   female
   other
@@ -9,7 +9,7 @@ model Employees {
   code            String    @default(cuid())
   email           String?
   name            String?
-  gender          Gender    @default(other)
+  gender          PrsGender    @default(other)
   age             Int?
   marital_status String? // tinh trang hon nhan
   working_status  String?
@@ -38,6 +38,11 @@ model Employees {
   passport_expired_date DateTime?
   passport_files        Json?     @default("[]")
 
+  // BANK
+  bank_branch String?
+  bank_code   String?
+  bank String?
+
   organization_id Int?
   job_position_id Int?
 
@@ -54,7 +59,7 @@ model Employees {
 
   educations         Educations[]
   employee_finances  EmployeeFinances[]
-  addresses            Address[]
+  addresses            Addresses[]
   emergency_contacts EmergencyContacts[]
   employee_contracts EmployeeContracts[]
   insurances  Insurances[]
@@ -64,26 +69,27 @@ model Employees {
   invoices           Invoices[]
   quotations         Quotations[]
   orders             Orders[]
-  bank_accounts      BankAccounts[]
+  banks              Banks[]
   inventories        Inventories[]
   finance_records    FinanceRecords[]
   transaction_orders TransactionOrders[]
 
-  job_position  JobPositions?   @relation(fields: [job_position_id], references: [id], onDelete: Cascade)
+  job_position  JobPositions?   @relation(fields: [job_position_id], references: [id], onDelete: SetNull)
   organizations Organizations[]
 
   @@map("employees")
   productions Productions[]
   contracts Contracts[]
   purchase_requests PurchaseRequests[]
+  warehouses Warehouses[]
 }
 
-enum AddressType {
+enum PrsAddressType {
   tt // Thường trú
   ht // nơi ở hiện tại 
 }
 
-enum FinanceType {
+enum PrsFinanceType {
   kt
   pc
 }
@@ -99,6 +105,7 @@ model Educations {
   faculty         String? // khoa
   major           String? // chuyen nganh
   graduation_year Int?
+  files       Json?     @default("[]")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -115,7 +122,7 @@ model EmployeeFinances {
   amount Decimal?
   note   String?
   status String?
-  type   FinanceType?
+  type   PrsFinanceType?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -123,7 +130,7 @@ model EmployeeFinances {
   @@map("employee_finances")
 }
 
-model Address {
+model Addresses {
   id          Int       @id @default(autoincrement())
   employee_id Int
   employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
@@ -133,28 +140,30 @@ model Address {
   district String? // quan/huyen
   ward     String? // phuong/xa
   details  String? // dia chi chi tiet
-  type     AddressType?
+  type     PrsAddressType?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("address")
+  @@map("addresses")
 }
 
 model EmployeeContracts {
   id          Int       @id @default(autoincrement())
   employee_id Int
-  employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   code       String
   type       String?
   start_date DateTime?
   end_date   DateTime?
   salary    Decimal?
+  file       String?
   is_applied     Boolean? @default(false) // da ap dung hop dong
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  employee    Employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@map("employee_contracts")
 }
@@ -190,7 +199,7 @@ model EmergencyContacts {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee Employees? @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  employee Employees? @relation(fields: [employee_id], references: [id], onDelete: SetNull)
 
   @@map("emergency_contacts")
 }

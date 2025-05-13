@@ -1,7 +1,7 @@
 import { BaseService } from './base.service';
 import { Orders, Prisma } from '.prisma/client';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
-import { IIdResponse } from '@common/interfaces/common.interface';
+import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { IOrder } from '@common/interfaces/order.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
@@ -14,6 +14,9 @@ import { ContractService } from './contract.service';
 import { InvoiceService } from './invoice.service';
 import { OrderExpenseService } from './order-expense.service';
 import { ProductionService } from './production.service';
+import { InventoryService } from './inventory.service';
+import logger from '@common/logger';
+import { RepresentativeRepo } from '@common/repositories/representative.repo';
 
 export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prisma.OrdersWhereInput> {
     private static instance: OrderService;
@@ -25,6 +28,8 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     private invoiceService: InvoiceService = InvoiceService.getInstance();
     private orderExpenseService: OrderExpenseService = OrderExpenseService.getInstance();
     private productionService: ProductionService = ProductionService.getInstance();
+    private inventoryService: InventoryService = InventoryService.getInstance();
+    private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
 
     private constructor() {
         super(new OrderRepo());
@@ -37,6 +42,16 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         return this.instance;
     }
 
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        try {
+            const data = await this.repo.paginate(query, true);
+            return this.enrichOrderTotals(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.paginate: `, error);
+            throw error;
+        }
+    }
+
     public async create(request: IOrder): Promise<IIdResponse> {
         let orderId = 0;
 
@@ -45,9 +60,10 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         await this.validateForeignKeys(request, {
             partner_id: this.partnerRepo,
             employee_id: this.employeeRepo,
+            representative_id: this.representativeRepo,
         });
 
-        const { details, contracts, invoices, order_expenses, productions, ...orderData } = request;
+        const { details, contracts, invoices, order_expenses, productions, inventories, ...orderData } = request;
 
         await this.db.$transaction(async (tx) => {
             orderId = await this.repo.create(orderData as Partial<Orders>, tx);
@@ -62,11 +78,12 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 );
 
                 const mappedDetails = details.map((item) => {
-                    const { product_id, ...rest } = item;
+                    const { product_id, unit_id, ...rest } = item;
                     return {
                         ...rest,
                         order: orderId ? { connect: { id: orderId } } : undefined,
                         product: product_id ? { connect: { id: product_id } } : undefined,
+                        unit: unit_id ? { connect: { id: unit_id } } : undefined,
                     };
                 });
 
@@ -102,6 +119,15 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         productions.map((ele) => {
                             ele.order_id = orderId;
                             return this.productionService.createProduction(ele, tx);
+                        }),
+                    );
+                }
+
+                if (inventories && inventories.length > 0) {
+                    await Promise.all(
+                        inventories.map((ele) => {
+                            ele.order_id = orderId;
+                            return this.inventoryService.create(ele, tx);
                         }),
                     );
                 }

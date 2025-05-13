@@ -1,6 +1,7 @@
 import { Warehouses, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
+import { EmployeeSelection } from './employee.repo';
 
 export const WarehouseSelection: Prisma.WarehousesSelect = {
     id: true,
@@ -13,6 +14,9 @@ export const WarehouseSelection: Prisma.WarehousesSelect = {
 
 export const WarehouseSelectionAll: Prisma.WarehousesSelect = {
     ...WarehouseSelection,
+    employee: {
+        select: EmployeeSelection
+    }
 };
 
 export class WarehouseRepo extends BaseRepo<Warehouses, Prisma.WarehousesSelect, Prisma.WarehousesWhereInput> {
@@ -20,4 +24,5 @@ export class WarehouseRepo extends BaseRepo<Warehouses, Prisma.WarehousesSelect,
     protected defaultSelect = WarehouseSelection;
     protected detailSelect = WarehouseSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'warehouses';
+    protected searchableFields = ['name', 'code', 'note', 'phone'];
 }

@@ -66,11 +66,12 @@ export class ProductionService extends BaseService<Productions, Prisma.Productio
             );
 
             const mappedDetails = details.map((item) => {
-                const { product_id, ...rest } = item;
+                const { product_id, unit_id, ...rest } = item;
                 return {
                     ...rest,
                     production: productionId ? { connect: { id: productionId } } : undefined,
                     product: product_id ? { connect: { id: product_id } } : undefined,
+                    unit: unit_id ? { connect: { id: unit_id } } : undefined,
                 };
             });
 
@@ -112,11 +113,12 @@ export class ProductionService extends BaseService<Productions, Prisma.Productio
                     );
 
                     const mappedDetails = details.map((item) => {
-                        const { product_id, ...rest } = item;
+                        const { product_id, unit_id, ...rest } = item;
                         return {
                             ...rest,
                             production: id ? { connect: { id } } : undefined,
                             product: product_id ? { connect: { id: product_id } } : undefined,
+                            unit: unit_id ? { connect: { id: unit_id } } : undefined,
                         };
                     });
 

@@ -1,24 +1,34 @@
+// Thu/Chi
 model FinanceRecords {
   id                 Int      @id @default(autoincrement())
   code               String   @default(cuid())
   time_at            DateTime @default(now())
-  description        String?
-  payment_method     String?
+  description        String? // dien giai
+  payment_method     String? // hinh thuc thanh toan
   amount             Decimal?
-  address            String?
-  attached_documents Json?    @default("[]")
+  counterparty_name            String?   // Nguoi nhan tien/nguoi nop tien
+  counterparty_address           String? // dia chi nguoi nhan/nguoi nop
+  type               PrsFinanceRecordType @default(income)
+  attached_documents String? // ching tu kem theo
+  files Json?    @default("[]")
 
   partner_id      Int?
   employee_id     Int? // nhan vien thanh toan
-  organization_id Int?
+
+  organization_id Int? // doi tuong thu chi
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  partner            Partners?           @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  employee           Employees?          @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  organization       Organizations?      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  partner            Partners?           @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee           Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization       Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   transaction_orders TransactionOrders[]
 
   @@map("finance_records")
+}
+
+enum PrsFinanceRecordType {
+  income // thu
+  expense // chi
 }

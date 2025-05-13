@@ -1,7 +1,7 @@
 import { Contracts, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { CommonDetailSelection } from './common-detail.repo';
+import { CommonDetailSelectionAll } from './common-detail.repo';
 import { PartnerSelection } from './partner.repo';
 import { OrganizationSelection } from './organization.repo';
 import { EmployeeSelection } from './employee.repo';
@@ -10,7 +10,7 @@ export const ContractSelection: Prisma.ContractsSelect = {
     id: true,
     code: true,
     tax: true,
-    sign_date: true,
+    time_at: true,
     contract_value: true,
     contract_date: true,
     status: true,
@@ -20,8 +20,8 @@ export const ContractSelection: Prisma.ContractsSelect = {
 
 export const ContractSelectionAll: Prisma.ContractsSelect = {
     ...ContractSelection,
-    contract_details: {
-        select: CommonDetailSelection
+    details: {
+        select: CommonDetailSelectionAll
     },
     partner: {
         select: PartnerSelection
@@ -43,4 +43,5 @@ export class ContractRepo extends BaseRepo<
     protected defaultSelect = ContractSelection;
     protected detailSelect = ContractSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'contracts';
+    protected searchableFields = ['code'];
 }

@@ -1,63 +1,37 @@
 import { PartnerType } from '@config/app.constant';
-import { IPaginationInput } from './common.interface';
-import { ICreateBank } from './bank.interface';
+import { IBank } from './bank.interface';
+import { IArrayDataInput } from './common.interface';
 
-export interface IUpdateOrCreatePartner {
+export interface IRepresentative extends IArrayDataInput {
+    id?: number;
+    phone?: string;
+    salutation?: string;
+    title?: string;
+    email?: string;
+
+    bank_id?: number;
+    partner_id?: number;
+
+    banks?: IBank;
+}
+
+export interface IPartner {
+    id?: number;
     code?: string;
     name: string;
-    phone?: string | null;
-    note?: string | null;
-    tax?: string | null;
+    phone?: string;
+    note?: string;
+    tax?: string;
+    address?: string;
+    representative_position?: string;
+    representative_name?: string;
+    representative_email?: string;
+    representative_phone?: string;
     type?: PartnerType;
-    sale_staff_id?: number | null;
-    partner_group_id?: number | null;
-    emergency_contact_id?: number | null;
-    payment_term?: string | null;
-    representatives: {
-        representative_name?: string;
-        representative_phone?: string;
-        representative_title?: string;
-        representative_email?: string;
-    }[];
-    addresses: {
-        address_type: string;
-        address_name: string;
-    }[];
+
+    employee_id?: number;
+    partner_group_id?: number;
+    clause_id?: number;
+
+    representatives?: IRepresentative[];
 }
-export interface ICreatePartner extends IUpdateOrCreatePartner {
-    type: PartnerType;
-    product_group_id: number | null;
-    clause_id: number | null;
-    bank_accounts: {
-        account_number?: string;
-        name: string;
-        partner_id?: number | null;
-        key?: string;
-    }[];
-}
-export interface IUpdatePartner extends IUpdateOrCreatePartner {
-    bank_accounts: {
-        add: {
-            account_number?: string;
-            name: string;
-            partner_id?: number | null;
-            key?: string;
-        }[];
-        update: {
-            bank_id?: number;
-            account_number?: string;
-            name: string;
-            partner_id?: number | null;
-            key?: string;
-        }[];
-        delete: {
-            id: number;
-            key?: string;
-        }[];
-    };
-}
-export interface IPaginationInputPartner extends IPaginationInput {
-    type?: PartnerType | '';
-    organization_id?: number | null;
-}
-export interface IPaginationInputPartnerGroup extends IPaginationInputPartner {}

@@ -10,6 +10,7 @@ export const EducationSelection: Prisma.EducationsSelect = {
     faculty: true,
     major: true,
     graduation_year: true,
+    files: true
 };
 
 export const EducationSelectionAll: Prisma.EducationsSelect = {

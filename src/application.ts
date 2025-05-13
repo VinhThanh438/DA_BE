@@ -23,22 +23,21 @@ export class Application {
 
     public static async createApplication(): Promise<ExpressServer> {
         await this.databaseInstance.connect();
-        await RedisAdapter.connect();
-        await MailAdapter.connect();
+        // await RedisAdapter.connect();
+        // await MailAdapter.connect();
 
         Application.registerEvents();
 
         const expressServer = new ExpressServer();
         await expressServer.setup(PORT);
 
-        const workerServer = new WorkerServer();
-        await workerServer.setup();
+        // const workerServer = new WorkerServer();
+        // await workerServer.setup();
 
         // const socketServer = new SocketServer();
         // await socketServer.setup(SOCKET_PORT);
 
-        // Application.handleExit(expressServer, workerServer, socketServer);
-        Application.handleExit(expressServer, workerServer);
+        Application.handleExit(expressServer);
 
         return expressServer;
     }
@@ -50,16 +49,17 @@ export class Application {
      * @param workerServer Worker server
      * @param socketServer Socket server
      */
-    // private static handleExit(expressServer: ExpressServer, workerServer: WorkerServer, socketServer: SocketServer) {
-    private static handleExit(expressServer: ExpressServer, workerServer: WorkerServer) {
+    private static handleExit(expressServer: ExpressServer, workerServer?: WorkerServer, socketServer?: SocketServer) {
         const shutdown = async (exitCode: number) => {
             logger.info('Starting graceful shutdown...');
             try {
                 await expressServer.kill();
-                await workerServer.kill();
-                // await socketServer.kill();
-                await RedisAdapter.disconnect();
-                await MailAdapter.disconnect();
+
+                if (workerServer) await workerServer.kill();
+                if (socketServer) await socketServer.kill();
+                
+                // await RedisAdapter.disconnect();
+                // await MailAdapter.disconnect();
                 await this.databaseInstance.disconnect();
                 logger.info('Shutdown complete, bye bye!');
                 process.exit(exitCode);

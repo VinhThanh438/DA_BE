@@ -11,7 +11,6 @@ export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
     device_uid: true,
     username: true,
     email: true,
-    employee_id: true,
 };
 
 export const UserSelection: Prisma.UsersSelect = {
@@ -48,12 +47,12 @@ export class UserRepo extends BaseRepo<Users, Prisma.UsersSelect, Prisma.UsersWh
     }
 
     public async paginate(
-        { page, limit, args }: IPaginationInput,
+        { page, size, args }: IPaginationInput,
         includeRelations: boolean = false,
     ): Promise<IPaginationResponse> {
         const currentPage = page ?? 1;
-        const size = limit ?? 10;
-        const skip = (currentPage - 1) * size;
+        const limit = size ?? 10;
+        const skip = (currentPage - 1) * limit;
         const { keyword, startAt, endAt } = args ?? {};
 
         const conditions: Prisma.UsersWhereInput = {
@@ -89,14 +88,14 @@ export class UserRepo extends BaseRepo<Users, Prisma.UsersSelect, Prisma.UsersWh
             this.db.count({ where: conditions }),
         ]);
 
-        const totalPages = Math.ceil(totalRecords / size);
+        const totalPages = Math.ceil(totalRecords / limit);
 
         return {
             data: data,
             pagination: {
                 totalPages: totalPages,
                 totalRecords: totalRecords,
-                size,
+                size: limit,
                 currentPage: currentPage,
             } as IPaginationInfo,
         };

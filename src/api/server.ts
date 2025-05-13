@@ -71,7 +71,12 @@ export class ExpressServer {
             }),
         );
 
-        const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://api.thepdonganh.itomo.one',
+            'https://thepdonganh.itomo.one',
+            'https://kswrz0sc-3000.asse.devtunnels.ms',
+        ];
 
         server.use(
             cors({

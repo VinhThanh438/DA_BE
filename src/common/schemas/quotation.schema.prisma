@@ -1,11 +1,11 @@
 // Báo giá
-enum QuotationStatus {
+enum PrsQuotationStatus {
   pending
   confirmed
   rejected
 }
 
-enum QuatationType {
+enum PrsQuatationType {
   customer
   supplier
 }
@@ -16,23 +16,31 @@ model Quotations {
   time_at      DateTime? @default(now())
   expired_date DateTime?
   note         String?
-  type         QuatationType @default(supplier) // loại báo giá
+  rejected_reason String?
+  type         PrsQuatationType @default(supplier) // loại báo giá
 
-  status       QuotationStatus @default(pending)
+  status       PrsQuotationStatus @default(pending)
   files        Json?           @default("[]")
+  quotation_files        Json?           @default("[]")
+  message        String?
+  organization_name String?
   is_confirmed Boolean?        @default(false)
 
   employee_id     Int? // nhan vien bao gia
   partner_id      Int? // Khach hang
   organization_id Int?
+  quotation_request_id Int?
+  purchase_request_id Int?
 
-  organization Organizations? @relation(fields: [organization_id], references: [id])
-  employee     Employees?     @relation(fields: [employee_id], references: [id])
-  partner      Partners?      @relation(fields: [partner_id], references: [id])
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  quotation_request QuotationRequests? @relation(fields: [quotation_request_id], references: [id], onDelete: SetNull)
+  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  purchase_request      PurchaseRequests?      @relation(fields: [purchase_request_id], references: [id], onDelete: SetNull)
 
   created_at        DateTime        @default(now())
   updated_at        DateTime        @updatedAt
-  quotation_details CommonDetails[]
+  details CommonDetails[]
 
   @@map("quotations")
 }

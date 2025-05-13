@@ -29,5 +29,6 @@ export class QuotationRequestRepo extends BaseRepo<
     protected db = DatabaseAdapter.getInstance().quotationRequests;
     protected defaultSelect = QuotationRequestSelection;
     protected detailSelect = QuotationRequestSelectionAll;
-    protected modelKey = 'quotationRequests' as const;
+    protected modelKey: keyof Prisma.TransactionClient = 'quotationRequests';
+    protected searchableFields = ['organization_name', 'requester_name', 'note'];
 }

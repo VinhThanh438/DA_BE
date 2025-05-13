@@ -1,8 +1,6 @@
 import { Clauses, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { IPaginationInputClause } from '@common/interfaces/clause.interface';
-import { IPaginationResponse } from '@common/interfaces/common.interface';
 
 export const ClauseSelection: Prisma.ClausesSelect = {
     id: true,
@@ -23,18 +21,4 @@ export class ClauseRepo extends BaseRepo<Clauses, Prisma.ClausesSelect, Prisma.C
     protected defaultSelect = ClauseSelection;
     protected detailSelect = ClauseSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'clauses';
-
-    public async getAll(
-        body: IPaginationInputClause,
-        includeRelations: boolean,
-        organization_id: number | null,
-    ): Promise<IPaginationResponse> {
-        const s_query = organization_id
-            ? {
-                  organization_id: organization_id,
-              }
-            : {};
-
-        return super.paginate(body, includeRelations, s_query);
-    }
 }

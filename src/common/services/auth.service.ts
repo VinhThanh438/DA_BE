@@ -114,7 +114,7 @@ export class AuthService {
     }
 
     public static async getInfo(id: number): Promise<Partial<Users>> {
-        const user = await this.userRepo.findOne({ id });
+        const user = await this.userRepo.findOne({ id }, true);
 
         if (!user) {
             throw new APIError({

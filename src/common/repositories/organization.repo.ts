@@ -9,6 +9,8 @@ export const OrganizationSelection: Prisma.OrganizationsSelect = {
     code: true,
     responsibility: true,
     establishment: true,
+    industry: true,
+    logo: true,
     type: true,
     files: true,
 };
@@ -34,5 +36,6 @@ export class OrganizationRepo extends BaseRepo<
     protected db = DatabaseAdapter.getInstance().organizations;
     protected defaultSelect = OrganizationSelection;
     protected detailSelect = OrganizationSelectionAll;
-    protected modelKey = 'organizations' as const;
+    protected modelKey: keyof Prisma.TransactionClient = 'organizations';
+    protected searchableFields = ['name', 'code'];
 }

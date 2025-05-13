@@ -26,7 +26,7 @@ export class QuotationRequestService extends BaseService<
         return this.instance;
     }
 
-    public async update(id: number, request: IQuotationRequest, userId: number): Promise<IIdResponse> {
+    public async updateRequestQuotation(id: number, request: IQuotationRequest, userId: number): Promise<IIdResponse> {
         const receiver: any = await this.userService.findOne({ id: userId }, true);
         if (!receiver) {
             throw new APIError({
@@ -37,5 +37,10 @@ export class QuotationRequestService extends BaseService<
         request.receiver_name = receiver.employee_id ? receiver.employee?.name : receiver.username;
         const dataId = await this.repo.update({ id }, request);
         return { id: dataId };
+    }
+
+    public async createRequestQuotation(request: Partial<IQuotationRequest>): Promise<IIdResponse> {
+        const id = await this.repo.create(request)
+        return { id };
     }
 }

@@ -1,16 +1,17 @@
-enum InventoryType {
-  purchase_in // nhap kho hang mua
+enum PrsInventoryType {
+  normal_in // nhap kho hang mua
   finished_in // nhap kho thanh pham
   material_in // nhap kho nguyen vat lieu
   normal_out // xuat kho hang ban
   material_out // xuat kho nguyen vat lieu
+  finished_out //xuat kho thanh pham
 }
 
 model Inventories {
   id            Int           @id @default(autoincrement())
   time_at       DateTime      @default(now())
   code          String        @unique
-  type          InventoryType
+  type          PrsInventoryType @default(normal_in)
   note          String? 
   files         Json?         @default("[]")
   license_plate String? 
@@ -21,39 +22,19 @@ model Inventories {
   delivery_id     Int?
   organization_id Int? 
   order_id        Int?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization          Organizations?          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  employee              Employees?              @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  inventory_details      InventoryDetails[]
+  details CommonDetails[]
   transaction_warehouses TransactionWarehouses[]
-  order   Orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  supplier Partners? @relation("Supplier", fields: [supplier_id], references: [id], onDelete: Cascade)
-  customer Partners? @relation("Customer", fields: [customer_id], references: [id], onDelete: Cascade)
-  delivery Partners? @relation("Delivery", fields: [delivery_id], references: [id], onDelete: Cascade)
 
+  organization          Organizations?          @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  employee              Employees?              @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  order   Orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  supplier Partners? @relation("Supplier", fields: [supplier_id], references: [id], onDelete: SetNull)
+  customer Partners? @relation("Customer", fields: [customer_id], references: [id], onDelete: SetNull)
+  delivery Partners? @relation("Delivery", fields: [delivery_id], references: [id], onDelete: SetNull)
 
   @@map("inventories")
-}
-
-model InventoryDetails {
-  id       Int      @id @default(autoincrement())
-  quantity Int? // Số lượng
-  price    Decimal? // Đơn giá
-  discount Int? // Giảm giá (%)
-  note     String?
-   
-  product_id      Int
-  inventory_id    Int
-  warehouse_id    Int?
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
-  @@map("inventory_details")
-  organizations Organizations[]
 }

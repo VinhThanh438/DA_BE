@@ -1,7 +1,6 @@
-import { IPaginationInput } from "./common.interface";
 import { Gender } from "@config/app.constant";
 
-export interface ICreateEmployee {
+export interface IEmployee {
     code?: string;
     name?: string | null;
     avatar?: string | null;
@@ -13,6 +12,9 @@ export interface ICreateEmployee {
     tax?: string | null;
     description?: string | null;
     base_salary?: any;
+    bank?: string;
+    bank_code?: string;
+    bank_branch?: string;
 
     phone?: string;
     email?: string;
@@ -40,17 +42,17 @@ export interface ICreateEmployee {
     trial_date?: Date;
     official_date?: Date;
 
-    job_position?: ICreateJobPosition[];
+    job_position?: IJobPosition[];
 
-    educations?: ICreateEducation[];
-    employee_finances?: ICreateFinance[];
-    addresses?: ICreateAddress[];
-    emergency_contacts?: ICreateEmergencyContact[];
-    employee_contracts?: ICreateEmployeeContract[];
-    insurances?: ICreateInsurance[];
+    educations?: IEducation[];
+    employee_finances?: IEmployeeFinance[];
+    addresses?: IAddress[];
+    emergency_contacts?: IEmergencyContact[];
+    employee_contracts?: IEmployeeContract[];
+    insurances?: IInsurance[];
 }
 
-export interface ICreateEducation {
+export interface IEducation {
     id: number;
     education_level: string;
     training_level?: string;
@@ -60,7 +62,7 @@ export interface ICreateEducation {
     graduation_year?: number;
 }
 
-export interface ICreateJobPosition {
+export interface IJobPosition {
     id: number;
     organization_id?: number;
     position_id?: number;
@@ -72,7 +74,7 @@ export interface ICreateJobPosition {
 
 export type FinanceType = 'kt' | 'pc';
 
-export interface ICreateFinance {
+export interface IEmployeeFinance {
     id: number;
     name: string;
     amount: number;
@@ -83,7 +85,7 @@ export interface ICreateFinance {
 
 export type IdentityType = 'cccd' | 'hc';
 
-export interface ICreateIdentity {
+export interface IIdentity {
     id: number;
     code: string;
     issued_place?: string;
@@ -94,7 +96,7 @@ export interface ICreateIdentity {
 
 export type AddressType = 'tt' | 'ht';
 
-export interface ICreateAddress {
+export interface IAddress {
     id: number;
     country?: string;
     province?: string;
@@ -104,16 +106,17 @@ export interface ICreateAddress {
     type?: AddressType;
 }
 
-export interface ICreateEmployeeContract {
+export interface IEmployeeContract {
     id: number;
     code: string;
     type?: string;
     start_date?: Date;
     end_date?: Date;
     status?: string;
+    file?: string;
 }
 
-export interface ICreateInsurance {
+export interface IInsurance {
     id: number;
     is_participating?: boolean;
     percent?: number;
@@ -122,7 +125,7 @@ export interface ICreateInsurance {
     start_date?: Date;
 }
 
-export interface ICreateEmergencyContact {
+export interface IEmergencyContact {
     id: number;
     name: string;
     relationship: string;
@@ -130,6 +133,12 @@ export interface ICreateEmergencyContact {
     address?: string;
 }
 
-export interface IQueryFilterEmployee extends IPaginationInput {
-    isCreateUser?: boolean;
+export interface IUpdateEmployee extends IEmployee {
+    employee_finances_add: IEmployeeFinance[];
+    employee_finances_update: IEmployeeFinance[];
+    employee_finances_delete: number[];
+
+    employee_contracts_delete: number[];
+    employee_contracts_update: IEmployeeContract[];
+    employee_contracts_add: IEmployeeContract[];
 }

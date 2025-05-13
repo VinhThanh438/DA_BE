@@ -5,13 +5,17 @@ import { OrganizationType } from '@config/app.constant';
 import { ICreateOrganization } from '@common/interfaces/company.interface';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
+import { IEmployee } from '@common/interfaces/employee.interface';
 
 interface IHierarchyModel {
     id: number;
     type: string;
+    code?: string;
+    industry?: string;
+    logo?: string;
     name: string;
-    leader: string | null;
-    sub_organizations: any[];
+    leader?: IEmployee | null;
+    children: any[];
 }
 
 export class OrganizationService extends BaseService<
@@ -54,8 +58,11 @@ export class OrganizationService extends BaseService<
             id: organization.id,
             type: organization.type!,
             name: organization.name || '',
-            leader: organization.leader?.name || null,
-            sub_organizations: [],
+            logo: organization.logo || '',
+            code: organization.code || '',
+            industry: organization.industry || '',
+            leader: organization.leader as IEmployee || null,
+            children: [],
         };
 
         const subOrgs = await this.repo.findMany({ parent_id: organization.id }, true);
@@ -64,14 +71,14 @@ export class OrganizationService extends BaseService<
 
         for (const subOrg of subOrgs) {
             const subHierarchy = await this.getHierarchyModel(subOrg.id);
-            if (subHierarchy) result.sub_organizations.push(subHierarchy);
+            if (subHierarchy) result.children.push(subHierarchy);
         }
 
         return result;
     }
 
-    public async create(request: Partial<ICreateOrganization>): Promise<IIdResponse> {
-        await this.isExist({ name: request.name, code: request.code })
+    public async createOrganization(request: Partial<ICreateOrganization>): Promise<IIdResponse> {
+        await this.isExist({ code: request.code })
 
         await this.validateForeignKeys(request, {
             leader_id: this.employeeRepo,
@@ -83,7 +90,7 @@ export class OrganizationService extends BaseService<
         return { id }
     }
 
-    public async update(id: number, request: Partial<ICreateOrganization>): Promise<IIdResponse> {
+    public async updateOrganization(id: number, request: Partial<ICreateOrganization>): Promise<IIdResponse> {
         await this.findById(id);
 
         await this.isExist({ name: request.name, code: request.code, id }, true);

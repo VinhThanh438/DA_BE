@@ -1,8 +1,8 @@
-import { Address, Prisma } from '.prisma/client';
+import { Addresses, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
 
-export const AddressSelection: Prisma.AddressSelect = {
+export const AddressesSelection: Prisma.AddressesSelect = {
     id: true,
     country: true,
     province: true,
@@ -12,13 +12,13 @@ export const AddressSelection: Prisma.AddressSelect = {
     type: true
 };
 
-export const AddressSelectionAll: Prisma.AddressSelect = {
-    ...AddressSelection,
+export const AddressesSelectionAll: Prisma.AddressesSelect = {
+    ...AddressesSelection,
 };
 
-export class AddressRepo extends BaseRepo<Address, Prisma.AddressSelect, Prisma.AddressWhereInput> {
-    protected db = DatabaseAdapter.getInstance().address;
-    protected defaultSelect = AddressSelection;
-    protected detailSelect = AddressSelectionAll;
-    protected modelKey = 'address' as const;
+export class AddressesRepo extends BaseRepo<Addresses, Prisma.AddressesSelect, Prisma.AddressesWhereInput> {
+    protected db = DatabaseAdapter.getInstance().addresses;
+    protected defaultSelect = AddressesSelection;
+    protected detailSelect = AddressesSelectionAll;
+    protected modelKey = 'addresses' as const;
 }

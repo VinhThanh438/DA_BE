@@ -26,7 +26,7 @@ export class QuotationRequestController extends BaseController<QuotationRequests
             const request = req.body as IQuotationRequest;
             const id = Number(req.params.id);
             const userId = req.user.id;
-            const result = await this.service.update(id, request, userId);
+            const result = await this.service.updateRequestQuotation(id, request, userId);
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);

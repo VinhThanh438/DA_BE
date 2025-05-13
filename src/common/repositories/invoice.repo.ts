@@ -1,8 +1,8 @@
 import { Invoices, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { CommonDetailSelection } from './common-detail.repo';
-import { BankAccountSelection } from './bank.repo';
+import { CommonDetailSelectionAll } from './common-detail.repo';
+import { BankSelection } from './bank.repo';
 import { ContractSelection } from './contract.repo';
 import { EmployeeShortSelection } from './employee.repo';
 import { PartnerSelection } from './partner.repo';
@@ -11,18 +11,18 @@ export const InvoiceSelection: Prisma.InvoicesSelect = {
     id: true,
     code: true,
     payment_method: true,
-    invoice_date: true,
+    time_at: true,
     status: true,
     files: true,
 };
 
 export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
     ...InvoiceSelection,
-    invoice_details: {
-        select: CommonDetailSelection
+    details: {
+        select: CommonDetailSelectionAll
     },
-    bank_account: {
-        select: BankAccountSelection
+    bank: {
+        select: BankSelection
     },
     contract: {
         select: ContractSelection
@@ -40,4 +40,6 @@ export class InvoiceRepo extends BaseRepo<Invoices, Prisma.InvoicesSelect, Prism
     protected defaultSelect = InvoiceSelection;
     protected detailSelect = InvoiceSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'invoices';
+    protected timeFieldDefault: string = 'time_at';
+    protected searchableFields = ['code'];
 }

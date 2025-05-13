@@ -5,9 +5,9 @@ import { Joi, schema } from 'express-validation';
 export const create: schema = {
     body: wrapSchema(
         Joi.object<IProduction>({
-            code: Joi.string().required().max(100),
+            code: Joi.string().optional().allow(null, '').max(100),
             time_at: Joi.string().isoDate().optional().allow(null),
-            files: Joi.array().items(Joi.string()).optional().default([]),
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
 
             organization_id: Joi.number().optional(),
             order_id: Joi.number().optional(),
@@ -38,9 +38,9 @@ export const update: schema = {
     ),
     body: wrapSchema(
         Joi.object<IProduction>({
-            code: Joi.string().required().max(100),
+            code: Joi.string().optional().allow(null, '').max(100),
             time_at: Joi.string().isoDate().optional().allow(null),
-            files: Joi.array().items(Joi.string()).optional().default([]),
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
 
             organization_id: Joi.number().optional(),
             order_id: Joi.number().optional(),

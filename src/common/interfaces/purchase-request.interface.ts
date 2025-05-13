@@ -1,4 +1,4 @@
-import { PurchaseRequestStatus } from "@config/app.constant";
+import { PurchaseRequestStatus } from '@config/app.constant';
 
 export interface IPurchaseRequest {
     id: number;
@@ -6,6 +6,8 @@ export interface IPurchaseRequest {
     status?: PurchaseRequestStatus;
     files?: string[];
     note?: string;
+    rejected_reason?: string;
+    time_at?: string;
 
     employee_id?: number;
     production_id?: number;
@@ -22,7 +24,13 @@ export interface IPurchaseRequestDetail {
     key?: string;
 
     purchase_request_id: number;
-    product_id?: number;
+    material_id?: number;
+    unit_id?: number;
 
     purchase_request?: IPurchaseRequest;
+}
+
+export interface IApproveRequest {
+    status: PurchaseRequestStatus;
+    rejected_reason?: string;
 }

@@ -1,7 +1,8 @@
+import { TimeHelper } from '@common/helpers/time.helper';
 import { transformDecimal } from '@common/helpers/transform.util';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { IPaginationInfo, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
-import { Prisma } from '@prisma/client/default';
+import { Prisma } from '@prisma/client';
 
 /**
  * Note:
@@ -15,6 +16,8 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     protected abstract defaultSelect: S; // Default fields to select (e.g., SomethingSelection)
     protected abstract detailSelect: S; // Default fields to select (e.g., SomethingSelection)
     protected abstract modelKey: keyof Prisma.TransactionClient;
+    protected searchableFields: string[] = [];
+    protected timeFieldDefault: string = 'created_at';
     private dbAdapter = DatabaseAdapter.getInstance();
 
     protected getModel(tx?: Prisma.TransactionClient): any {
@@ -22,33 +25,50 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     }
 
     public async paginate(
-        { page, limit, ...args }: Partial<IPaginationInput>,
+        { page, size, keyword, startAt, endAt, ...args }: Partial<IPaginationInput>,
         includeRelations: boolean = false,
         query: object = {},
     ): Promise<IPaginationResponse> {
-        const currentPage = page ? Number(page) : 1;
-        const size = limit ? Number(limit) : 10;
-        const skip = (currentPage - 1) * size;
+        const currentPage: number = page ? Number(page) : 1;
+        const limit: number = size ? Number(size) : 10;
+        const skip = (currentPage - 1) * limit;
+
+        const where: any = {
+            ...query,
+            ...args,
+        };
+
+        if (startAt || endAt) {
+            where[this.timeFieldDefault] = {};
+            if (startAt) where[this.timeFieldDefault].gte = TimeHelper.parseStartOfDayDate(startAt);
+            if (endAt) where[this.timeFieldDefault].lte = TimeHelper.parseEndOfDayDate(endAt);
+        }
+
+        if (keyword && this.searchableFields.length) {
+            where.OR = this.searchableFields.map((field) => ({
+                [field]: { contains: keyword, mode: 'insensitive' },
+            }));
+        }
 
         const [data, totalRecords] = await Promise.all([
             this.db.findMany({
-                where: { ...query, ...(args && args) },
+                where: { ...where, ...(args && args) },
                 select: includeRelations ? this.detailSelect : this.defaultSelect,
                 skip,
-                take: size,
+                take: limit,
                 orderBy: { id: 'desc' },
             }),
             this.db.count({ where: { ...query, ...(args && args) } }),
         ]);
 
-        const totalPages = Math.ceil(totalRecords / size);
+        const totalPages = Math.ceil(totalRecords / limit);
 
         return {
             data: transformDecimal(data),
             pagination: {
                 totalPages: totalPages,
                 totalRecords: totalRecords,
-                size,
+                size: limit,
                 currentPage: currentPage,
             } as IPaginationInfo,
         };
@@ -115,6 +135,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
 
     public async createMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<number> {
         let count = 0;
+
         const db = this.getModel(tx);
         const run = async () => {
             for (const item of bodies) {
@@ -173,11 +194,11 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         return data?.id;
     }
 
-    public async deleteMany(where: W = {} as W, tx?: Prisma.TransactionClient): Promise<number> {
+    public async deleteMany(where: W = {} as W, tx?: Prisma.TransactionClient, needSanitized = true): Promise<number> {
         const sanitizedWhere = this.sanitizeJsonFilters(where);
         const db = this.getModel(tx);
         const data = await db.deleteMany({
-            where: sanitizedWhere,
+            where: needSanitized ? sanitizedWhere : where,
         });
         return data?.id;
     }

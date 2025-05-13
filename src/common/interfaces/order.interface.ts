@@ -1,9 +1,10 @@
-import { OrderType } from '@config/app.constant';
+import { OrderStatus, OrderType } from '@config/app.constant';
 import { IOrderExpense } from './order-expense.interface';
 import { IProduction } from './production.interface';
 import { IContract } from './contract.interface';
 import { IInvoice } from './invoice.interface';
 import { ICommonDetails } from './common.interface';
+import { IInventory } from './inventory.interface';
 
 export interface IOrder {
     id?: number;
@@ -12,16 +13,24 @@ export interface IOrder {
     address?: string;
     phone?: string;
     note?: string;
-    order_date?: Date;
+    time_at?: Date;
     files?: string[];
 
     employee_id?: number;
     partner_id?: number;
+    representative_id?: number;
     organization_id?: number;
 
-    details?: ICommonDetails[]
+    details?: ICommonDetails[];
     order_expenses?: IOrderExpense[];
     productions?: IProduction[];
     contracts?: IContract[];
     invoices?: IInvoice[];
+    inventories: IInventory[];
+}
+
+export interface IApproveRequest {
+    status: OrderStatus;
+    type: OrderType;
+    rejected_reason?: string;
 }

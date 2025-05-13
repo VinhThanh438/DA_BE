@@ -4,6 +4,7 @@ import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 export const ProductGroupSelection: Prisma.ProductGroupsSelect = {
     id: true,
     name: true,
+    type: true
 };
 export const ProductGroupSelectionAll: Prisma.ProductGroupsSelect = {
     ...ProductGroupSelection,
@@ -17,5 +18,5 @@ export class ProductGroupRepo extends BaseRepo<
     protected db = DatabaseAdapter.getInstance().productGroups;
     protected defaultSelect = ProductGroupSelection;
     protected detailSelect = ProductGroupSelectionAll;
-    protected modelKey = 'productGroups' as const;
+    protected modelKey: keyof Prisma.TransactionClient = 'productGroups';
 }

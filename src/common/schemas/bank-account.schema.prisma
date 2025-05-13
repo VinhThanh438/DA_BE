@@ -1,18 +1,22 @@
-model BankAccounts {
+model Banks {
   id             Int     @id @default(autoincrement())
-  employee_id    Int?
-  partner_id     Int?
   bank           String
-  responsibility String? @unique
-  account_number String? @unique
+  responsibility String?
+  account_number String?
   name           String?
   branch         String?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  partner           Partners?           @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+
+  employee_id    Int?
+  representative_id    Int?
+
+  employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  representative    Representatives?    @relation(fields: [representative_id], references: [id], onDelete: SetNull)
+
   invoices           Invoices[]
   transaction_orders TransactionOrders[]
 
-  @@map("bank_accounts")
+  @@map("banks")
 }

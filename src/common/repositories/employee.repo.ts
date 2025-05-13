@@ -2,11 +2,11 @@ import { Employees, Prisma } from '.prisma/client';
 import { IPaginationInfo, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { mapNestedInput } from '@common/helpers/nested-input.helper';
-import { ICreateEmployee } from '@common/interfaces/employee.interface';
+import { IEmployee } from '@common/interfaces/employee.interface';
 import { BaseRepo } from './base.repo';
 import { EducationSelectionAll } from './education.repo';
 import { EmployeeFinanceSelectionAll } from './employee-finance.repo';
-import { AddressSelectionAll } from './address.repo';
+import { AddressesSelectionAll } from './address.repo';
 import { EmergencyContactSelectionAll } from './emergency-contact.repo';
 import { EmployeeContractSelectionAll } from './employee-contract.repo';
 import { InsuranceSelectionAll } from './insurance.repo';
@@ -35,6 +35,10 @@ export const EmployeeSelection: Prisma.EmployeesSelect = {
     attendance_code: true,
     description: true,
     avatar: true,
+    base_salary: true,
+    bank: true,
+    bank_branch: true,
+    bank_code: true,
     job_position: {
         select: JobPositionSelectionAll,
     },
@@ -55,6 +59,7 @@ export const EmployeeSelectionAll: Prisma.EmployeesSelect = {
     passport_files: true,
     trial_date: true,
     official_date: true,
+
     educations: {
         select: EducationSelectionAll,
     },
@@ -62,7 +67,7 @@ export const EmployeeSelectionAll: Prisma.EmployeesSelect = {
         select: EmployeeFinanceSelectionAll,
     },
     addresses: {
-        select: AddressSelectionAll,
+        select: AddressesSelectionAll,
     },
     emergency_contacts: {
         select: EmergencyContactSelectionAll,
@@ -86,7 +91,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
     protected detailSelect = EmployeeSelectionAll;
     protected modelKey = 'employees' as const;
 
-    private SEARCHABLE_FIELDS: (keyof Prisma.EmployeesWhereInput)[] = ['code', 'email', 'description'];
+    private SEARCHABLE_FIELDS: (keyof Prisma.EmployeesWhereInput)[] = ['code', 'email', 'name'];
 
     private buildSearchCondition(keyword?: string): Prisma.EmployeesWhereInput | undefined {
         if (!keyword) return undefined;
@@ -99,12 +104,12 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
     }
 
     public async paginate(
-        { page, limit, args, isCreateUser }: IPaginationInput,
+        { page, size, isCreateUser, ...args }: IPaginationInput,
         includeRelations: boolean = false,
     ): Promise<IPaginationResponse> {
         const currentPage = page ?? 1;
-        const size = limit ?? 10;
-        const skip = (currentPage - 1) * size;
+        const limit = size ?? 10;
+        const skip = (currentPage - 1) * limit;
         const { keyword, startAt, endAt } = args ?? {};
 
         const conditions: Prisma.EmployeesWhereInput = {
@@ -134,20 +139,25 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
                 where: conditions,
                 select: getSelection(includeRelations),
                 skip,
-                take: size,
+                take: limit,
                 orderBy: { id: 'desc' },
             }),
             this.db.count({ where: conditions }),
         ]);
 
-        const totalPages = Math.ceil(totalRecords / size);
+        const totalPages = Math.ceil(totalRecords / limit);
 
+        data.forEach((item) => {
+            if (item.employee_finances) {
+                item.employee_finances = transformDecimal(item.employee_finances);
+            }
+        });
         return {
-            data: transformDecimal(data),
+            data,
             pagination: {
                 totalPages: totalPages,
                 totalRecords: totalRecords,
-                size,
+                size: limit,
                 currentPage: currentPage,
             } as IPaginationInfo,
         };
@@ -157,32 +167,30 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
         where: Prisma.EmployeesWhereInput = {},
         includeRelations: boolean = false,
     ): Promise<Employees[]> {
-        const data = await this.db.findMany({
+        return this.db.findMany({
             where: {
                 ...where,
                 is_deleted: false,
             },
             select: getSelection(includeRelations),
         });
-        return transformDecimal(data)
     }
 
     public async findOne(
         where: Prisma.EmployeesWhereInput = {},
         includeRelations: boolean = false,
     ): Promise<Partial<Employees> | null> {
-        const data = await this.db.findFirst({
+        return this.db.findFirst({
             where: {
                 ...where,
                 is_deleted: false,
             },
             select: getSelection(includeRelations),
         });
-        return transformDecimal(data)
     }
 
     public async isExist(where: Prisma.EmployeesWhereInput = {}): Promise<Partial<Employees> | null> {
-        const data = await this.db.findFirst({
+        return this.db.findFirst({
             where: {
                 ...where,
                 is_deleted: false,
@@ -191,10 +199,9 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
                 id: true,
             },
         });
-        return transformDecimal(data)
     }
 
-    public async create(data: ICreateEmployee): Promise<number> {
+    public async create(data: IEmployee): Promise<number> {
         const {
             job_position_id,
             educations,
@@ -209,11 +216,11 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
         const result = await this.db.create({
             data: {
                 ...rest,
-                ...(job_position_id && {
+                ...((job_position_id && {
                     job_position: {
                         connect: { id: job_position_id },
                     },
-                }) as any,
+                }) as any),
                 educations: mapNestedInput(educations),
                 employee_finances: mapNestedInput(employee_finances),
                 addresses: mapNestedInput(addresses),

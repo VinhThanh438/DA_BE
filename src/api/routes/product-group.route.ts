@@ -11,7 +11,7 @@ router.get('/',validateRequest(queryFilter), controller.getAll.bind(controller))
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post('/', controller.create.bind(controller));
+router.post('/', validateRequest(createProductGroup), controller.create.bind(controller));
 
 router.put('/:id', validateRequest(updateProductGroup), controller.update.bind(controller));
 

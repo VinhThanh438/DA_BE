@@ -9,7 +9,8 @@ export const EmployeeContractSelection: Prisma.EmployeeContractsSelect = {
     salary: true,
     start_date: true,
     end_date: true,
-    is_applied: true
+    is_applied: true,
+    file: true,
 };
 
 export const EmployeeContractSelectionAll: Prisma.EmployeeContractsSelect = {

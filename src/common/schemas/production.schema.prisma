@@ -10,16 +10,16 @@ model Productions {
   partner_id      Int? // Doi tac
   employee_id     Int? // Nhan vien ban hang
 
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
 
   created_at         DateTime            @default(now())
   updated_at         DateTime            @updatedAt
 
   @@map("productions")
-  production_details ProductionDetails[]
+  details ProductionDetails[]
   purchase_requests PurchaseRequests[]
 }
 
@@ -31,9 +31,11 @@ model ProductionDetails {
 
   production_id Int?
   product_id    Int?
+  unit_id       Int?
 
-  product    Products?    @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  production Productions? @relation(fields: [production_id], references: [id], onDelete: Cascade)
+  product    Products?    @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  unit    Units?    @relation(fields: [unit_id], references: [id], onDelete: SetNull)
+  production Productions? @relation(fields: [production_id], references: [id], onDelete: SetNull)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

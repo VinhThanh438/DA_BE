@@ -1,9 +1,9 @@
 model Invoices {
   id             Int           @id @default(autoincrement())
   code           String        @unique
-  status         InvoiceStatus @default(draft)
+  status         PrsInvoiceStatus @default(draft)
   payment_method String?
-  invoice_date   DateTime?
+  time_at   DateTime?
   files          Json?         @default("[]")
   bank_id         Int? // Tài khoản ngân hàng
   employee_id     Int? // Nhân viên bán hàng
@@ -15,19 +15,19 @@ model Invoices {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  bank_account    BankAccounts?   @relation(fields: [bank_id], references: [id], onDelete: Cascade)
-  contract        Contracts?      @relation(fields: [contract_id], references: [id], onDelete: Cascade)
-  employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  order    Orders?  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  bank    Banks?   @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  contract        Contracts?      @relation(fields: [contract_id], references: [id], onDelete: SetNull)
+  employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  order    Orders?  @relation(fields: [order_id], references: [id], onDelete: SetNull)
 
-  invoice_details CommonDetails[]
+  details CommonDetails[]
 
   @@map("invoices")
 }
 
-enum InvoiceStatus {
+enum PrsInvoiceStatus {
   draft
   released
 }

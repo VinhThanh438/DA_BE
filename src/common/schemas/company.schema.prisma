@@ -1,7 +1,8 @@
-enum OrganizationType {
+enum PrsOrganizationType {
   headquarter
   company
   department
+  branch
 }
 
 model Organizations {
@@ -9,10 +10,12 @@ model Organizations {
   code           String? @default(cuid())
   name           String
   responsibility String?
+  industry       String?
+  logo           String?
   files          Json?   @default("[]")
   establishment  String?
 
-  type      OrganizationType @default(company)
+  type      PrsOrganizationType @default(company)
   parent_id Int?
   leader_id Int?
 
@@ -31,9 +34,7 @@ model Organizations {
   orders                 Orders[]
   invoices               Invoices[]
   inventories            Inventories[]
-  inventory_details      InventoryDetails[]
   productions            Productions[]
-  material_standards     MaterialStandards[]
   material_budgets       MaterialBudgets[]
   finance_records        FinanceRecords[]
   transaction_orders     TransactionOrders[]
@@ -69,7 +70,7 @@ model JobPositions {
   updated_at DateTime @updatedAt
 
   organization Organizations? @relation(fields: [organization_id], references: [id])
-  position     Positions?    @relation(fields: [position_id], references: [id], onDelete: Cascade)
+  position     Positions?    @relation(fields: [position_id], references: [id], onDelete: SetNull)
   employees    Employees[]
 
   @@map("job_positions")

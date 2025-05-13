@@ -8,19 +8,19 @@ model OrderExpenses {
   transaction_person String?
   address        String?
   attached_documents String?
-  type    OrderExpenseType
+  type    PrsOrderExpenseType
   files Json?    @default("[]")
 
   organization_id      Int?
   order_id             Int?
 
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  order Orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  order Orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
 
   @@map("order_expenses")
 }
 
-enum OrderExpenseType {
+enum PrsOrderExpenseType {
   order_income
   order_expense
   income

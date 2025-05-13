@@ -1,104 +1,67 @@
-import { wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { Inventory } from '@common/interfaces/inventory.interface';
-import { schema } from 'express-validation/lib';
-import Joi from 'joi';
+import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
+import { IInventory } from '@common/interfaces/inventory.interface';
+import { values } from 'lodash';
+import { schema } from 'express-validation';
+import Joi, { ObjectSchema } from 'joi';
+import { InventoryType } from '@config/app.constant';
+import { ICommonDetails } from '@common/interfaces/common.interface';
+import { queryFilter as baseQueryFilter } from './common.validator';
 
-export const createInventory: schema = {
+export const create: schema = {
     body: wrapSchema(
-        Joi.object<Inventory>({
-            code: Joi.string().required(),
-            organization_id: Joi.number().required(),
-            customer_id: Joi.number().when('type', {
-                is: Joi.valid('purchase_in', 'normal_out'),
-                then: Joi.required(),
-                otherwise: Joi.optional(),
-            }),
-            delivery_id: Joi.number().when('type', {
-                is: Joi.valid('purchase_in', 'normal_out'),
-                then: Joi.required(),
-                otherwise: Joi.optional(),
-            }),
-            order_id: Joi.number().optional(),
-            supplier_id: Joi.number().when('type', {
-                is: Joi.valid('purchase_in', 'normal_out'),
-                then: Joi.required(),
-                otherwise: Joi.optional(),
-            }),
-            type: Joi.string().required(),
-            employee_id: Joi.number().required(),
-            time_at: Joi.string().optional(),
-            note: Joi.string().max(500).allow('', null),
-            license_plate: Joi.string().max(20).allow('', null),
-            files: Joi.array().items(Joi.string()).optional().default([]),
-            products: Joi.array()
+        Joi.object<IInventory>({
+            organization_id: Joi.number().optional().allow(null, ''),
+            employee_id: Joi.number().optional().allow(null, ''),
+            order_id: Joi.number().optional().allow(null, ''),
+            customer_id: Joi.number().optional().allow(null, ''),
+            delivery_id: Joi.number().optional().allow(null, ''),
+            supplier_id: Joi.number().optional().allow(null, ''),
+
+            code: Joi.string().optional().allow(null, ''),
+            time_at: Joi.string().optional().allow(null, ''),
+            note: Joi.string().max(500).optional().allow('', null),
+            license_plate: Joi.string().max(20).optional().allow('', null),
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            type: Joi.string()
+                .valid(...values(InventoryType))
+                .required(),
+
+            details: Joi.array()
                 .items(
-                    Joi.object({
+                    Joi.object<ICommonDetails>({
                         product_id: Joi.number().required(),
-                        quantity: Joi.number().min(1).required(),
+                        unit_id: Joi.number().optional().allow(null, ''),
+                        warehouse_id: Joi.number().optional().allow(null, ''),
+
+                        quantity: Joi.number().min(0).required(),
                         price: Joi.number().min(0).required(),
-                        warehouse_id: Joi.number().min(0).required(),
-                        discount: Joi.number().min(0).optional(),
-                        note: Joi.string().allow('', null),
+                        discount: Joi.number().min(0).optional().allow('', null).default(0),
+                        vat: Joi.number().min(0).optional().allow('', null).default(0),
+                        note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
                     }),
                 )
-                .min(1)
-                .required(),
+                .optional()
+                .default([]),
         }),
     ),
 };
-export const updateInventory: schema = {
-    body: wrapSchema(
-        Joi.object<Inventory>({
-            customer_id: Joi.number().optional(),
-            organization_id: Joi.number().optional(),
-            delivery_id: Joi.number().optional(),
-            supplier_id: Joi.number().optional(),
-            type: Joi.string().required(),
-            employee_id: Joi.number().optional(),
-            files: Joi.array().items(Joi.string()).optional().default([]),
-            note: Joi.string().max(500).allow('', null).optional(),
-            license_plate: Joi.string().max(20).allow('', null).optional(),
-            time_at: Joi.string().optional(),
 
-            products: Joi.object({
-                add: Joi.array()
-                    .items(
-                        Joi.object({
-                            product_id: Joi.number().required(),
-                            quantity: Joi.number().min(1).required(),
-                            price: Joi.number().min(0).required(),
-                            warehouse_id: Joi.number().min(0).required(),
-                            discount: Joi.number().min(0).optional(),
-                            note: Joi.string().allow('', null).optional(),
-                            key: Joi.string().allow(null, ''),
-                        }),
-                    )
-                    .optional(),
+export const update: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
+    body: create.body,
+};
 
-                update: Joi.array()
-                    .items(
-                        Joi.object({
-                            product_id: Joi.number().required(),
-                            quantity: Joi.number().min(1).required(),
-                            price: Joi.number().min(0).required(),
-                            warehouse_id: Joi.number().min(0).required(),
-                            discount: Joi.number().min(0).optional(),
-                            note: Joi.string().allow('', null).optional(),
-                            key: Joi.string().allow(null, ''),
-                        }),
-                    )
-                    .optional(),
-
-                delete: Joi.array()
-                    .items(
-                        Joi.object({
-                            product_id: Joi.number().required(),
-                            key: Joi.string().allow(null, ''),
-                        }),
-                    )
-                    .optional(),
-            }).optional(),
+export const queryFilter: schema = {
+    query: wrapSchema(
+        extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
+            type: Joi.string()
+                .valid(...values(InventoryType))
+                .optional().allow(null, ''),
         }),
     ),
 };

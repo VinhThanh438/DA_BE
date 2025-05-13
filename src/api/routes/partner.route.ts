@@ -7,7 +7,8 @@ import express from 'express';
 
 const router = express.Router();
 const controller = PartnerController.getInstance();
-router.get('/', validateRequest(queryFilter), controller.getAll.bind(controller));
+
+router.get('/', validateRequest(queryFilter), controller.paginate.bind(controller));
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 

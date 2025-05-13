@@ -34,14 +34,12 @@ export interface IUpdateProduct {
     product_group_id?: number;
     unit_id?: number;
     type?: ProductType;
-    extra_units?: {
-        add?: IExtraUnits[];
-        update?: IExtraUnits[];
-        delete?: {
-            unit_id?: number;
-            key?: string;
-        }[];
-    };
+    add?: IExtraUnits[];
+    update?: IExtraUnits[];
+    delete?: {
+        unit_id?: number;
+        key?: string;
+    }[];
 }
 export interface ICreateProductGroup {
     name: string;

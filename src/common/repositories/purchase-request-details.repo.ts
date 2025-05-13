@@ -2,6 +2,7 @@ import { PurchaseRequestDetails, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
 import { ProductSelectionAll } from './product.repo';
+import { UnitSelectionAll } from './unit.repo';
 
 export const PurchaseRequestDetailSelection: Prisma.PurchaseRequestDetailsSelect = {
     id: true,
@@ -11,9 +12,12 @@ export const PurchaseRequestDetailSelection: Prisma.PurchaseRequestDetailsSelect
 
 export const PurchaseRequestDetailSelectionAll: Prisma.PurchaseRequestDetailsSelect = {
     ...PurchaseRequestDetailSelection,
-    product: {
+    material: {
         select: ProductSelectionAll,
     },
+    unit: {
+        select: UnitSelectionAll
+    }
 };
 
 export class PurchaseRequestDetailRepo extends BaseRepo<

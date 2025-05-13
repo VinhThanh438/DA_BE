@@ -1,11 +1,10 @@
 import { wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { ICreateBank, IUpdateBank } from '@common/interfaces/bank.interface';
-import { Joi, schema } from 'express-validation';
-import { values } from 'lodash';
+import { IBank } from '@common/interfaces/bank.interface';
+import { Joi } from 'express-validation';
 
-export const createBank = {
+export const create = {
     body: wrapSchema(
-        Joi.object<ICreateBank>({
+        Joi.object<IBank>({
             bank: Joi.string().required(),
             account_number: Joi.string().optional().allow(null, ''),
             name: Joi.string().required(),
@@ -14,9 +13,9 @@ export const createBank = {
     ),
 };
 
-export const updateBank = {
+export const update = {
     body: wrapSchema(
-        Joi.object<IUpdateBank>({
+        Joi.object<IBank>({
             bank: Joi.string().optional(),
             account_number: Joi.string().optional().allow(null, ''),
             name: Joi.string().optional(),

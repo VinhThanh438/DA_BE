@@ -2,16 +2,22 @@ import { APIError } from '@common/error/api.error';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { filterDataExclude } from '@common/helpers/filter-data.helper';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import {
+    IIdResponse,
+    IPaginationInput,
+    IPaginationResponse,
+    IUpdateChildAction,
+} from '@common/interfaces/common.interface';
 import logger from '@common/logger';
 import { BaseRepo } from '@common/repositories/base.repo';
+import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
 import { Prisma } from '@prisma/client';
 
 export abstract class BaseService<T, S, W> {
     protected db = DatabaseAdapter.getInstance();
 
     constructor(protected readonly repo: BaseRepo<T, any, W>) {}
-    
+
     protected async validateForeignKeys<T extends { [key: string]: any }>(
         data: T[] | T,
         foreignKeysAndRepos: Record<
@@ -81,6 +87,49 @@ export abstract class BaseService<T, S, W> {
                 status: StatusCode.BAD_REQUEST,
                 message: 'common.existed',
                 errors: existMessages,
+            });
+        }
+    }
+
+    protected async isExistIncludeConditions(
+        data: { [key: string]: any },
+        includeSelf: boolean = false,
+        tx?: Prisma.TransactionClient,
+    ): Promise<void> {
+        if (!data || Object.keys(data).length === 0) return;
+
+        if (includeSelf && !data.id) {
+            logger.warn(`${this.constructor.name}.${ErrorKey.EXISTED}: Missing id in update method`);
+            throw new APIError({
+                status: StatusCode.SERVER_ERROR,
+                message: 'common.developer-error',
+            });
+        }
+
+        const orConditions = Object.entries(data)
+            .filter(([key, value]) => key !== 'id' && value != null)
+            .map(([key, value]) => ({ [key]: value }));
+
+        if (orConditions.length === 0) return;
+
+        const where: any = {
+            OR: orConditions,
+        };
+
+        if (includeSelf) {
+            where.NOT = { id: data.id };
+        }
+
+        const existedRecord: any = await this.repo.findOne(where as W, false, tx);
+
+        if (existedRecord) {
+            const fields = Object.keys(data).filter((k) => k !== 'id');
+            const existedFields = fields.filter((field) => existedRecord[field] === data[field]);
+            const messages = existedFields.map((f) => `${f}.existed`);
+            throw new APIError({
+                status: StatusCode.BAD_REQUEST,
+                message: 'common.existed',
+                errors: messages,
             });
         }
     }
@@ -193,5 +242,147 @@ export abstract class BaseService<T, S, W> {
             logger.error(`${this.constructor.name}.delete: `, error);
             throw error;
         }
+    }
+
+    public async updateChildEntity(
+        data: IUpdateChildAction,
+        repo: BaseRepo<any, any, any>,
+        tx?: Prisma.TransactionClient,
+    ): Promise<void> {
+        if (!data || (!data.add && !data.update && !data.delete)) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`request.${ErrorKey.INVALID}`],
+            });
+        }
+
+        const executeOperations = async (transaction: Prisma.TransactionClient) => {
+            if (Array.isArray(data.delete) && data.delete.length > 0) {
+                for (const id of data.delete) {
+                    const check = await repo.isExist({ id }, transaction);
+                    if (!check) {
+                        throw new APIError({
+                            message: `common.status.${StatusCode.BAD_REQUEST}`,
+                            status: ErrorCode.BAD_REQUEST,
+                            errors: [`id.${ErrorKey.NOT_FOUND}`],
+                        });
+                    }
+                }
+                await repo.deleteMany({ id: { in: data.delete } }, transaction, false);
+            }
+
+            if (Array.isArray(data.add) && data.add.length > 0) {
+                const filteredAdd = this.filterData(data.add, DEFAULT_EXCLUDED_FIELDS, ['key']);
+                await repo.createMany(filteredAdd, transaction);
+            }
+
+            if (Array.isArray(data.update) && data.update.length > 0) {
+                for (const item of data.update) {
+                    const id = item.id as number;
+                    if (!id) {
+                        throw new APIError({
+                            message: `common.status.${StatusCode.BAD_REQUEST}`,
+                            status: ErrorCode.BAD_REQUEST,
+                            errors: ['id.required'],
+                        });
+                    }
+
+                    const exists = await repo.findOne({ id }, true, transaction);
+
+                    if (!exists) {
+                        throw new APIError({
+                            message: `common.status.${StatusCode.REQUEST_NOT_FOUND}`,
+                            status: ErrorCode.REQUEST_NOT_FOUND,
+                            errors: ['id.not_found'],
+                        });
+                    }
+
+                    const filteredUpdate = this.filterData([item], DEFAULT_EXCLUDED_FIELDS, ['key', 'id'])[0];
+
+                    await repo.isExist({ id });
+
+                    await repo.update({ id }, filteredUpdate, transaction);
+                }
+            } else {
+                logger.debug('No records to update');
+            }
+        };
+
+        if (tx) {
+            await executeOperations(tx);
+        } else {
+            await this.db.$transaction(async (transaction) => {
+                await executeOperations(transaction);
+            });
+        }
+    }
+
+    protected mapDetails<T extends Record<string, any>>(
+        items: T[],
+        foreignKeys: Record<string, any>,
+    ): (T & Record<string, any>)[] {
+        if (!items || !Array.isArray(items)) {
+            return [];
+        }
+
+        return items.map((item) => ({
+            ...item,
+            ...foreignKeys,
+        }));
+    }
+
+    protected parseJsonArray(rawFiles: any) {
+        let files;
+        if (Array.isArray(rawFiles)) {
+            files = rawFiles;
+        } else if (typeof rawFiles === 'string') {
+            try {
+                files = JSON.parse(rawFiles);
+            } catch (e) {
+                files = [];
+            }
+        } else if (typeof rawFiles === 'object' && rawFiles !== null) {
+            files = Array.isArray(rawFiles) ? rawFiles : [rawFiles];
+        }
+        return files;
+    }
+
+    protected enrichOrderTotals(responseData: IPaginationResponse): IPaginationResponse {
+        const enrichedData = responseData.data.map((order: any) => {
+            let total_money = 0;
+            let total_vat = 0;
+            let total_commission = 0;
+
+            order.details.forEach((detail: any) => {
+                const quantity = Number(detail.quantity || 0);
+                const price = Number(detail.price || 0);
+                const vat = Number(detail.vat || 0);
+                const commission = Number(detail.commission || 0);
+
+                const totalMoney = quantity * price;
+                const totalVat = (totalMoney * vat) / 100;
+                const totalCommission = (totalMoney * commission) / 100;
+
+                total_money += totalMoney;
+                total_vat += totalVat;
+                total_commission += totalCommission;
+            });
+
+            const total_amount = total_money + total_vat;
+
+            return {
+                ...order,
+                total_money,
+                total_vat,
+                total_amount,
+                total_commission,
+            };
+        });
+
+        return {
+            ...responseData,
+            data: enrichedData,
+        };
     }
 }

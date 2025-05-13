@@ -3,7 +3,8 @@ import { BaseController } from './base.controller';
 import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
 import { PurchaseRequests } from '.prisma/client';
-import { IPurchaseRequest } from '@common/interfaces/purchase-request.interface';
+import { IApproveRequest, IPurchaseRequest } from '@common/interfaces/purchase-request.interface';
+import { PurchaseRequestStatus } from '@config/app.constant';
 
 export class PurchaseRequestController extends BaseController<PurchaseRequests> {
     private static instance: PurchaseRequestController;
@@ -40,6 +41,21 @@ export class PurchaseRequestController extends BaseController<PurchaseRequests> 
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);
+            next(error);
+        }
+    }
+
+    public async approve(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IApproveRequest;
+            const id = Number(req.params.id);
+            if (body.status === PurchaseRequestStatus.CONFIRMED) {
+                body.rejected_reason = '';
+            }
+            const result = await this.service.update(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.approve: `, error);
             next(error);
         }
     }

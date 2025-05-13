@@ -1,5 +1,5 @@
 import eventbus from '@common/eventbus';
-import { ICreateEmployee } from '@common/interfaces/employee.interface';
+import { IEmployee } from '@common/interfaces/employee.interface';
 import { IUpdateEmployeeAccountStatus } from '@common/interfaces/user.interface';
 import logger from '@common/logger';
 import { EmployeeService } from '@common/services/employee.service';
@@ -17,7 +17,7 @@ export class UserEvent {
 
     private static async updateEmployeeAccountStatusHandler(body: IUpdateEmployeeAccountStatus): Promise<void> {
         try {
-            await this.employeeService.update(body.employeeId, { has_user_account: body.status } as ICreateEmployee);
+            await this.employeeService.update(body.employeeId, { has_user_account: body.status } as IEmployee);
             logger.info('UserEvent.updateEmployeeAccountStatusHandler: Employee status updated successfully!');
         } catch (error: any) {
             logger.error('UserEvent.updateEmployeeAccountStatusHandler:', error.message);

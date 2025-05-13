@@ -1,22 +1,39 @@
-model MaterialStandards {
+// dinh muc nguyen vat lieu
+model BillOfMaterialDetails {
   id       Int     @id @default(autoincrement())
-  quantity Int
-  price    Decimal
+  quantity Int     @default(0)
 
-  product_id      Int?
   material_id     Int?
-  organization_id Int?
+  bom_id     Int?
+  unit_id    Int?
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  product      Products?      @relation("ProductRelation", fields: [product_id], references: [id], onDelete: Cascade)
-  material     Products?      @relation("MaterialRelation", fields: [material_id], references: [id], onDelete: Cascade)
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  material          Products?             @relation(fields: [material_id], references: [id], onDelete: SetNull)
+  unit              Units?                @relation(fields: [unit_id], references: [id])
+  bill_of_material  BillOfMaterials?      @relation(fields: [bom_id], references: [id], onDelete: SetNull)
+
+  @@map("bom_details")
+}
+
+// dinh muc nguyen vat lieu co luong khoan
+model BillOfMaterials {
+  id                 Int     @id @default(autoincrement())
+  salary    Decimal?
+  
+  product_id  Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("material_standards")
+  product     Products?      @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@map("bom")
+  details BillOfMaterialDetails[]
 }
 
+// du tru vat tu
 model MaterialBudgets {
   id                 Int     @id @default(autoincrement())
   add_for_production Int?
@@ -26,8 +43,8 @@ model MaterialBudgets {
   product_id      Int?
   organization_id Int?
 
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  product      Products?      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  product      Products?      @relation(fields: [product_id], references: [id], onDelete: SetNull)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

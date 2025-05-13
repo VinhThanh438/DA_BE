@@ -5,7 +5,6 @@ import logger from '@common/logger';
 import { pick } from 'lodash';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { APIError } from '@common/error/api.error';
-import { Prisma } from '@prisma/client';
 
 export class ResponseMiddleware {
     /**
@@ -77,7 +76,7 @@ export class ResponseMiddleware {
         Object.entries(errors).forEach(([key, errorObject]) => {
             if (!errorObject || typeof errorObject !== 'object') return;
 
-            Object.entries(errorObject).forEach(([errorKey, error]: [string, any]) => {
+            Object.entries(errorObject).forEach(([_, error]: [string, any]) => {
                 if (typeof error === 'object') {
                     const path = error?.path;
                     const type = error?.type;
@@ -87,15 +86,14 @@ export class ResponseMiddleware {
                         errorType = ErrorKey.REQUIRED;
                     }
 
-                    if (Array.isArray(path)) {
-                        const formattedMessage = `${path.join('.')}.${errorType}`;
-                        formattedErrors.push(formattedMessage);
-                    } else if (error?.context?.key !== undefined) {
-                        const formattedMessage = `${key}.${error.context.key}.${errorType}`;
-                        formattedErrors.push(formattedMessage);
-                    } else {
-                        formattedErrors.push(`${key}.${errorType}`);
+                    let field = 'unknown';
+                    if (Array.isArray(path) && path.length > 0) {
+                        field = path[path.length - 1];
+                    } else if (error?.context?.key) {
+                        field = error.context.key;
                     }
+
+                    formattedErrors.push(`${field}.${errorType}`);
                 } else if (typeof error === 'string') {
                     formattedErrors.push(`${key}.${ErrorKey.INVALID}`);
                 }
@@ -104,29 +102,6 @@ export class ResponseMiddleware {
 
         return formattedErrors;
     }
-
-    // static parseDecimalFromStringToNumber() {
-    //     return async (params: any, next: any) => {
-    //         const result = await next(params);
-    //         return ResponseMiddleware._convertDecimalFields(result);
-    //     };
-    // }
-
-    // private static _convertDecimalFields(obj: any): any {
-    //     if (Array.isArray(obj)) {
-    //         return obj.map((item) => ResponseMiddleware._convertDecimalFields(item));
-    //     } else if (obj !== null && typeof obj === 'object') {
-    //         for (const key of Object.keys(obj)) {
-    //             const value = obj[key];
-    //             if (value instanceof Prisma.Decimal) {
-    //                 obj[key] = value.toNumber();
-    //             } else if (typeof value === 'object' && value !== null) {
-    //                 obj[key] = ResponseMiddleware._convertDecimalFields(value);
-    //             }
-    //         }
-    //     }
-    //     return obj;
-    // }
 
     /**
      * Convert error if it's not APIError

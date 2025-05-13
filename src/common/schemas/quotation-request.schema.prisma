@@ -1,9 +1,9 @@
-enum QuotationRequestType {
+enum PrsQuotationRequestType {
     employee
     supplier
 }
 
-enum QuotationRequestStatus {
+enum PrsQuotationRequestStatus {
     rejected
     accepted
     pending
@@ -20,9 +20,9 @@ model QuotationRequests {
   email             String?
   address           String?
   note              String?
-  status            QuotationRequestStatus @default(pending)
+  status            PrsQuotationRequestStatus @default(pending)
   files             Json?                  @default("[]")
-  type              QuotationRequestType   @default(employee)
+  type              PrsQuotationRequestType   @default(employee)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -30,4 +30,5 @@ model QuotationRequests {
   organization Organizations? @relation(fields: [organization_id], references: [id])
 
   @@map("quotation_requests")
+  quotations Quotations[]
 }

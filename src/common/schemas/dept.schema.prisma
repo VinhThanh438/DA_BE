@@ -5,7 +5,7 @@ model Depts {
 
   partner_id      Int?
 
-  status DeptStatus @default(not_due_yet)
+  status PrsDeptStatus @default(not_due_yet)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -32,7 +32,7 @@ model Receipts {
     @@map("receipts")
 }
 
-enum DeptStatus {
+enum PrsDeptStatus {
     not_due_yet
     over_due
 }

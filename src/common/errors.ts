@@ -62,7 +62,8 @@ export enum ErrorCode {
 
     // SERVER ERROR
     SERVER_ERROR = 500,
-    SERVER_AUTH_ERROR = 501, // and not know why
+    SERVER_AUTH_ERROR = 501,
+    NOT_FOUND, // and not know why
 }
 
 export enum ErrorKey {

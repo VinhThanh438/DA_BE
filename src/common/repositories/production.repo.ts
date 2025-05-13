@@ -16,7 +16,7 @@ export const ProductionSelectionAll: Prisma.ProductionsSelect = {
     partner: {
         select: PartnerSelection,
     },
-    production_details: {
+    details: {
         select: ProductionDetailSelectionAll
     }
 };
@@ -26,4 +26,6 @@ export class ProductionRepo extends BaseRepo<Productions, Prisma.ProductionsSele
     protected defaultSelect = ProductionSelection;
     protected detailSelect = ProductionSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'productions';
+    protected timeFieldDefault: string = 'time_at';
+    protected searchableFields = ['code'];
 }

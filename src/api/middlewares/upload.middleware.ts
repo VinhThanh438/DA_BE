@@ -31,12 +31,18 @@ export class UploadMiddleware {
                     cb(null, folderPath);
                 },
                 filename: (req, file, cb) => {
-                    const uniqueSuffix = `${file.originalname}-${Date.now()}${path.extname(file.originalname)}`;
+                    const nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
+                    const uniqueSuffix = `${nameWithoutExt}-${Date.now()}${path.extname(file.originalname)}`;
                     cb(null, uniqueSuffix);
                 },
             });
 
-            const upload = multer({ storage }).any();
+            const upload = multer({
+                storage,
+                limits: {
+                    fileSize: 100 * 1024 * 1024, // 100MB
+                },
+            }).any();
 
             upload(req, res, async (err) => {
                 if (err) {

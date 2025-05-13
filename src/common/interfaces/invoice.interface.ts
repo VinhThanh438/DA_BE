@@ -1,10 +1,10 @@
 import { InvoiceStatus } from '@config/app.constant';
-import { ICommonDetails } from './common.interface';
+import { ICommonDetails, IUpdateChildAction } from './common.interface';
 
-export interface IInvoice {
+export interface IInvoice extends IUpdateChildAction {
     code: string;
     payment_method?: string;
-    invoice_date?: DateString;
+    time_at?: DateString;
     files?: string[];
     status?: InvoiceStatus;
 

@@ -1,38 +1,27 @@
-import { Partners, Prisma } from '.prisma/client';
-import { APIError } from '@common/error/api.error';
-import { ErrorKey, StatusCode } from '@common/errors';
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
-import { ICreatePartner, IPaginationInputPartner, IUpdatePartner } from '@common/interfaces/partner.interface';
-import { BankRepo } from '@common/repositories/bank.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
-import { PartnerType } from '@config/app.constant';
-import { BankService } from './bank.service';
-import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseService } from './base.service';
-import { ProductService } from './product.service';
+import { Partners, Prisma } from '.prisma/client';
+import { IPartner } from '@common/interfaces/partner.interface';
+import { IIdResponse, IUpdateChildAction } from '@common/interfaces/common.interface';
+import { PartnerGroupRepo } from '@common/repositories/partner-group.repo';
+import { EmployeeRepo } from '@common/repositories/employee.repo';
+import { ClauseRepo } from '@common/repositories/clause.repo';
+import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
+import { RepresentativeRepo } from '@common/repositories/representative.repo';
+import { BankRepo } from '@common/repositories/bank.repo';
 
 export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect, Prisma.PartnersWhereInput> {
-    private partnerRepo = new PartnerRepo();
-    private bankRepo = new BankRepo();
-    private tx = DatabaseAdapter.getInstance();
     private static instance: PartnerService;
-    private validateBankAccount(bankAccountsNotFound: number[], message: string) {
-        const formattedErrors: string[] = [];
+    private employeeRepo: EmployeeRepo = new EmployeeRepo();
+    private parterGroupRepo: PartnerGroupRepo = new PartnerGroupRepo();
+    private clauseRepo: ClauseRepo = new ClauseRepo();
+    private bankRepo: BankRepo = new BankRepo();
+    private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
 
-        for (const item of bankAccountsNotFound) {
-            formattedErrors.push(`${message}.${item}`);
-        }
-        if (bankAccountsNotFound.length > 0) {
-            throw new APIError({
-                message: message,
-                status: StatusCode.BAD_REQUEST,
-                errors: formattedErrors,
-            });
-        }
-    }
     private constructor() {
         super(new PartnerRepo());
     }
+
     public static getInstance(): PartnerService {
         if (!this.instance) {
             this.instance = new PartnerService();
@@ -40,183 +29,93 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         return this.instance;
     }
 
-    public async paginate(body: IPaginationInput): Promise<IPaginationResponse> {
-        return this.partnerRepo.paginate(body, true);
-    }
-    public async getAllPartner(
-        body: IPaginationInputPartner,
-        type: PartnerType | '',
-        organization_id: number | null,
-    ): Promise<IPaginationResponse> {
-        return this.partnerRepo.getAll(body, true, type, organization_id);
-    }
-    public async createPartner(body: ICreatePartner): Promise<IIdResponse> {
-        const existed = await this.partnerRepo.findOne({ name: body.name, type: body.type }, true);
-        if (existed) {
-            throw new APIError({
-                message: 'common.existed',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`name.${ErrorKey.EXISTED}`],
-            });
-        }
-        const data = await this.tx.$transaction(
-            async (prisma) => {
-                const { bank_accounts, ...mapperPartner } = body;
+    public async create(request: IPartner): Promise<IIdResponse> {
+        let parterId = 0;
 
-                const id = await this.partnerRepo.create({ ...mapperPartner }, prisma);
-                const bankAccountMapper = bank_accounts.map((item) => {
-                    return { ...item, partner_id: id };
-                });
+        await this.validateForeignKeys(request, {
+            partner_group_id: this.parterGroupRepo,
+            employee_id: this.employeeRepo,
+            clause_id: this.clauseRepo,
+        });
 
-                if (bankAccountMapper && bankAccountMapper.length > 0) {
-                    const bankAccountsExisted: number[] = [];
-                    for (const item of bankAccountMapper) {
-                        const existed = await BankService.bankRepo.findOne(
-                            { account_number: item.account_number },
-                            false,
-                            prisma,
-                        );
-                        if (existed) {
-                            bankAccountsExisted.push(Number(item.key));
-                        }
-                    }
-                    if (bankAccountsExisted && bankAccountsExisted.length > 0) {
-                        this.validateBankAccount(bankAccountsExisted, 'account_number.existed');
-                    }
-                    for (const item of bankAccountMapper) {
-                        const { key, ...mapper } = item;
-                        const id_bank = await BankService.bankRepo.create(mapper, prisma);
-                    }
-                }
-                return id;
-            },
-            {
-                isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
-                maxWait: 5000, // default: 2000
-                timeout: 10000, // default: 5000
-            },
-        );
+        await this.db.$transaction(async (tx) => {
+            const { representatives, ...partnerData } = request;
 
-        return { id: data };
-    }
-    public async updatePartner(updateId: number, body: IUpdatePartner): Promise<IIdResponse> {
-        const data = await this.tx.$transaction(
-            async (prisma) => {
-                const { bank_accounts, ...mapperPartner } = body;
+            parterId = await this.repo.create(partnerData as Partial<IPartner>, tx);
 
-                const existed = await this.partnerRepo.findOne({ name: body.name, type: body.type }, true);
-                if (existed) {
-                    throw new APIError({
-                        message: 'common.existed',
-                        status: StatusCode.BAD_REQUEST,
-                        errors: [`name.${ErrorKey.EXISTED}`],
+            if (representatives && representatives.length > 0) {
+                for (const ele of representatives) {
+                    let { banks, key, ...representativeData } = ele;
+
+                    representativeData.partner = parterId ? { connect: { id: parterId } } : undefined;
+
+                    const representativeId = await this.representativeRepo.create(representativeData, tx);
+
+                    const mappedDetails = banks?.map((item: any) => {
+                        return {
+                            ...item,
+                            representative: representativeId ? { connect: { id: representativeId } } : undefined,
+                        };
                     });
+
+                    const filteredData = this.filterData(mappedDetails, DEFAULT_EXCLUDED_FIELDS, ['banks']);
+                    await this.bankRepo.createMany(filteredData, tx);
                 }
-                const id = await this.partnerRepo.update({ id: updateId }, { ...mapperPartner }, prisma);
+            }
+        });
 
-                if (bank_accounts.add && bank_accounts.add.length > 0) {
-                    const bankAccountMapper = bank_accounts.add.map((item) => {
-                        return { ...item, partner_id: updateId };
-                    });
-                    const bankAccountsExisted: number[] = [];
-                    for (const item of bankAccountMapper) {
-                        const existed = await BankService.bankRepo.findOne(
-                            { account_number: item.account_number },
-                            false,
-                            prisma,
-                        );
-                        if (existed) {
-                            bankAccountsExisted.push(Number(item.key));
-                        }
-                    }
-                    if (bankAccountsExisted && bankAccountsExisted.length > 0) {
-                        this.validateBankAccount(bankAccountsExisted, `bank_account.${ErrorKey.EXISTED}`);
-                    }
-                    for (const item of bankAccountMapper) {
-                        const { key, ...mapper } = item;
-                        const id_bank = await BankService.bankRepo.create(mapper, prisma);
-                    }
-                }
-
-                if (bank_accounts.delete && bank_accounts.delete.length > 0) {
-                    const bankAccountsNotFound: number[] = [];
-                    for (const item of bank_accounts.delete) {
-                        const existed = await BankService.bankRepo.findOne({ id: item.id }, false, prisma);
-                        if (!existed) {
-                            bankAccountsNotFound.push(Number(item.key));
-                        }
-                    }
-                    if (bankAccountsNotFound && bankAccountsNotFound.length > 0) {
-                        this.validateBankAccount(bankAccountsNotFound, `bank_account.${ErrorKey.NOT_FOUND}`);
-                    }
-                    for (const item of bank_accounts.delete) {
-                        const id_delete_bank = await BankService.bankRepo.delete({ id: item.id }, prisma);
-                    }
-                }
-
-                if (bank_accounts.update && bank_accounts.update.length > 0) {
-                    const bankAccountsNotFound: number[] = [];
-                    const bankAccountsExisted: number[] = [];
-                    for (const item of bank_accounts.update) {
-                        const notFound = await BankService.bankRepo.findOne({ id: item.bank_id }, false, prisma);
-                        if (!notFound) {
-                            bankAccountsNotFound.push(Number(item.key));
-                        }
-                        const existed = await BankService.bankRepo.findOne(
-                            { account_number: item.account_number },
-                            false,
-                            prisma,
-                        );
-                        if (existed) {
-                            bankAccountsExisted.push(Number(item.key));
-                        }
-                    }
-                    if (bankAccountsExisted.length > 0 || bankAccountsNotFound.length > 0) {
-                        this.validateBankAccount(bankAccountsExisted, `bank_account.${ErrorKey.EXISTED}`);
-                        this.validateBankAccount(bankAccountsNotFound, `bank_account.${ErrorKey.NOT_FOUND}`);
-                    }
-                    for (const item of bank_accounts.update) {
-                        const { bank_id, key, ...mapper } = item;
-
-                        const id_update_bank = await BankService.bankRepo.update({ id: item.bank_id }, mapper, prisma);
-                    }
-                }
-
-                return id;
-            },
-            {
-                isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // optional, default defined by database configuration
-                maxWait: 5000, // default: 2000
-                timeout: 10000, // default: 5000
-            },
-        );
-        return { id: data };
+        return { id: parterId };
     }
 
-    public async deletePartner(deleteId: number): Promise<IIdResponse> {
-        const notFound = await this.partnerRepo.findOne({ id: deleteId });
-        if (!notFound) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
-        const id = await this.partnerRepo.delete({ id: deleteId });
-        return { id };
-    }
+    // public async update(id: number, request: Partial<IPartner>): Promise<IIdResponse> {
+    //     await this.findById(id);
 
-    public async findByIdPartner(id: number): Promise<Partial<Partners | null>> {
-        const data = await this.partnerRepo.findOne({ id }, true);
+    //     await this.isExist({ code: request.code, id }, true);
 
-        if (!data) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
+    //     await this.validateForeignKeys(request, {
+    //         partner_id: this.partnerRepo,
+    //         employee_id: this.employeeRepo,
+    //         organization_id: this.organizationRepo,
+    //     });
 
-        return data;
-    }
+    //     const { delete: deteleItems, update, add, ...body } = request;
+
+    //     await this.db.$transaction(async (tx) => {
+    //         await this.repo.update({ id }, body as Partial<IContract>, tx);
+
+    //         const detailItems = [...(request.add || []), ...(request.update || [])];
+    //         if (detailItems.length > 0) {
+    //             await this.validateForeignKeys(
+    //                 detailItems,
+    //                 {
+    //                     product_id: this.productRepo,
+    //                     unit_id: this.productRepo,
+    //                 },
+    //                 tx,
+    //             );
+    //         }
+
+    //         const mappedDetails: IUpdateChildAction = {
+    //             add: this.mapDetails(request.add || [], { contract_id: id }),
+    //             update: this.mapDetails(request.update || [], { contract_id: id }),
+    //             delete: request.delete,
+    //         };
+
+    //         const filteredData = {
+    //             add: this.filterData(mappedDetails.add, DEFAULT_EXCLUDED_FIELDS, ['key']),
+    //             update: this.filterData(mappedDetails.update, DEFAULT_EXCLUDED_FIELDS, ['key']),
+    //             delete: mappedDetails.delete,
+    //         };
+
+    //         if (
+    //             filteredData.add.length > 0 ||
+    //             filteredData.update.length > 0 ||
+    //             (filteredData.delete?.length || 0) > 0
+    //         ) {
+    //             await this.updateChildEntity(filteredData, this.contractDetailRepo, tx);
+    //         }
+    //     });
+
+    //     return { id };
+    // }
 }

@@ -1,10 +1,10 @@
 import { ContractStatus } from "@config/app.constant";
-import { ICommonDetails } from "./common.interface";
+import { ICommonDetails, IUpdateChildAction } from "./common.interface";
 
-export interface IContract {
+export interface IContract extends IUpdateChildAction {
     code: string;
     tax?: string;
-    sign_date?: DateString;
+    time_at?: DateString;
     delivery_date?: DateString;
     contract_date?: DateString;
     contract_value?: string;

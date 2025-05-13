@@ -26,4 +26,5 @@ export class JobPositionRepo extends BaseRepo<JobPositions, Prisma.JobPositionsS
     protected defaultSelect = JobPositionSelection;
     protected detailSelect = JobPositionSelectionAll;
     protected modelKey = 'jobPositions' as const;
+    protected searchableFields = ['name', 'level', 'description'];
 }

@@ -1,10 +1,10 @@
+import { Organizations, Prisma } from '.prisma/client';
+import { OrganizationType, PartnerType } from '@config/app.constant';
+
 export interface ICreateAndUpdate {
     name: string;
     type: PartnerType;
 }
-
-import { Organizations, PartnerType, Prisma } from '.prisma/client';
-import { OrganizationType } from '@config/app.constant';
 
 export interface IOrganizationTypes
     extends PrismaModelTypes<Organizations, Prisma.OrganizationsSelect, Prisma.OrganizationsWhereInput> {}
@@ -18,6 +18,8 @@ export interface PrismaModelTypes<T, S extends Record<string, any>, W> {
 export interface ICreateOrganization {
     name: string;
     code: string;
+    industry?: string;
+    logo?: string;
     responsibility?: string;
     files?: string[];
     establishment?: DateString;

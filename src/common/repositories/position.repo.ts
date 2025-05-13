@@ -17,5 +17,5 @@ export class PositionRepo extends BaseRepo<Positions, Prisma.PositionsSelect, Pr
     protected db = DatabaseAdapter.getInstance().positions;
     protected defaultSelect = PositionSelection;
     protected detailSelect = PositionSelectionAll;
-    protected modelKey = 'positions' as const;
+    protected modelKey: keyof Prisma.TransactionClient = 'positions';
 }

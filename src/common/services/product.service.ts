@@ -1,15 +1,12 @@
 import { Prisma, Products } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
 import { ErrorKey, StatusCode } from '@common/errors';
-import { generateUniqueCode } from '@common/helpers/generate-unique-code.helper';
 
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import { IIdResponse } from '@common/interfaces/common.interface';
 import { ICreateProduct, IProducts, IUpdateProduct } from '@common/interfaces/product.interface';
 import { ProductRepo } from '@common/repositories/product.repo';
 import { BaseService } from './base.service';
-import { UnitService } from './unit.service';
 import { UnitRepo } from '@common/repositories/unit.repo';
-import { number } from 'joi/lib';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 
 export class ProductService extends BaseService<Products, Prisma.ProductsSelect, Prisma.ProductsWhereInput> {
@@ -45,7 +42,6 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         }
         return this.instance;
     }
-
     async delete(id: number): Promise<IIdResponse> {
         const exist = await this.productRepo.findOne({ id: id });
         if (!exist) {
@@ -58,7 +54,6 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         const output = await this.productRepo.delete({ id: id });
         return { id: output };
     }
-
     async updateProduct(id: number, body: IUpdateProduct): Promise<IIdResponse> {
         await this.isExist({ code: body.code, id }, true);
         const unitNotFound: string[] = [];
@@ -67,58 +62,72 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         if (!unit) {
             unitNotFound.push('0');
         }
-        if (body.extra_units?.add) {
-            for (const unit of body.extra_units.add) {
+        if (body?.add) {
+            for (const unit of body.add) {
                 const notFound = await this.unitRepo.findOne({ id: unit.unit_id });
                 if (!notFound) {
                     unitExisted.push(unit.key);
                 }
             }
         }
-        if (body.extra_units?.delete) {
-            for (const unit of body.extra_units.delete) {
+        if (body?.delete) {
+            for (const unit of body.delete) {
                 const notFound = await this.unitRepo.findOne({ id: unit.unit_id });
                 if (!notFound) {
                     unitNotFound.push(String(unit.key));
                 }
             }
         }
-        if (body.extra_units?.update) {
-            for (const unit of body.extra_units.update) {
+        if (body?.update) {
+            for (const unit of body.update) {
                 const notFound = await this.unitRepo.findOne({ id: unit.unit_id });
                 if (!notFound) {
                     unitNotFound.push(String(unit.key));
                 }
             }
+        }
+        const productGroup = await this.productRepo.findOne({ id: body.product_group_id });
+
+        if (!productGroup) {
+            throw new APIError({
+                message: 'product_group.not_found',
+                status: StatusCode.BAD_REQUEST,
+                errors: ['product_group.not_found'],
+            });
         }
         if (unitNotFound && unitNotFound.length > 0) {
             this.validateUnit(unitNotFound, 'unit_id.not_found');
             this.validateUnit(unitExisted, 'unit_id.existed');
         }
-        const output = this.db.$transaction(async (prisma) => {
-            const { extra_units, ...mapperProduct } = body;
 
+        const output = await this.db.$transaction(async (prisma) => {
+            const { delete: del, add, update, ...mapperProduct } = body;
+            const extra_units = { add, update, delete: body.delete };
             const updateProduct = await this.productRepo.update({ id: id }, mapperProduct, prisma);
+
             if (extra_units?.add && extra_units.add.length > 0) {
                 const unitsToAdd = extra_units.add.map(({ key, ...mapper }) => {
                     return { product_id: updateProduct, ...mapper };
                 });
-                await this.unitRepo.createMany(unitsToAdd, prisma);
+                await prisma.productUnits.createMany({ data: unitsToAdd });
             } else if (extra_units?.delete && extra_units.delete.length > 0) {
                 for (const item of extra_units.delete) {
-                    await this.unitRepo.delete({ id: item.unit_id }, prisma);
+                    await prisma.productUnits.delete({ where: { id: item.unit_id } });
                 }
             } else if (extra_units?.update && extra_units.update.length > 0) {
                 const unitsToUpdate = extra_units.update.map(({ key, ...mapper }) => {
                     return mapper;
                 });
                 for (const item of unitsToUpdate) {
-                    await this.unitRepo.update({ id: item.unit_id }, { conversion_rate: item.conversion_rate }, prisma);
+                    await prisma.productUnits.update({
+                        where: { id: item.unit_id },
+                        data: { conversion_rate: item.conversion_rate },
+                    });
                 }
             }
             return updateProduct;
         });
-        return { id: Number(output) };
+        return { id: output };
     }
 
     async createProduct(body: ICreateProduct): Promise<IIdResponse> {
@@ -161,12 +170,8 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         }
 
         const output = await this.productRepo.create({ ...body, extra_units });
-        return { id: output };
-    }
 
-    async getAllProduct(body: IPaginationInput): Promise<IPaginationResponse> {
-        const output = await this.productRepo.paginate(body, true);
-        return output;
+        return { id: output };
     }
 
     async getById(id: number): Promise<Partial<Products>> {
