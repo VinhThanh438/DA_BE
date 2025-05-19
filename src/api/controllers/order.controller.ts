@@ -1,6 +1,6 @@
 import { BaseController } from './base.controller';
 import { Orders } from '.prisma/client';
-import { IApproveRequest } from '@common/interfaces/order.interface';
+import { IApproveRequest, IOrder } from '@common/interfaces/order.interface';
 import logger from '@common/logger';
 import { OrderService } from '@common/services/order.service';
 import { OrderStatus } from '@config/app.constant';
@@ -33,6 +33,18 @@ export class OrderController extends BaseController<Orders> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.approveRequest: `, error);
+            next(error);
+        }
+    }
+
+    public async updateOrder(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IOrder;
+            const id = Number(req.params.id);
+            const result = await this.service.updateOrder(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.updateOrderRequest: `, error);
             next(error);
         }
     }

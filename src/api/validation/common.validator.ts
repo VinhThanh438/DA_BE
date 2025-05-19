@@ -21,13 +21,12 @@ export const queryFilter: schema = {
         Joi.object({
             page: Joi.number().optional().min(1),
             size: Joi.number().optional().min(1),
-            startAt: Joi.string().optional().allow(null, ''),
-            endAt: Joi.string().optional().allow(null, ''),
+            startAt: Joi.string().isoDate().optional().allow(null),
+            endAt: Joi.string().isoDate().optional().allow(null),
             keyword: Joi.string().optional().allow(null, ''),
         }),
     ),
 };
-
 
 export const queryById: schema = {
     params: wrapSchema(

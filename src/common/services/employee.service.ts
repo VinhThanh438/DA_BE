@@ -93,6 +93,8 @@ export class EmployeeService extends BaseService<Employees, Prisma.EmployeesSele
             attendance_code: request.attendance_code,
             identity_code: request.identity_code,
             passport_code: request.passport_code,
+            email: request.email,
+            phone: request.phone,
         });
 
         await this.validateForeignKeys(request, {

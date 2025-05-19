@@ -35,6 +35,7 @@ model TransactionWarehouses {
   product_id      Int?
   order_id        Int?
   inventory_id    Int?
+
   organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
   product      Products?      @relation(fields: [product_id], references: [id], onDelete: SetNull)
@@ -43,6 +44,6 @@ model TransactionWarehouses {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  @@index([id,product_id])
+
   @@map("transaction_warehouses")
 }

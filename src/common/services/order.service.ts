@@ -17,6 +17,11 @@ import { ProductionService } from './production.service';
 import { InventoryService } from './inventory.service';
 import logger from '@common/logger';
 import { RepresentativeRepo } from '@common/repositories/representative.repo';
+import { BankRepo } from '@common/repositories/bank.repo';
+import { UnitRepo } from '@common/repositories/unit.repo';
+import { mergeFileUrl } from '@common/helpers/merge-file-url';
+import { deleteFileSystem } from '@common/helpers/delete-file-system';
+import { TransactionRepo } from '@common/repositories/transaction.repo';
 
 export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prisma.OrdersWhereInput> {
     private static instance: OrderService;
@@ -24,12 +29,15 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     private partnerRepo: PartnerRepo = new PartnerRepo();
     private employeeRepo: EmployeeRepo = new EmployeeRepo();
     private productRepo: ProductRepo = new ProductRepo();
+    private bankRepo: BankRepo = new BankRepo();
+    private unitRepo: UnitRepo = new UnitRepo();
     private contractService: ContractService = ContractService.getInstance();
     private invoiceService: InvoiceService = InvoiceService.getInstance();
     private orderExpenseService: OrderExpenseService = OrderExpenseService.getInstance();
     private productionService: ProductionService = ProductionService.getInstance();
     private inventoryService: InventoryService = InventoryService.getInstance();
     private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
+    private transactionRepo: TransactionRepo = new TransactionRepo();
 
     private constructor() {
         super(new OrderRepo());
@@ -42,14 +50,77 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         return this.instance;
     }
 
+    private async attachPaymentInfoToOrder(order: IOrder): Promise<IOrder> {
+        const transactionData = await this.transactionRepo.findMany({
+            order_id: order.id,
+        });
+
+        const totalPaid = transactionData
+            .filter((t) => t.type === 'out' && !t.note?.toLowerCase().includes('hoa hồng'))
+            .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+        const totalCommissionPaid = transactionData
+            .filter((t) => t.note?.toLowerCase().includes('hoa hồng'))
+            .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+        const totalOrderAmount = (order.details ?? []).reduce((sum, detail) => {
+            const detailTotal = detail.quantity * detail.price;
+            const detailVat = (detailTotal * (detail.vat || 0)) / 100;
+            return sum + detailTotal + detailVat;
+        }, 0);
+
+        const detailsWithPayments = (order.details ?? []).map((detail: any) => {
+            const quantity = detail.quantity;
+            const price = detail.price;
+            const vatPercent = detail.vat || 0;
+            const commission = detail.commission || 0;
+
+            const detailTotal = quantity * price;
+            const detailVat = (detailTotal * vatPercent) / 100;
+            const detailTotalAfterVat = detailTotal + detailVat;
+
+            const ratio = totalOrderAmount ? detailTotalAfterVat / totalOrderAmount : 0;
+
+            const amount_paid = ratio * totalPaid;
+            const amount_debt = detailTotalAfterVat - amount_paid;
+            const commission_paid = ratio * totalCommissionPaid;
+            const commission_debt = commission - commission_paid;
+
+            return {
+                ...detail,
+                amount_paid,
+                amount_debt,
+                commission_paid,
+                commission_debt,
+            };
+        });
+
+        return {
+            ...order,
+            details: detailsWithPayments,
+        };
+    }
+
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
-        try {
-            const data = await this.repo.paginate(query, true);
-            return this.enrichOrderTotals(data);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.paginate: `, error);
-            throw error;
+        const data = await this.repo.paginate(query, true);
+
+        data.data = await Promise.all(data.data.map((order: IOrder) => this.attachPaymentInfoToOrder(order)));
+
+        return this.enrichOrderTotals(data);
+    }
+
+    public async findById(id: number): Promise<Partial<IOrder> | null> {
+        const data = (await this.repo.findOne({ id }, true)) as IOrder;
+
+        if (!data) {
+            throw new APIError({
+                message: 'common.not-found',
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`id.${ErrorKey.NOT_FOUND}`],
+            });
         }
+
+        return this.attachPaymentInfoToOrder(data);
     }
 
     public async create(request: IOrder): Promise<IIdResponse> {
@@ -61,18 +132,27 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             partner_id: this.partnerRepo,
             employee_id: this.employeeRepo,
             representative_id: this.representativeRepo,
+            bank_id: this.bankRepo,
         });
 
         const { details, contracts, invoices, order_expenses, productions, inventories, ...orderData } = request;
 
         await this.db.$transaction(async (tx) => {
-            orderId = await this.repo.create(orderData as Partial<Orders>, tx);
+            const { partner_id, employee_id, bank_id, representative_id, ...restData } = orderData;
+            Object.assign(restData, {
+                partner: partner_id ? { connect: { id: partner_id } } : undefined,
+                employee: employee_id ? { connect: { id: employee_id } } : undefined,
+                representative: representative_id ? { connect: { id: representative_id } } : undefined,
+                bank: bank_id ? { connect: { id: bank_id } } : undefined,
+            });
+            orderId = await this.repo.create(restData as Partial<Orders>, tx);
 
             if (details && details.length > 0) {
                 await this.validateForeignKeys(
                     details,
                     {
                         product_id: this.productRepo,
+                        unit_id: this.unitRepo,
                     },
                     tx,
                 );
@@ -144,5 +224,111 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             }
         });
         return { id: orderId };
+    }
+
+    public async updateOrder(id: number, request: IOrder): Promise<IIdResponse> {
+        const orderExists = await this.findById(id);
+        if (!orderExists) {
+            return { id };
+        }
+
+        await this.validateForeignKeys(request, {
+            partner_id: this.partnerRepo,
+            employee_id: this.employeeRepo,
+            representative_id: this.representativeRepo,
+            bank_id: this.bankRepo,
+        });
+
+        const {
+            details,
+            add,
+            update,
+            delete: deleteIds,
+            contracts,
+            invoices,
+            order_expenses,
+            productions,
+            inventories,
+            files_add,
+            files_delete,
+            files,
+            ...orderData
+        } = request;
+
+        // handle files
+        let filesUpdate = null;
+        if (files || files_add || files_delete) {
+            const updatedFiles = mergeFileUrl({
+                current: (orderExists.files || []) as string[],
+                deletes: files_delete || [],
+                update: files_add || [],
+            });
+
+            filesUpdate = updatedFiles;
+
+            if (files_delete && files_delete.length > 0) {
+                await deleteFileSystem(files_delete);
+            }
+        }
+
+        await this.db.$transaction(async (tx) => {
+            await this.repo.update(
+                { id },
+                { ...orderData, ...(filesUpdate !== null && { files: filesUpdate }) } as Partial<Orders>,
+                tx,
+            );
+
+            // [add] order details
+            if (add && add.length > 0) {
+                await this.validateForeignKeys(
+                    add,
+                    {
+                        product_id: this.productRepo,
+                        unit_id: this.unitRepo,
+                    },
+                    tx,
+                );
+
+                const data = add.map((item) => {
+                    const { key, ...rest } = item;
+                    return { ...rest, order_id: id };
+                });
+                await this.orderDetailRepo.createMany(data, tx);
+            }
+
+            // [update] order details
+            if (update && update.length > 0) {
+                await this.validateForeignKeys(
+                    update,
+                    {
+                        id: this.orderDetailRepo,
+                        product_id: this.productRepo,
+                        unit_id: this.unitRepo,
+                    },
+                    tx,
+                );
+
+                const data = update.map((item) => {
+                    const { key, ...rest } = item;
+                    return rest;
+                });
+                await this.orderDetailRepo.updateMany(data, tx);
+            }
+
+            // [delete] order details
+            if (deleteIds && deleteIds.length > 0) {
+                await this.orderDetailRepo.deleteMany({ id: { in: deleteIds } }, tx, false);
+            }
+
+            // handle invoices
+
+            // handle expenses
+
+            // handle productions
+
+            // handle inventories
+        });
+
+        return { id };
     }
 }

@@ -28,6 +28,7 @@ export const create: schema = {
             employee_id: Joi.number().optional(),
             partner_id: Joi.number().optional(),
             representative_id: Joi.number().optional(),
+            bank_id: Joi.number().optional(),
 
             details: Joi.array()
                 .items(
@@ -79,7 +80,103 @@ export const update: schema = {
             id: Joi.number().required(),
         }),
     ),
-    body: create.body,
+    body: wrapSchema(
+        Joi.object<IOrder>({
+            type: Joi.string()
+                .valid(...values(OrderType))
+                .required(),
+            code: Joi.string().max(100).optional(),
+            address: Joi.string().allow(null, '').max(500).optional(),
+            phone: Joi.string().allow(null, '').max(50).optional(),
+            note: Joi.string().allow(null, '').max(1000).optional(),
+            time_at: Joi.date().iso().optional(),
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+
+            employee_id: Joi.number().optional(),
+            partner_id: Joi.number().optional(),
+            representative_id: Joi.number().optional(),
+            bank_id: Joi.number().optional(),
+
+            details: Joi.array()
+                .items(
+                    Joi.object<ICommonDetails>({
+                        product_id: Joi.number().required(),
+                        unit_id: Joi.number().optional().allow(null, ''),
+                        quantity: Joi.number().min(0).required(),
+                        discount: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).required(),
+                        vat: Joi.number().min(0).optional().allow('', null),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
+                .optional()
+                .default([]),
+
+            productions: Joi.array()
+                .items(createProduction.body ?? Joi.any())
+                .optional()
+                .default([]),
+
+            order_expenses: Joi.array()
+                .items(createOrderExpense.body ?? Joi.any())
+                .optional()
+                .default([]),
+
+            contracts: Joi.array()
+                .items(createContract.body ?? Joi.any())
+                .optional()
+                .default([]),
+
+            invoices: Joi.array()
+                .items(createInvoice.body ?? Joi.any())
+                .optional()
+                .default([]),
+
+            inventories: Joi.array()
+                .items(createInventory.body ?? Joi.any())
+                .optional()
+                .default([]),
+
+            add: Joi.array()
+                .items(
+                    Joi.object<ICommonDetails>({
+                        product_id: Joi.number().required(),
+                        unit_id: Joi.number().optional().allow(null, ''),
+                        quantity: Joi.number().min(0).required(),
+                        discount: Joi.number().min(0).optional(),
+                        commission: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).required(),
+                        vat: Joi.number().min(0).optional().allow('', null),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
+                .optional()
+                .default([]),
+            update: Joi.array()
+                .items(
+                    Joi.object<ICommonDetails>({
+                        id: Joi.number().required(),
+                        product_id: Joi.number().required(),
+                        unit_id: Joi.number().optional().allow(null, ''),
+                        quantity: Joi.number().min(0).required(),
+                        discount: Joi.number().min(0).optional(),
+                        commission: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).required(),
+                        vat: Joi.number().min(0).optional().allow('', null),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
+                .optional()
+                .default([]),
+            delete: Joi.array().items(Joi.number()).optional().default([]),
+
+            files_add: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            files_delete: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+        }),
+    ),
 };
 
 export const queryFilter: schema = {
@@ -87,7 +184,9 @@ export const queryFilter: schema = {
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             type: Joi.string()
                 .valid(...values(OrderType))
-                .optional().allow(null, ''),
+                .optional()
+                .allow(null, ''),
+            partner_id: Joi.number().optional(),
         }),
     ),
 };

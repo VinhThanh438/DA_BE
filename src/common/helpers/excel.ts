@@ -1,4 +1,4 @@
-import { CellFormulaValue, DataValidation, Worksheet } from 'exceljs';
+import { CellFormulaValue, CellRichTextValue, DataValidation, Worksheet } from 'exceljs';
 import { ICustomizeCell, IHeader } from '../interfaces/excel.interface';
 
 // Tính độ sâu tối đa của header để xác định số dòng header
@@ -52,7 +52,20 @@ export function renderExcelHeader(
                 worksheet.getCell(item.cell).style = item.style;
 
                 if (item.value) {
-                    worksheet.getCell(item.cell).value = item.value;
+                    // Ensure value is assignable to CellValue
+                    if (
+                        typeof item.value === 'string' ||
+                        typeof item.value === 'number' ||
+                        typeof item.value === 'boolean' ||
+                        item.value === null ||
+                        (typeof item.value === 'object' &&
+                            item.value !== null &&
+                            ('formula' in item.value || 'richText' in item.value))
+                    ) {
+                        worksheet.getCell(item.cell).value = item.value as CellRichTextValue;
+                    } else {
+                        worksheet.getCell(item.cell).value = String(item.value);
+                    }
                 }
 
                 if (item.dataValidation) {
@@ -259,30 +272,78 @@ export function renderExcelHeader(
                 const lastRow = startRow + maxDepth + dataRender.length;
                 worksheet.getRow(lastRow).height = 20;
 
-                for (let i = 1; i <= Object.keys(dataRender[0]).length; i++) {
-                    const cell = worksheet.getCell(lastRow, i);
-                    const footer = dataFooter.find((item: any) => item.col === i);
-                    if (footer !== undefined) {
-                        if (footer.colSpan > 1) {
-                            // Cell sẽ có dạng "A1" hoặc "AB1" , cần tách chữ và số sau đó cộng thêm cột tương ứng với số tăng của colSpan
-                            worksheet.mergeCells(lastRow, i, lastRow, i + footer.colSpan - 1);
+                dataFooter.forEach((item: ICustomizeCell) => {
+                    worksheet.getCell(item.cell).style = item.style;
+                    if (item.height) {
+                        worksheet.getRow(Number(worksheet.getCell(item.cell).row)).height = item.height;
+                    } else {
+                        worksheet.getRow(Number(worksheet.getCell(item.cell).row)).height = 20;
+                    }
+
+                    if (item.value) {
+                        // Ensure value is assignable to CellValue
+                        if (
+                            typeof item.value === 'string' ||
+                            typeof item.value === 'number' ||
+                            typeof item.value === 'boolean' ||
+                            item.value === null ||
+                            (typeof item.value === 'object' &&
+                                item.value !== null &&
+                                ('formula' in item.value || 'richText' in item.value))
+                        ) {
+                            worksheet.getCell(item.cell).value = item.value as any;
+                        } else {
+                            worksheet.getCell(item.cell).value = String(item.value);
+                        }
+                    }
+
+                    if (item.dataValidation) {
+                        worksheet.getCell(item.cell).dataValidation = item.dataValidation;
+                    }
+
+                    if (item.colSpan >= 1) {
+                        // chuyen doi 1 ky tu sang Unicode, vi du A
+                        // Cell sẽ có dạng "A1" hoặc "AB1" , cần tách chữ và số sau đó cộng thêm cột tương ứng với số tăng của colSpan
+                        const match = item.cell.match(/\d+/);
+                        let lastCell = match
+                            ? `${String.fromCharCode(item.cell.charCodeAt(0) + item.colSpan)}${match[0]}`
+                            : item.cell;
+
+                        if (item.rowSpan && item.rowSpan >= 1) {
+                            const matchRow = item.cell.match(/\d+/);
+                            lastCell = matchRow
+                                ? `${String.fromCharCode(lastCell.charCodeAt(0))}${Number(matchRow[0]) + item.rowSpan}`
+                                : lastCell;
                         }
 
-                        cell.value = footer.value;
-                        cell.style = footer.style;
-                    } else {
-                        cell.style = {
-                            font: { bold: true, size: 14 },
-                            alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
-                            border: {
-                                top: { style: 'thin' },
-                                left: { style: 'thin' },
-                                bottom: { style: 'thin' },
-                                right: { style: 'thin' },
-                            },
-                        };
+                        worksheet.mergeCells(item.cell, lastCell);
                     }
-                }
+                });
+
+                // for (let i = 1; i <= Object.keys(dataRender[0]).length; i++) {
+                //     const cell = worksheet.getCell(lastRow, i);
+                //     const footer = dataFooter.find((item: any) => item.col === i);
+                //     if (footer !== undefined) {
+                //         if (footer.colSpan > 1) {
+                //             // Cell sẽ có dạng "A1" hoặc "AB1" , cần tách chữ và số sau đó cộng thêm cột tương ứng với số tăng của colSpan
+                //             worksheet.mergeCells(lastRow, i, lastRow, i + footer.colSpan - 1);
+                //         }
+
+                //         cell.value = footer.value;
+                //         cell.style = footer.style;
+                //     } else {
+                //         cell.style = {
+                //             font: { bold: true, size: 14 },
+                //             alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+                //             border: {
+                //                 top: { style: 'thin' },
+                //                 left: { style: 'thin' },
+                //                 bottom: { style: 'thin' },
+                //                 right: { style: 'thin' },
+                //             },
+                //         };
+                //     }
+                // }
             }
         }
 

@@ -14,6 +14,12 @@ model Organizations {
   logo           String?
   files          Json?   @default("[]")
   establishment  String?
+  address        String?
+  phone          String?
+  hotline        String?
+  email          String?
+  website        String?
+  tax_code       String?
 
   type      PrsOrganizationType @default(company)
   parent_id Int?
@@ -37,7 +43,7 @@ model Organizations {
   productions            Productions[]
   material_budgets       MaterialBudgets[]
   finance_records        FinanceRecords[]
-  transaction_orders     TransactionOrders[]
+  transactions     Transactions[]
   transaction_warehouses TransactionWarehouses[]
   quotation_requests       QuotationRequests[]
   order_expenses         OrderExpenses[]
@@ -45,6 +51,8 @@ model Organizations {
   @@map("organizations")
   contracts Contracts[]
   purchase_requests PurchaseRequests[]
+  clauses Clauses[]
+  users Users[]
 }
 
 model Positions {

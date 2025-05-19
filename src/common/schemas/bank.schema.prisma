@@ -13,10 +13,11 @@ model Banks {
   representative_id    Int?
 
   employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  representative    Representatives?    @relation(fields: [representative_id], references: [id], onDelete: SetNull)
+  representative    Representatives?    @relation(fields: [representative_id], references: [id], onDelete: Cascade)
 
   invoices           Invoices[]
-  transaction_orders TransactionOrders[]
+  transactions Transactions[]
+  orders Orders[]
 
   @@map("banks")
 }

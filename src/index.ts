@@ -1,4 +1,3 @@
-// require('module-alias/register');
 import { Application } from './application';
 import logger from '@common/logger';
 

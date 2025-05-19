@@ -1,13 +1,8 @@
 import { Prisma, TransactionWarehouses } from '.prisma/client';
 import { BaseRepo } from './base.repo';
-import { DefaultArgs } from '@prisma/client/runtime/library';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-export const TransactionWarehouseSelect: Prisma.TransactionWarehousesSelect = {
-    quantity: true,
-};
-export const TransactionWarehouseSelectAll: Prisma.TransactionWarehousesSelect = {
-    ...TransactionWarehouseSelect,
-};
+import { TransactionWarehouseSelect, TransactionWarehouseSelectAll } from './prisma/transaction-warehouse.select';
+
 export class TransactionWarehouseRepo extends BaseRepo<
     TransactionWarehouses,
     Prisma.TransactionWarehousesSelect,

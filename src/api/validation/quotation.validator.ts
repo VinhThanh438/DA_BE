@@ -64,7 +64,7 @@ export const approve: schema = {
         Joi.object({
             type: Joi.string()
                 .valid(...values(QuotationType))
-                .required(),
+                .optional().allow(null, ''),
             status: Joi.string()
                 .valid(...values([QuotationStatus.REJECTED, QuotationStatus.CONFIRMED]))
                 .required(),
@@ -97,6 +97,7 @@ export const queryFilter: schema = {
             type: Joi.string()
                 .required()
                 .valid(...values(QuotationType)),
+            isMain: Joi.boolean().optional().default(false)
         }),
     ),
 };

@@ -1,6 +1,6 @@
-import { Borders, Column, DataValidation, Fill, Style } from 'exceljs';
+import { Alignment, Borders, Column, DataValidation, Fill, Style } from 'exceljs';
 
-const ListBorder: { [key: string]: Partial<Borders> } = {
+export const ListBorder: { [key: string]: Partial<Borders> } = {
     THIN: {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -9,7 +9,7 @@ const ListBorder: { [key: string]: Partial<Borders> } = {
     },
 };
 
-const ListFill: { [key: string]: Fill } = {
+export const ListFill: { [key: string]: Fill } = {
     SOLID: {
         type: 'pattern',
         pattern: 'solid',
@@ -40,11 +40,34 @@ const ListFill: { [key: string]: Fill } = {
         pattern: 'solid',
         fgColor: { argb: 'FFFFFF' },
     },
+    GREEN: {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '90EE90' },
+    },
+};
+
+export const ListAlignment: { [key: string]: Partial<Alignment> } = {
+    LEFT: {
+        vertical: 'middle',
+        horizontal: 'left',
+        // wrapText: true,
+    },
+    CENTER: {
+        vertical: 'middle',
+        horizontal: 'center',
+        // wrapText: true,
+    },
+    RIGHT: {
+        vertical: 'middle',
+        horizontal: 'right',
+        // wrapText: true,
+    },
 };
 
 export const ListStyle: { [key: string]: Style } = {
     SOLID: {
-        font: { bold: true, size: 14 },
+        font: { name: 'Times New Roman', bold: true, size: 14 },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: ListBorder.THIN,
         fill: ListFill.SOLID,
@@ -52,7 +75,7 @@ export const ListStyle: { [key: string]: Style } = {
         protection: { locked: false },
     },
     YELLOW: {
-        font: { bold: true, size: 14 },
+        font: { name: 'Times New Roman', bold: true, size: 14 },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: ListBorder.THIN,
         fill: ListFill.YELLOW,
@@ -60,7 +83,7 @@ export const ListStyle: { [key: string]: Style } = {
         protection: { locked: false },
     },
     BLUE: {
-        font: { bold: true, size: 14 },
+        font: { name: 'Times New Roman', bold: true, size: 14 },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: ListBorder.THIN,
         fill: ListFill.BLUE,
@@ -76,7 +99,7 @@ export const ListStyle: { [key: string]: Style } = {
         protection: { locked: false },
     },
     PINK: {
-        font: { bold: true, size: 14 },
+        font: { name: 'Times New Roman', bold: true, size: 14 },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: ListBorder.THIN,
         fill: ListFill.PINK,
@@ -84,10 +107,18 @@ export const ListStyle: { [key: string]: Style } = {
         protection: { locked: false },
     },
     WHITE: {
-        font: { bold: true, size: 14 },
+        font: { name: 'Times New Roman', bold: true, size: 14 },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: ListBorder.THIN,
         fill: ListFill.WHITE,
+        numFmt: '0',
+        protection: { locked: false },
+    },
+    GREEN: {
+        font: { bold: true, size: 14 },
+        alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+        border: ListBorder.THIN,
+        fill: ListFill.GREEN,
         numFmt: '0',
         protection: { locked: false },
     },
@@ -109,9 +140,15 @@ export interface IHeader {
 export interface ICustomizeCell {
     key: string;
     cell: string;
-    value?: string | number;
+    value?: string | number | boolean | object;
     col?: number;
     colSpan: number;
+    rowSpan?: number;
+    height?: number;
     dataValidation?: DataValidation;
     style: Partial<Column>;
+}
+
+export interface TransactionTyles {
+    type: 'mb' | 'bidv' | 'cb';
 }

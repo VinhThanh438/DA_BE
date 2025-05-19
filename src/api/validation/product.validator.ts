@@ -18,7 +18,8 @@ export const createProduct: schema = {
             unit_id: Joi.number().integer().min(1).required(),
             type: Joi.string()
                 .valid(...values(ProductType))
-                .required(),
+                .optional()
+                .allow(null, ''),
             extra_units: Joi.array()
                 .items(
                     Joi.object({
@@ -27,7 +28,7 @@ export const createProduct: schema = {
                         key: Joi.string().allow(null, ''),
                     }),
                 )
-                .min(1)
+                // .min(1)
                 .optional(),
             product_group_id: Joi.number().integer().min(1).optional(),
         }),
@@ -45,7 +46,7 @@ export const updateProduct: schema = {
             image: Joi.string().allow('', null).max(250),
             type: Joi.string()
                 .valid(...values(ProductType))
-                .required(),
+                .optional().allow(null, ''),
 
             unit_id: Joi.number().integer().optional().min(1),
             product_group_id: Joi.number().integer().optional().min(1),
@@ -117,7 +118,7 @@ export const queryFilter: schema = {
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             type: Joi.string()
                 .valid(...values(ProductType))
-                .required(),
+                .optional().allow(null, ''),
         }),
     ),
 };

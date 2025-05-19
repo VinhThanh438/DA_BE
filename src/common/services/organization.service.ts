@@ -1,4 +1,4 @@
-import { OrganizationRepo, OrganizationSelectionAll } from '@common/repositories/organization.repo';
+import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { BaseService } from './base.service';
 import { Organizations, Prisma } from '.prisma/client';
 import { OrganizationType } from '@config/app.constant';
@@ -6,6 +6,7 @@ import { ICreateOrganization } from '@common/interfaces/company.interface';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { IEmployee } from '@common/interfaces/employee.interface';
+import { OrganizationSelectionAll } from '@common/repositories/prisma/organization.select';
 
 interface IHierarchyModel {
     id: number;
@@ -14,6 +15,12 @@ interface IHierarchyModel {
     industry?: string;
     logo?: string;
     name: string;
+    address: string;
+    phone: string;
+    hotline: string;
+    email: string;
+    website: string;
+    tax_code: string;
     leader?: IEmployee | null;
     children: any[];
 }
@@ -24,8 +31,8 @@ export class OrganizationService extends BaseService<
     Prisma.OrganizationsWhereInput
 > {
     private static instance: OrganizationService;
-    private employeeRepo: EmployeeRepo = new EmployeeRepo()
-    private organizationRepo: OrganizationRepo = new OrganizationRepo()
+    private employeeRepo: EmployeeRepo = new EmployeeRepo();
+    private organizationRepo: OrganizationRepo = new OrganizationRepo();
 
     private constructor() {
         super(new OrganizationRepo());
@@ -47,8 +54,8 @@ export class OrganizationService extends BaseService<
     public async getHierarchyModel(orgId?: number): Promise<IHierarchyModel | null> {
         const organization = (await this.repo.findOne(
             orgId
-                ? { id: orgId } as Prisma.OrganizationsWhereInput
-                : { type: OrganizationType.HEAD_QUARTER } as Prisma.OrganizationsWhereInput,
+                ? ({ id: orgId } as Prisma.OrganizationsWhereInput)
+                : ({ type: OrganizationType.HEAD_QUARTER } as Prisma.OrganizationsWhereInput),
             true,
         )) as Prisma.OrganizationsGetPayload<{ select: typeof OrganizationSelectionAll }> | null;
 
@@ -61,7 +68,13 @@ export class OrganizationService extends BaseService<
             logo: organization.logo || '',
             code: organization.code || '',
             industry: organization.industry || '',
-            leader: organization.leader as IEmployee || null,
+            address: organization.address || '',
+            phone: organization.phone || '',
+            hotline: organization.hotline || '',
+            email: organization.email || '',
+            website: organization.website || '',
+            tax_code: organization.tax_code || '',
+            leader: (organization.leader as IEmployee) || null,
             children: [],
         };
 
@@ -78,16 +91,16 @@ export class OrganizationService extends BaseService<
     }
 
     public async createOrganization(request: Partial<ICreateOrganization>): Promise<IIdResponse> {
-        await this.isExist({ code: request.code })
+        await this.isExist({ code: request.code });
 
         await this.validateForeignKeys(request, {
             leader_id: this.employeeRepo,
-            parent_id: this.organizationRepo
-        })
+            parent_id: this.organizationRepo,
+        });
 
-        const id = await this.repo.create(request)
+        const id = await this.repo.create(request);
 
-        return { id }
+        return { id };
     }
 
     public async updateOrganization(id: number, request: Partial<ICreateOrganization>): Promise<IIdResponse> {
@@ -99,9 +112,9 @@ export class OrganizationService extends BaseService<
             leader_id: this.employeeRepo,
             parent_id: this.organizationRepo,
         });
-        
-        await this.repo.update({ id }, request)
 
-        return { id }
+        await this.repo.update({ id }, request);
+
+        return { id };
     }
 }

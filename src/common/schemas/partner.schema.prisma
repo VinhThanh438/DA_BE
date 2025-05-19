@@ -40,8 +40,7 @@ model Partners {
   orders              Orders[]
   productions         Productions[]
   finance_records     FinanceRecords[]
-  transaction_orders  TransactionOrders[]
-  depts               Depts[]
+  transactions  Transactions[]
   contracts           Contracts[]
   representatives Representatives[]
 
@@ -70,6 +69,13 @@ model Clauses {
   max_dept_amount Decimal? // so tien no toi da
   max_dept_day    Int? // so ngay no toi da
 
+  organization_id  Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+
   partners Partners[]
 
   @@map("clauses")
@@ -83,13 +89,16 @@ model Representatives {
   salutation  String?
   title  String?
   email  String?
-  type    PrsPartnerType
 
   partner_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   partner     Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
 
   @@map("representatives")
   banks Banks[]
   orders Orders[]
+  transactions Transactions[]
 }

@@ -226,9 +226,10 @@ export enum OrderExpenseType {
 }
 
 export enum ProductType {
-    MATERIAL = 'material',
-    PRODUCT = 'product',
+    SUB_MATERIAL = 'sub_material',
+    MAIN_MATERIAL = 'main_material',
     FINISHED = 'finished',
+    SEMI = 'semi',
 }
 
 export const DEFAULT_EXCLUDED_FIELDS = ['key'];
@@ -287,3 +288,24 @@ export const DECIMAL_KEYS = [
     'remaining_amount',
     'commission',
 ];
+
+export enum PaymentRequestStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
+}
+
+export enum PaymentRequestType {
+    ORDER = 'order',
+    COMMISSION = 'commission',
+}
+
+export enum DeptType {
+    ORDER = 'order',
+    COMMISSION = 'product',
+}
+
+export enum TransactionOrderType {
+    ORDER = 'order',
+    COMMISSION = 'commission',
+}

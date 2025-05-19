@@ -1,23 +1,7 @@
 import { Warehouses, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { EmployeeSelection } from './employee.repo';
-
-export const WarehouseSelection: Prisma.WarehousesSelect = {
-    id: true,
-    code: true,
-    name: true,
-    phone: true,
-    address: true,
-    note: true,
-};
-
-export const WarehouseSelectionAll: Prisma.WarehousesSelect = {
-    ...WarehouseSelection,
-    employee: {
-        select: EmployeeSelection
-    }
-};
+import { WarehouseSelection, WarehouseSelectionAll } from './prisma/warehouse.select';
 
 export class WarehouseRepo extends BaseRepo<Warehouses, Prisma.WarehousesSelect, Prisma.WarehousesWhereInput> {
     protected db = DatabaseAdapter.getInstance().warehouses;

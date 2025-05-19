@@ -1,7 +1,7 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
 import { IBillOfMaterial, IBillOfMaterialDetails } from '@common/interfaces/bill-of-material.interface';
-import { ObjectSchema, optional } from 'joi/lib';
+import { ObjectSchema } from 'joi';
 import { queryFilter as baseQueryFilter } from './common.validator';
 
 export const create: schema = {

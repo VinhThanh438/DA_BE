@@ -1,14 +1,7 @@
 import { Prisma, ProductGroups } from '.prisma/client';
 import { BaseRepo } from './base.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-export const ProductGroupSelection: Prisma.ProductGroupsSelect = {
-    id: true,
-    name: true,
-    type: true
-};
-export const ProductGroupSelectionAll: Prisma.ProductGroupsSelect = {
-    ...ProductGroupSelection,
-};
+import { ProductGroupSelection, ProductGroupSelectionAll } from './prisma/product-group.select';
 
 export class ProductGroupRepo extends BaseRepo<
     ProductGroups,

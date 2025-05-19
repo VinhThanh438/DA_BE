@@ -1,19 +1,8 @@
 import { DeviceRequests, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { RequestStatus } from '@config/app.constant';
-import { UserSelectionWithoutPassword } from './user.repo';
 import { ICreateAndUpdateResponse } from '@common/interfaces/common.interface';
-
-export const DeviceRequestSelection: Prisma.DeviceRequestsSelect = {
-    id: true,
-    device_uid: true,
-    status: true,
-    ip_address: true,
-    user_agent: true,
-    user: {
-        select: UserSelectionWithoutPassword,
-    },
-};
+import { DeviceRequestSelection } from './prisma/device-request.select';
 
 export class DeviceRequestRepo {
     private static db = DatabaseAdapter.getInstance().deviceRequests;

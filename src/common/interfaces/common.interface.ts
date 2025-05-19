@@ -8,7 +8,7 @@ export interface IPaginationInfo {
 }
 
 export interface IPaginationResponse<T = any> {
-    data: T;
+    data: T | T[];
     pagination: IPaginationInfo;
 }
 
@@ -61,6 +61,7 @@ export interface ICommonDetails {
     quantity: number;
     discount?: number;
     price: number;
+    amount: number;
     vat?: number;
     commission?: number;
     note?: string;
@@ -72,6 +73,7 @@ export interface ICommonDetails {
     invoice_id?: number;
     inventory_id?: number;
     warehouse_id?: number;
+    order_detail_id?: number;
 }
 
 export interface IUpdateChildAction {

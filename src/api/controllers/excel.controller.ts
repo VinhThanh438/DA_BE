@@ -1,3 +1,5 @@
+import { APIError } from '@common/error/api.error';
+import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import logger from '@common/logger';
 import { ExcelService } from '@common/services/excel.service';
 import { Response, Request, NextFunction } from 'express';
@@ -17,62 +19,59 @@ export class ExcelController {
         return this.instance;
     }
 
-    public async exportExcelPurchaseOrder(req: Request, res: Response, next: NextFunction) {
+    public async exportExcel(req: Request, res: Response, next: NextFunction) {
         try {
-            const data = req.body.data;
-            const fileName = 'purchase_order.xlsx';
-            await this.excelService.exportExcelPurchaseOrder(data, fileName);
-            res.download(fileName);
+            const id = Number(req.query.id);
+            const type = req.query.type;
+            const partnerId = req.query.partnerId;
+            const startAt = req.query.startAt;
+            const endAt = req.query.endAt;
+
+            if (!type) {
+                throw new APIError({
+                    message: `type.${ErrorKey.NOT_FOUND}`,
+                    status: ErrorCode.BAD_REQUEST,
+                });
+            }
+            let path = '';
+
+            switch (type) {
+                case 'purchaseOrder': // don dat hang
+                    path = await this.excelService.exportExcelPurchaseOrder(id);
+                    break;
+                case 'salesOrder': // don ban hang
+                    path = await this.excelService.exportExcelPurchaseOrder(id);
+                    break;
+                case 'purchaseDebtComparison': // doi chieu cong no mua
+                    path = await this.excelService.exportExcelDebtComparison(req.query);
+                    break;
+                case 'purchaseDebtReport': // bao cao cong no mua
+                    path = await this.excelService.exportExcelPayment(req.query);
+                    break;
+                case 'purchaseDebtCommissionReport': // bao cao cong no hoa hong cong
+                    path = await this.excelService.exportExcelSalesCommission(req.query);
+                    break;
+                case 'inventoryReceipt': // phieu nhap kho
+                    path = await this.excelService.exportExcelImportWarehouse(id);
+                    break;
+                case 'purchaseContract': // hop dong mua hang
+                    path = await this.excelService.exportExcelPurchaseContract(id);
+                    break;
+                case 'bankTransaction': // giao dich ngan hang
+                    path = await this.excelService.exportExcelTransaction(req.query);
+                    break;
+                case 'Quotation': // bao gia
+                    path = await this.excelService.exportExcelQuotation(id);
+                    break;
+                default:
+                    throw new APIError({
+                        message: `type.${ErrorKey.INVALID}`,
+                        status: ErrorCode.BAD_REQUEST,
+                    });
+            }
+            return res.sendJson(path);
         } catch (error) {
             logger.error(`${this.constructor.name}.exportExcelPurchaseOrder: `, error);
-            next(error);
-        }
-    }
-
-    public async exportExcelPurchaseContract(req: Request, res: Response, next: NextFunction) {
-        try {
-            const data = req.body.data;
-            const fileName = 'purchase_contract.xlsx';
-            await this.excelService.exportExcelPurchaseContract(data, fileName);
-            res.download(fileName);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.exportExcelPurchaseContract: `, error);
-            next(error);
-        }
-    }
-
-    public async exportExcelImportWarehouse(req: Request, res: Response, next: NextFunction) {
-        try {
-            logger.info('export excel import warehouse');
-            const inventoryId = Number(req.params.id);
-            const fileResult = await this.excelService.exportExcelImportWarehouse(inventoryId);
-            res.download(fileResult);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.exportExcelImportWarehouse: `, error);
-            next(error);
-        }
-    }
-
-    public async exportExcelSalesCommission(req: Request, res: Response, next: NextFunction) {
-        try {
-            const data = req.body.data;
-            const fileName = 'export_warehouse.xlsx';
-            await this.excelService.exportExcelSalesCommission(data, fileName);
-            res.download(fileName);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.exportExcelExportWarehouse: `, error);
-            next(error);
-        }
-    }
-
-    public async exportExcelPayment(req: Request, res: Response, next: NextFunction) {
-        try {
-            const data = req.body.data;
-            const fileName = 'export_warehouse.xlsx';
-            await this.excelService.exportExcelPayment(data, fileName);
-            res.download(fileName);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.exportExcelExportWarehouse: `, error);
             next(error);
         }
     }

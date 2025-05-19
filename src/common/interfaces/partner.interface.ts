@@ -1,6 +1,7 @@
 import { PartnerType } from '@config/app.constant';
 import { IBank } from './bank.interface';
-import { IArrayDataInput } from './common.interface';
+import { IArrayDataInput, IUpdateChildAction } from './common.interface';
+import { IPaginationInput } from './common.interface';
 
 export interface IRepresentative extends IArrayDataInput {
     id?: number;
@@ -15,10 +16,11 @@ export interface IRepresentative extends IArrayDataInput {
     banks?: IBank;
 }
 
-export interface IPartner {
+export interface IPartner extends IUpdateChildAction {
     id?: number;
     code?: string;
     name: string;
+    email?: string;
     phone?: string;
     note?: string;
     tax?: string;
@@ -28,10 +30,18 @@ export interface IPartner {
     representative_email?: string;
     representative_phone?: string;
     type?: PartnerType;
-
-    employee_id?: number;
-    partner_group_id?: number;
+    employee_id?: number | null;
+    partner_group_id?: number | null;
     clause_id?: number;
+    emergency_contact_id?: number | null;
+    payment_term?: string | null;
+    representatives: IRepresentative[];
+    addresses: {
+        address_type: string;
+        address_name: string;
+    }[];
+}
 
-    representatives?: IRepresentative[];
+export interface IPartnerDebtQueryFilter extends IPaginationInput {
+    partnerId?: number;
 }

@@ -18,6 +18,13 @@ export class TimeHelper {
     }
 
     /**
+     * Get current date
+     */
+    public static getCurrentDate(): Date {
+        return moment().tz(this.timezone).startOf('day').toDate();
+    }
+
+    /**
      * Format time to string
      */
     public static format(date: Date | string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): string {

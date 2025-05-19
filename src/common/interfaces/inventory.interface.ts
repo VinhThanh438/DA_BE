@@ -22,3 +22,7 @@ export interface IInventory extends IUpdateChildAction {
 
     details: ICommonDetails[];
 }
+
+export interface IUpdateWarehouseTransaction {
+    
+}

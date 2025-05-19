@@ -1,6 +1,11 @@
 import { BaseService } from './base.service';
 import { Contracts, Prisma } from '.prisma/client';
-import { IIdResponse, IUpdateChildAction } from '@common/interfaces/common.interface';
+import {
+    IIdResponse,
+    IPaginationInput,
+    IPaginationResponse,
+    IUpdateChildAction,
+} from '@common/interfaces/common.interface';
 import { ContractRepo } from '@common/repositories/contract.repo';
 import { IContract } from '@common/interfaces/contract.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
@@ -12,6 +17,7 @@ import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { UnitRepo } from '@common/repositories/unit.repo';
+import { transformDecimal } from '@common/helpers/transform.util';
 
 export class ContractService extends BaseService<Contracts, Prisma.ContractsSelect, Prisma.ContractsWhereInput> {
     private static instance: ContractService;
@@ -58,6 +64,7 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
                     details,
                     {
                         product_id: this.productRepo,
+                        unit_id: this.unitRepo,
                     },
                     transaction,
                 );
@@ -200,5 +207,11 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
         });
 
         return { id };
+    }
+
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        const result = await this.repo.paginate(query, true);
+        const data = this.enrichOrderTotals(result);
+        return transformDecimal(data);
     }
 }

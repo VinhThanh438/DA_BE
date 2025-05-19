@@ -8,7 +8,7 @@ model Products {
   note             String?
   product_group_id Int?
   unit_id          Int?
-  type             PrsProductType @default(product)
+  type             PrsProductType @default(main_material)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -28,9 +28,10 @@ model Products {
 }
 
 enum PrsProductType {
-  product
-  material
+  sub_material
+  main_material
   finished
+  semi
 }
 
 model Units {
@@ -50,7 +51,7 @@ model Units {
 model ProductGroups {
   id       Int        @id @default(autoincrement())
   name     String
-  type             PrsProductType @default(product)
+  type             PrsProductType @default(main_material)
   products Products[]
 
   @@map("product_groups")

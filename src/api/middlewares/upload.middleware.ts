@@ -31,9 +31,13 @@ export class UploadMiddleware {
                     cb(null, folderPath);
                 },
                 filename: (req, file, cb) => {
-                    const nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
-                    const uniqueSuffix = `${nameWithoutExt}-${Date.now()}${path.extname(file.originalname)}`;
-                    cb(null, uniqueSuffix);
+                    // const nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
+                    // const uniqueSuffix = `${nameWithoutExt}-${Date.now()}${path.extname(file.originalname)}`;
+                    const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+                    const fileExtension = fileName.split('.').pop();
+                    const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+                    const now = Date.now();
+                    cb(null, `${fileNameWithoutExt}-${now}.${fileExtension}`);
                 },
             });
 

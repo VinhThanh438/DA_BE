@@ -5,7 +5,6 @@ model Contracts {
   tax            String? // Mã số thuế
   time_at      DateTime? // Ngày ký
   contract_date      DateTime? @default(now()) // Ngày hợp đồng
-  contract_value Decimal? // giá trị hợp đồng
   delivery_date  DateTime? // Hạn giao hàng
 
   type           PrsContractType @default(order)

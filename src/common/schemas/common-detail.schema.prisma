@@ -30,4 +30,5 @@ model CommonDetails {
   warehouse Warehouses?   @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
 
   @@map("common_details")
+  payment_request_details PaymentRequestDetails[]
 }

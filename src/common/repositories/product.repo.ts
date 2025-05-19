@@ -1,24 +1,7 @@
 import { Prisma, Products } from '.prisma/client';
 import { BaseRepo } from './base.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { ProductGroupSelectionAll } from './product-group.repo';
-import { UnitSelection } from './unit.repo';
-export const ProductSelection: Prisma.ProductsSelect = {
-    id: true,
-    name: true,
-    code: true,
-    vat: true,
-    image: true,
-    packing_standard: true,
-    note: true,
-    type: true
-};
-export const ProductSelectionAll: Prisma.ProductsSelect = {
-    ...ProductSelection,
-    product_group: { select: ProductGroupSelectionAll },
-    unit: { select: UnitSelection },
-    extra_units: { select: { unit: { select: { ...UnitSelection, id: true } }, conversion_rate: true } },
-};
+import { ProductSelection, ProductSelectionAll } from './prisma/product.select';
 
 export class ProductRepo extends BaseRepo<Products, Prisma.ProductsSelect, Prisma.ProductsWhereInput> {
     protected db = DatabaseAdapter.getInstance().products;

@@ -26,6 +26,12 @@ export interface ICreateOrganization {
     type: OrganizationType;
     leader_id: number;
     parent_id: number;
+    address?: string;
+    phone?: string;
+    hotline?: string;
+    email?: string;
+    website?: string;
+    tax_code?: string;
 }
 
 export interface ICreateUpdateJobPosition {

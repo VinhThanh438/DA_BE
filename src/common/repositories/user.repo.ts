@@ -2,31 +2,8 @@ import { Users, Prisma } from '.prisma/client';
 import { IPaginationInfo, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { EmployeeSelection } from './employee.repo';
 import { ADMIN_USER_NAME } from '@common/environment';
-
-export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
-    id: true,
-    code: true,
-    device_uid: true,
-    username: true,
-    email: true,
-};
-
-export const UserSelection: Prisma.UsersSelect = {
-    ...UserSelectionWithoutPassword,
-    password: true,
-    is_first_loggin: true,
-    is_default: true,
-    is_disabled: true,
-};
-
-export const UserSelectionAll: Prisma.UsersSelect = {
-    ...UserSelectionWithoutPassword,
-    employee: {
-        select: EmployeeSelection,
-    },
-};
+import { UserSelectionWithoutPassword, UserSelectionAll, UserSelection } from './prisma/user.select';
 
 export class UserRepo extends BaseRepo<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
     protected db = DatabaseAdapter.getInstance().users;
@@ -80,7 +57,7 @@ export class UserRepo extends BaseRepo<Users, Prisma.UsersSelect, Prisma.UsersWh
         const [data, totalRecords] = await Promise.all([
             this.db.findMany({
                 where: conditions,
-                select: includeRelations? this.detailSelect : this.defaultSelect,
+                select: includeRelations ? this.detailSelect : this.defaultSelect,
                 skip,
                 take: size,
                 orderBy: { id: 'desc' },

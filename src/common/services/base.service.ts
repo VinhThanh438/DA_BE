@@ -385,4 +385,23 @@ export abstract class BaseService<T, S, W> {
             data: enrichedData,
         };
     }
+
+    public manualPaginate<T>(items: T[], page: number = 1, size: number = 20): IPaginationResponse<T> {
+        const totalRecords = items.length;
+        const totalPages = Math.ceil(totalRecords / size);
+        const currentPage = page;
+        const offset = (currentPage - 1) * size;
+
+        const paginatedItems = items.slice(offset, offset + size);
+
+        return {
+            data: paginatedItems,
+            pagination: {
+                totalPages,
+                totalRecords,
+                size,
+                currentPage,
+            },
+        };
+    }
 }

@@ -3,7 +3,7 @@ import { APIError } from '@common/error/api.error';
 import { ErrorKey, StatusCode } from '@common/errors';
 
 import { IIdResponse } from '@common/interfaces/common.interface';
-import { ICreateProduct, IProducts, IUpdateProduct } from '@common/interfaces/product.interface';
+import { ICreateProduct, IExtraUnits, IProducts, IUpdateProduct } from '@common/interfaces/product.interface';
 import { ProductRepo } from '@common/repositories/product.repo';
 import { BaseService } from './base.service';
 import { UnitRepo } from '@common/repositories/unit.repo';
@@ -96,7 +96,7 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             });
         }
         if (unitNotFound && unitNotFound.length > 0) {
-            this.validateUnit(unitNotFound, 'unit_id.not_found');
+            // this.validateUnit(unitNotFound, 'unit_id.not_found');
             this.validateUnit(unitExisted, 'unit_id.existed');
         }
 
@@ -149,7 +149,7 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             this.validateUnit(unitNotFound, 'unit_id.not_found');
         }
 
-        const extra_units =
+        const extra_units: any =
             body.extra_units && body.extra_units.length > 0
                 ? {
                       create: body.extra_units.map((item) => ({
@@ -168,8 +168,13 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
                 errors: [`extra_units.${ErrorKey.INVALID}`],
             });
         }
+        if (extra_units.length === 0) {
+            delete body.extra_units;
+        } else {
+            body.extra_units = extra_units;
+        }
 
-        const output = await this.productRepo.create({ ...body, extra_units });
+        const output = await this.productRepo.create({ ...body });
 
         return { id: output };
     }

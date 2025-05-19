@@ -13,7 +13,6 @@ export const create: schema = {
             time_at: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
-            contract_value: Joi.number().precision(2).optional().allow(null),
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),
@@ -40,10 +39,9 @@ export const update: schema = {
         Joi.object<IContract>({
             code: Joi.string().optional().allow(null, '').max(100),
             tax: Joi.string().optional().allow(null, '').max(20),
-            time_at: Joi.string().optional().allow(null),
+            time_at: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),
-            contract_value: Joi.number().precision(2).optional().allow(null),
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),
@@ -71,10 +69,9 @@ export const updateEntity: schema = {
         Joi.object<IContract>({
             code: Joi.string().optional().allow(null, '').max(100),
             tax: Joi.string().optional().allow(null, '').max(20),
-            time_at: Joi.string().optional().allow(null),
+            time_at: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),
-            contract_value: Joi.number().precision(2).optional().allow(null),
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),

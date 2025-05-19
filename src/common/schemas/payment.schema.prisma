@@ -1,0 +1,72 @@
+// De nghi thanh toan
+model PaymentRequests {
+  id           Int       @id @default(autoincrement())
+  code         String    @default(cuid())
+  status       PrsPaymentRequestStatus @default(pending)
+  type         PrsdPaymentRequestType @default(order)
+  files        Json?           @default("[]")
+  note            String?
+  rejected_reason            String?
+  time_at            DateTime @default(now())
+  payment_date            DateTime @default(now())
+
+  employee_id     Int?
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  employee   Employees?   @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+
+  @@map("payment_requests")
+  payments Payments[]
+  details PaymentRequestDetails[]
+}
+
+model PaymentRequestDetails {
+  id           Int       @id @default(autoincrement())
+  note         String?
+  amount       Float?
+
+  payment_request_id     Int?
+  order_detail_id        Int?
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  payment_request   PaymentRequests?   @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
+  order_detail   CommonDetails?   @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
+
+  @@map("payment_request_details")
+}
+
+enum PrsPaymentRequestStatus {
+  pending
+  confirmed
+  rejected
+}
+
+enum PrsdPaymentRequestType {
+  order
+  commission
+}
+
+model Payments {
+  id           Int       @id @default(autoincrement())
+  code         String    @default(cuid())
+  status       PrsPaymentRequestStatus @default(pending)
+  type         PrsdPaymentRequestType @default(order)
+  files        Json?           @default("[]")
+  note            String?
+  rejected_reason            String?
+  time_at            DateTime @default(now())
+  payment_date            DateTime @default(now())
+
+  payment_request_id     Int?
+
+  payment_request  PaymentRequests?   @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  @@map("payments")
+}

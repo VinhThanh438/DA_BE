@@ -15,11 +15,14 @@ export interface IOrder {
     note?: string;
     time_at?: Date;
     files?: string[];
+    files_add?: string[];
+    files_delete?: string[];
 
     employee_id?: number;
     partner_id?: number;
     representative_id?: number;
     organization_id?: number;
+    bank_id?: number;
 
     details?: ICommonDetails[];
     order_expenses?: IOrderExpense[];
@@ -27,6 +30,10 @@ export interface IOrder {
     contracts?: IContract[];
     invoices?: IInvoice[];
     inventories: IInventory[];
+
+    add?: ICommonDetails[];
+    update?: ICommonDetails[];
+    delete?: number[];
 }
 
 export interface IApproveRequest {

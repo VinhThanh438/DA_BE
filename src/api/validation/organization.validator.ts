@@ -9,7 +9,7 @@ import { queryFilter as baseQueryFilter } from './common.validator';
 export const queryFilter: schema = {
     query: wrapSchema(
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
-            parentId: Joi.number().optional().allow(null, '')
+            parentId: Joi.number().optional().allow(null, ''),
         }),
     ),
 };
@@ -29,6 +29,12 @@ export const create: schema = {
                 .valid(...values([OrganizationType.COMPANY, OrganizationType.DEPARTMENT, OrganizationType.BRANCH])),
             parent_id: Joi.number().required(),
             leader_id: Joi.number().optional().allow(null, ''),
+            address: Joi.string().optional().allow(null, '').min(1).max(500),
+            phone: Joi.string().optional().allow(null, '').min(1).max(100),
+            hotline: Joi.string().optional().allow(null, '').min(1).max(100),
+            email: Joi.string().optional().allow(null, '').email().min(1).max(100),
+            website: Joi.string().optional().allow(null, '').min(1).max(100),
+            tax_code: Joi.string().optional().allow(null, '').min(1).max(100),
         }),
     ),
 };
@@ -53,6 +59,12 @@ export const update: schema = {
                 .valid(...values([OrganizationType.COMPANY, OrganizationType.DEPARTMENT])),
             parent_id: Joi.number().required(),
             leader_id: Joi.number().optional().allow(null, ''),
+            address: Joi.string().optional().allow(null, '').min(1).max(500),
+            phone: Joi.string().optional().allow(null, '').min(1).max(100),
+            hotline: Joi.string().optional().allow(null, '').min(1).max(100),
+            email: Joi.string().optional().allow(null, '').email().min(1).max(100),
+            website: Joi.string().optional().allow(null, '').min(1).max(100),
+            tax_code: Joi.string().optional().allow(null, '').min(1).max(100),
         }),
     ),
 };

@@ -4,81 +4,9 @@ import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { mapNestedInput } from '@common/helpers/nested-input.helper';
 import { IEmployee } from '@common/interfaces/employee.interface';
 import { BaseRepo } from './base.repo';
-import { EducationSelectionAll } from './education.repo';
-import { EmployeeFinanceSelectionAll } from './employee-finance.repo';
-import { AddressesSelectionAll } from './address.repo';
-import { EmergencyContactSelectionAll } from './emergency-contact.repo';
-import { EmployeeContractSelectionAll } from './employee-contract.repo';
-import { InsuranceSelectionAll } from './insurance.repo';
-import { JobPositionSelectionAll } from './job-position.repo';
 import { ADMIN_USER_NAME } from '@common/environment';
 import { transformDecimal } from '@common/helpers/transform.util';
-
-export const EmployeeShortSelection: Prisma.EmployeesSelect = {
-    id: true,
-    code: true,
-    email: true,
-    name: true,
-    gender: true,
-};
-
-export const EmployeeSelection: Prisma.EmployeesSelect = {
-    ...EmployeeShortSelection,
-    marital_status: true,
-    working_status: true,
-    employee_status: true,
-    date_of_birth: true,
-    phone: true,
-    tax: true,
-    ethnicity: true,
-    religion: true,
-    attendance_code: true,
-    description: true,
-    avatar: true,
-    base_salary: true,
-    bank: true,
-    bank_branch: true,
-    bank_code: true,
-    job_position: {
-        select: JobPositionSelectionAll,
-    },
-};
-
-export const EmployeeSelectionAll: Prisma.EmployeesSelect = {
-    ...EmployeeSelection,
-    identity_code: true,
-    identity_issued_place: true,
-    identity_issued_date: true,
-    identity_expired_date: true,
-    indentity_files: true,
-
-    passport_code: true,
-    passport_issued_place: true,
-    passport_issued_date: true,
-    passport_expired_date: true,
-    passport_files: true,
-    trial_date: true,
-    official_date: true,
-
-    educations: {
-        select: EducationSelectionAll,
-    },
-    employee_finances: {
-        select: EmployeeFinanceSelectionAll,
-    },
-    addresses: {
-        select: AddressesSelectionAll,
-    },
-    emergency_contacts: {
-        select: EmergencyContactSelectionAll,
-    },
-    employee_contracts: {
-        select: EmployeeContractSelectionAll,
-    },
-    insurances: {
-        select: InsuranceSelectionAll,
-    },
-};
+import { EmployeeSelection, EmployeeSelectionAll } from './prisma/employee.select';
 
 export const getSelection = (includeRelations: boolean): Prisma.EmployeesSelect => ({
     ...EmployeeSelection,

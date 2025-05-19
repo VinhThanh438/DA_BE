@@ -1,19 +1,7 @@
 import { EmergencyContacts, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-
-export const EmergencyContactSelection: Prisma.EmergencyContactsSelect = {
-    id: true,
-    name: true,
-    email: true,
-    relationship: true,
-    address: true,
-    phone: true
-};
-
-export const EmergencyContactSelectionAll: Prisma.EmergencyContactsSelect = {
-    ...EmergencyContactSelection,
-};
+import { EmergencyContactSelection, EmergencyContactSelectionAll } from './prisma/emergency-contact.select';
 
 export class EmergencyContactRepo extends BaseRepo<
     EmergencyContacts,

@@ -58,7 +58,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
                 take: limit,
                 orderBy: { id: 'desc' },
             }),
-            this.db.count({ where: { ...query, ...(args && args) } }),
+            this.db.count({ where: { ...where, ...(args && args) } }),
         ]);
 
         const totalPages = Math.ceil(totalRecords / limit);
@@ -82,10 +82,12 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         const sanitizedWhere = this.sanitizeJsonFilters(where);
         const db = this.getModel(tx);
 
-        return db.findFirst({
+        const data = await db.findFirst({
             where: sanitizedWhere,
             select: includeRelations ? this.detailSelect : this.defaultSelect,
         });
+
+        return transformDecimal(data);
     }
 
     public async getLastRecord(tx?: Prisma.TransactionClient): Promise<Partial<T> | null> {
@@ -108,6 +110,15 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         tx?: Prisma.TransactionClient,
     ): Promise<Partial<T>[]> {
         const sanitizedWhere = this.sanitizeJsonFilters(where);
+        for (const logicKey of ['AND', 'OR', 'NOT']) {
+            if (
+                sanitizedWhere[logicKey] &&
+                !Array.isArray(sanitizedWhere[logicKey]) &&
+                typeof sanitizedWhere[logicKey] === 'object'
+            ) {
+                sanitizedWhere[logicKey] = Object.values(sanitizedWhere[logicKey]);
+            }
+        }
         const db = this.getModel(tx);
         const data = await db.findMany({
             where: sanitizedWhere,

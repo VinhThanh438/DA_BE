@@ -9,3 +9,5 @@ export const EVENT_USER_FIRST_LOGGIN = 'event-user-first-loggin';
 export const EVENT_USER_DEVICE_ACCEPTED = 'event-user-device-accepted';
 
 export const EVENT_USER_CREATED_OR_DELETED = 'event-user-created-or-deleted';
+
+export const EVENT_INVENTORY_CREATED = 'event-inventory-created'

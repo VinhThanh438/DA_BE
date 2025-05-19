@@ -1,23 +1,7 @@
 import { Representatives, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { orderSelectionDetails } from './order.repo';
-
-export const RepresentativeSelection: Prisma.RepresentativesSelect = {
-    id: true,
-    name: true,
-    phone: true,
-    salutation: true,
-    title: true,
-    email: true
-};
-
-export const RepresentativeSelectionAll: Prisma.RepresentativesSelect = {
-    ...RepresentativeSelection,
-    orders: {
-        select: orderSelectionDetails
-    }
-};
+import { RepresentativeSelection, RepresentativeSelectionAll } from './prisma/representative.select';
 
 export class RepresentativeRepo extends BaseRepo<
     Representatives,

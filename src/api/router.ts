@@ -27,8 +27,10 @@ import orderRoutes from '@api/routes/order.route';
 import billOfMaterialRoutes from '@api/routes/bill-of-material.route';
 import orderExpenseRoutes from '@api/routes/order-expense.route';
 import inventoryRoutes from '@api/routes/inventory.route';
+import paymentRequestRoutes from '@api/routes/payment-request.route';
 import representativeRoutes from '@api/routes/representative.route';
 import excelRouter from '@api/routes/excel.route';
+import publicRoutes from '@api/routes/public.route';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
 
@@ -36,6 +38,7 @@ const router = express.Router();
 
 router.use(UserDeviceMiddleware.getUserDevice);
 router.use('/auth', authRoutes);
+router.use('/', publicRoutes);
 router.use(AuthMiddleware.authenticate);
 router.use('/', otherRoutes);
 router.use('/employee', employeeRoutes);
@@ -64,6 +67,7 @@ router.use('/order', orderRoutes);
 router.use('/bill-of-material', billOfMaterialRoutes);
 router.use('/order-expense', orderExpenseRoutes);
 router.use('/inventory', inventoryRoutes);
+router.use('/payment-request', paymentRequestRoutes);
 router.use('/representative', representativeRoutes);
 router.use('/excel', excelRouter);
 

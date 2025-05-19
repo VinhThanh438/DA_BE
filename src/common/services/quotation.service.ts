@@ -1,21 +1,28 @@
 import { QuotationRepo } from '@common/repositories/quotation.repo';
 import { BaseService } from './base.service';
 import { Quotations, Prisma } from '.prisma/client';
-import { IQuotation, ISupplierQuotationRequest } from '@common/interfaces/quotation.interface';
+import {
+    IApproveRequest,
+    IQueryQuotation,
+    IQuotation,
+    ISupplierQuotationRequest,
+} from '@common/interfaces/quotation.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
-import { IIdResponse, IUpdateChildAction } from '@common/interfaces/common.interface';
+import { IIdResponse, IPaginationResponse, IUpdateChildAction } from '@common/interfaces/common.interface';
 import { ProductRepo } from '@common/repositories/product.repo';
-import { CodeType, DEFAULT_EXCLUDED_FIELDS, PartnerType } from '@config/app.constant';
+import { CodeType, DEFAULT_EXCLUDED_FIELDS, PartnerType, QuotationStatus, QuotationType } from '@config/app.constant';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { PurchaseRequestRepo } from '@common/repositories/purchase-request.repo';
 import { CommonService } from './common.service';
+import { PurchaseRequestDetailRepo } from '@common/repositories/purchase-request-details.repo';
 
 export class QuotationService extends BaseService<Quotations, Prisma.QuotationsSelect, Prisma.QuotationsWhereInput> {
     private static instance: QuotationService;
     private quotatioDetailRepo: CommonDetailRepo = new CommonDetailRepo();
+    private purchaseRequestDetailRepo: PurchaseRequestDetailRepo = new PurchaseRequestDetailRepo();
     private productRepo: ProductRepo = new ProductRepo();
     private partnerRepo: PartnerRepo = new PartnerRepo();
     private employeeRepo: EmployeeRepo = new EmployeeRepo();
@@ -49,10 +56,11 @@ export class QuotationService extends BaseService<Quotations, Prisma.QuotationsS
                     {
                         code: supplierCode,
                         tax: request.tax,
-                        name: request.name,
+                        name: request.organization_name,
                         address: request.address,
-                        phone: request.phone,
+                        representative_phone: request.phone,
                         type: request.type,
+                        representative_name: request.name,
                     },
                     tx,
                 );
@@ -114,24 +122,27 @@ export class QuotationService extends BaseService<Quotations, Prisma.QuotationsS
             quotationId = await this.repo.create(quotationData as Partial<Quotations>, tx);
 
             if (detailIds && detailIds.length > 0) {
-                const updateData = await Promise.all(
-                    detailIds.map(async (id) => {
-                        const isExistItem = await this.quotatioDetailRepo.findOne({ id });
-                        if (!isExistItem) {
+                const newDetailData = await Promise.all(
+                    detailIds.map(async (idItem) => {
+                        const purchaseRequest = await this.purchaseRequestDetailRepo.findOne({ id: idItem });
+                        if (!purchaseRequest) {
                             throw new APIError({
                                 message: 'common.not-found',
                                 status: ErrorCode.BAD_REQUEST,
-                                errors: [`id_${id}.${ErrorKey.NOT_FOUND}`],
+                                errors: [`id_${idItem}.${ErrorKey.NOT_FOUND}`],
                             });
                         }
-                        return {
-                            id: id,
-                            quotation_id: quotationId,
-                        };
+                        const { id, unit_id, material_id, ...details } = purchaseRequest;
+                        Object.assign(details, {
+                            product: { connect: { id: material_id } },
+                            unit: { connect: { id: unit_id } },
+                            quotation: { connect: { id: quotationId } },
+                        });
+                        return details;
                     }),
                 );
 
-                await this.quotatioDetailRepo.updateMany(updateData, tx);
+                await this.quotatioDetailRepo.createMany(newDetailData, tx);
             }
         });
 
@@ -186,59 +197,6 @@ export class QuotationService extends BaseService<Quotations, Prisma.QuotationsS
         return { id: quotationId };
     }
 
-    public async updateQuotation(id: number, request: Partial<IQuotation>): Promise<IIdResponse> {
-        await this.findById(id);
-
-        await this.isExist({ code: request.code, id }, true);
-
-        await this.validateForeignKeys(request, {
-            partner_id: this.partnerRepo,
-            employee_id: this.employeeRepo,
-        });
-
-        await this.db.$transaction(async (tx) => {
-            const { details, ...quotationData } = request;
-
-            await this.repo.update({ id }, quotationData as Partial<Quotations>, tx);
-
-            if (details) {
-                await this.quotatioDetailRepo.deleteMany({ quotation_id: id }, tx);
-
-                if (details.length > 0) {
-                    await this.validateForeignKeys(
-                        details,
-                        {
-                            product_id: this.productRepo,
-                        },
-                        tx,
-                    );
-
-                    const mappedDetails = details.map((item) => {
-                        const { product_id, unit_id, ...rest } = item;
-                        return {
-                            ...rest,
-                            quotation: id ? { connect: { id } } : undefined,
-                            product: product_id ? { connect: { id: product_id } } : undefined,
-                            unit: unit_id ? { connect: { id: unit_id } } : undefined,
-                        };
-                    });
-
-                    const filteredData = this.filterData(mappedDetails, DEFAULT_EXCLUDED_FIELDS, ['details']);
-
-                    await this.quotatioDetailRepo.createMany(filteredData, tx);
-                }
-            } else {
-                throw new APIError({
-                    message: `common.status.${StatusCode.BAD_REQUEST}`,
-                    status: ErrorCode.BAD_REQUEST,
-                    errors: [`details.${ErrorKey.INVALID}`],
-                });
-            }
-        });
-
-        return { id };
-    }
-
     public async updateQuotationEntity(id: number, request: Partial<IQuotation>): Promise<IIdResponse> {
         await this.findById(id);
 
@@ -287,6 +245,43 @@ export class QuotationService extends BaseService<Quotations, Prisma.QuotationsS
             }
         });
 
+        return { id };
+    }
+
+    public async paginate(query: IQueryQuotation): Promise<IPaginationResponse> {
+        const { isMain, type, ...otherQuery } = query;
+        const where: any = { ...otherQuery };
+
+        if (type === QuotationType.SUPPLIER) {
+            where.type = type;
+
+            if (isMain === true) {
+                where.NOT = { purchase_request_id: null };
+            } else if (isMain === false) {
+                where.purchase_request_id = null;
+            }
+        }
+
+        const data = await this.repo.paginate(where, true);
+        return data;
+    }
+
+    public async approve(id: number, request: IApproveRequest): Promise<IIdResponse> {
+        const quotation = await this.repo.findOne({ id });
+        if (!quotation) {
+            throw new APIError({
+                message: 'common.not_found',
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`id.${ErrorKey.NOT_FOUND}`],
+            });
+        } else if (quotation.status !== QuotationStatus.PENDING) {
+            throw new APIError({
+                message: 'common.not_found',
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`status.${ErrorKey.INVALID}`],
+            });
+        }
+        await this.repo.update({ id }, request);
         return { id };
     }
 }

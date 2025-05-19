@@ -1,21 +1,7 @@
 import { EmployeeContracts, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-
-export const EmployeeContractSelection: Prisma.EmployeeContractsSelect = {
-    id: true,
-    code: true,
-    type: true,
-    salary: true,
-    start_date: true,
-    end_date: true,
-    is_applied: true,
-    file: true,
-};
-
-export const EmployeeContractSelectionAll: Prisma.EmployeeContractsSelect = {
-    ...EmployeeContractSelection,
-};
+import { EmployeeContractSelection, EmployeeContractSelectionAll } from './prisma/employee-contract.select';
 
 export class EmployeeContractRepo extends BaseRepo<
     EmployeeContracts,

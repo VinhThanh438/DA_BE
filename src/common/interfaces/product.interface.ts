@@ -12,7 +12,7 @@ export interface ICreateProduct {
     product_group_id?: number;
     unit_id?: number;
     type?: ProductType;
-    extra_units?: IExtraUnits[]; // Optional vì có thể không truyền productUnits khi tạo mới
+    extra_units?: IExtraUnits[] | any[]; // Optional vì có thể không truyền productUnits khi tạo mới
 }
 export interface IExtraUnits {
     key: string;

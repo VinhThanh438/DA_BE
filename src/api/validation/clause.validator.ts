@@ -9,6 +9,7 @@ export const createClause = {
             content: Joi.string().optional().allow(null, ''),
             max_dept_amount: Joi.number().optional().allow(null),
             max_dept_day: Joi.number().optional().allow(null),
+            organization_id: Joi.number().optional().allow(null, ''),
         }),
     ),
 };
@@ -20,6 +21,7 @@ export const updateClause = {
             content: Joi.string().optional().allow(null, ''),
             max_dept_amount: Joi.number().optional().allow(null),
             max_dept_day: Joi.number().optional().allow(null),
+            organization_id: Joi.number().optional().allow(null, ''),
         }),
     ),
 };

@@ -3,7 +3,6 @@ import { ADMIN_USER_NAME } from '@common/environment';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, StatusCode } from '@common/errors';
 import eventbus from '@common/eventbus';
-import { PasswordHelper } from '@common/helpers/password.helper';
 import { TokenHelper } from '@common/helpers/token.helper';
 import {
     ICreateDeviceRequest,
@@ -114,7 +113,7 @@ export class AuthService {
     }
 
     public static async getInfo(id: number): Promise<Partial<Users>> {
-        const user = await this.userRepo.findOne({ id }, true);
+        let user = await this.userRepo.findOne({ id }, true);
 
         if (!user) {
             throw new APIError({
@@ -123,7 +122,10 @@ export class AuthService {
             });
         }
 
-        return user;
+        const { organization, ...userData } = user as any;
+        Object.assign(userData, { organizations: [organization] });
+
+        return userData;
     }
 
     public static async deleteToken(id: number): Promise<void> {

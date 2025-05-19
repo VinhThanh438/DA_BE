@@ -7,7 +7,7 @@ export interface IContract extends IUpdateChildAction {
     time_at?: DateString;
     delivery_date?: DateString;
     contract_date?: DateString;
-    contract_value?: string;
+    contract_value?: number;
     files?: string[];
     status?: ContractStatus;
 

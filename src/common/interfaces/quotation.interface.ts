@@ -1,5 +1,5 @@
 import { QuotationStatus, QuotationType } from "@config/app.constant";
-import { ICommonDetails, IUpdateChildAction } from "./common.interface";
+import { ICommonDetails, IPaginationInput, IUpdateChildAction } from "./common.interface";
 import { IEmployee } from "./employee.interface";
 
 export interface IQuotation extends IUpdateChildAction {
@@ -41,4 +41,8 @@ export interface IApproveRequest {
     status: QuotationStatus,
     type: QuotationType,
     rejected_reason?: string,
+}
+
+export interface IQueryQuotation extends IPaginationInput {
+    isMain: boolean;
 }

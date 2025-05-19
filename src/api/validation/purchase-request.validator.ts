@@ -30,7 +30,7 @@ export const create: schema = {
                         key: Joi.string().allow(null, ''),
                     }),
                 )
-                .optional()
+                .required()
                 .default([]),
         }),
     ),

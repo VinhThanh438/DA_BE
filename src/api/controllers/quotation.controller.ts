@@ -43,18 +43,6 @@ export class QuotationController extends BaseController<Quotations> {
         try {
             const body = req.body as IQuotation;
             const id = Number(req.params.id);
-            const result = await this.service.updateQuotation(id, body);
-            res.sendJson(result);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.update: `, error);
-            next(error);
-        }
-    }
-
-    public async updateChildEntity(req: Request, res: Response, next: NextFunction) {
-        try {
-            const body = req.body as IQuotation;
-            const id = Number(req.params.id);
             const result = await this.service.updateQuotationEntity(id, body);
             res.sendJson(result);
         } catch (error) {
@@ -70,10 +58,10 @@ export class QuotationController extends BaseController<Quotations> {
             if (body.status === QuotationStatus.CONFIRMED) {
                 body.rejected_reason = '';
             }
-            const result = await this.service.update(id, body);
+            const result = await this.service.approve(id, body);
             res.sendJson(result);
         } catch (error) {
-            logger.error(`${this.constructor.name}.update: `, error);
+            logger.error(`${this.constructor.name}.approve: `, error);
             next(error);
         }
     }
