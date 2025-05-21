@@ -1,16 +1,12 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
 import { values } from 'lodash';
-import { OrderStatus, OrderType } from '@config/app.constant';
+import { OrderStatus, OrderType, ShippingPlanStatus } from '@config/app.constant';
 import { IOrder } from '@common/interfaces/order.interface';
 import { ICommonDetails } from '@common/interfaces/common.interface';
-import { create as createProduction } from './production.validator';
-import { create as createOrderExpense } from './order-expense.validator';
-import { create as createInvoice } from './invoice.validator';
-import { create as createContract } from './contract.validator';
-import { create as createInventory } from './inventory.validator';
 import { queryFilter as baseQueryFilter } from './common.validator';
 import { ObjectSchema } from 'joi';
+import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';
 
 export const create: schema = {
     body: wrapSchema(
@@ -46,28 +42,16 @@ export const create: schema = {
                 .optional()
                 .default([]),
 
-            productions: Joi.array()
-                .items(createProduction.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            order_expenses: Joi.array()
-                .items(createOrderExpense.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            contracts: Joi.array()
-                .items(createContract.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            invoices: Joi.array()
-                .items(createInvoice.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            inventories: Joi.array()
-                .items(createInventory.body ?? Joi.any())
+            shipping_plans: Joi.array()
+                .items(
+                    Joi.object<IShippingPlan>({
+                        partner_id: Joi.number().required(),
+                        quantity: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).optional(),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
                 .optional()
                 .default([]),
         }),
@@ -113,31 +97,6 @@ export const update: schema = {
                 .optional()
                 .default([]),
 
-            productions: Joi.array()
-                .items(createProduction.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            order_expenses: Joi.array()
-                .items(createOrderExpense.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            contracts: Joi.array()
-                .items(createContract.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            invoices: Joi.array()
-                .items(createInvoice.body ?? Joi.any())
-                .optional()
-                .default([]),
-
-            inventories: Joi.array()
-                .items(createInventory.body ?? Joi.any())
-                .optional()
-                .default([]),
-
             add: Joi.array()
                 .items(
                     Joi.object<ICommonDetails>({
@@ -175,6 +134,35 @@ export const update: schema = {
 
             files_add: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
             files_delete: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+
+            shipping_plans_add: Joi.array()
+                .items(
+                    Joi.object<IShippingPlan>({
+                        partner_id: Joi.number().optional(),
+                        quantity: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).optional(),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
+                .optional()
+                .default([]),
+
+            shipping_plans_update: Joi.array()
+                .items(
+                    Joi.object<IShippingPlan>({
+                        id: Joi.number().required(),
+                        partner_id: Joi.number().optional(),
+                        quantity: Joi.number().min(0).optional(),
+                        price: Joi.number().min(0).optional(),
+                        note: Joi.string().allow(null, '').max(500),
+                        key: Joi.string().allow(null, ''),
+                    }),
+                )
+                .optional()
+                .default([]),
+
+            shipping_plans_delete: Joi.array().items(Joi.number()).optional().default([]),
         }),
     ),
 };
@@ -213,5 +201,26 @@ export const approve: schema = {
                 otherwise: Joi.object({}),
             },
         ),
+    ),
+};
+
+export const approveShippingPlan: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().positive().required(),
+        }),
+    ),
+    body: wrapSchema(
+        Joi.object({
+            status: Joi.string()
+                .valid(...Object.values(ShippingPlanStatus))
+                .required(),
+            rejected_reason: Joi.string().when('status', {
+                is: ShippingPlanStatus.REJECTED,
+                then: Joi.string().min(1).required(),
+                otherwise: Joi.string().allow(null, '').optional(),
+            }),
+            files: Joi.array().items(Joi.string()).optional().default([]),
+        }),
     ),
 };

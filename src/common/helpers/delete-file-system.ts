@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import logger from '@common/logger';
 
-export async function deleteFileSystem(filesToDelete: string[]) {
+export function deleteFileSystem(filesToDelete: string[]) {
     // Set root folder path to project root
     const ROOT_FOLDER = path.join(__dirname, '../../..');
 

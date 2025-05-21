@@ -8,8 +8,8 @@ export class TransactionWarehouseRepo extends BaseRepo<
     Prisma.TransactionWarehousesSelect,
     Prisma.TransactionWarehousesWhereInput
 > {
-    protected db = DatabaseAdapter.getInstance();
+    protected db = DatabaseAdapter.getInstance().transactionWarehouses;
     protected defaultSelect = TransactionWarehouseSelect;
     protected detailSelect = TransactionWarehouseSelectAll;
-    protected modelKey = 'transactionWarehouses' as const;
+    protected modelKey: keyof Prisma.TransactionClient = 'transactionWarehouses';
 }

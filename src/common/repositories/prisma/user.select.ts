@@ -1,6 +1,7 @@
 import { Prisma } from '.prisma/client';
 import { EmployeeSelection } from './employee.select';
-import { OrganizationSelectionWithAllSubs } from './organization.select';
+import { OrganizationSelection, OrganizationSelectionWithAllSubs } from './organization.select';
+import { RoleSelection } from './role.select';
 
 export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
     id: true,
@@ -18,6 +19,17 @@ export const UserSelection: Prisma.UsersSelect = {
     is_disabled: true,
 };
 
+export const UserRoleSelection: Prisma.UserRolesSelect = {
+    organization_id: true,
+    organization: {
+        select: OrganizationSelection,
+    },
+    role_id: true,
+    role: {
+        select: RoleSelection,
+    },
+};
+
 export const UserSelectionAll: Prisma.UsersSelect = {
     ...UserSelectionWithoutPassword,
     employee: {
@@ -25,5 +37,8 @@ export const UserSelectionAll: Prisma.UsersSelect = {
     },
     organization: {
         select: OrganizationSelectionWithAllSubs,
+    },
+    user_roles: {
+        select: UserRoleSelection,
     },
 };

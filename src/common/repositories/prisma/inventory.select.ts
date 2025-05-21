@@ -1,8 +1,9 @@
 import { Prisma } from '.prisma/client';
-import { CommonDetailSelectionAll } from './common-detail.select';
 import { EmployeeSelection } from './employee.select';
 import { OrganizationSelection } from './organization.select';
 import { PartnerSelection } from './partner.select';
+import { InventoryDetailSelectionAll } from './inventory-detail.select';
+import { WarehouseSelectionAll } from './warehouse.select';
 
 export const InventorySelection: Prisma.InventoriesSelect = {
     id: true,
@@ -31,7 +32,17 @@ export const InventorySelectionAll: Prisma.InventoriesSelect = {
     delivery: {
         select: PartnerSelection,
     },
+    warehouse: {
+        select: WarehouseSelectionAll
+    },
     details: {
-        select: CommonDetailSelectionAll,
+        select: InventoryDetailSelectionAll,
+    },
+};
+
+export const InventorySelectionDetails: Prisma.InventoriesSelect = {
+    ...InventorySelection,
+    details: {
+        select: InventoryDetailSelectionAll,
     },
 };

@@ -1,6 +1,11 @@
 import { BaseService } from './base.service';
 import { Invoices, Prisma } from '.prisma/client';
-import { IIdResponse, IUpdateChildAction } from '@common/interfaces/common.interface';
+import {
+    IIdResponse,
+    IPaginationInput,
+    IPaginationResponse,
+    IUpdateChildAction,
+} from '@common/interfaces/common.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
 import { IInvoice } from '@common/interfaces/invoice.interface';
@@ -165,7 +170,6 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
         const { delete: deteleItems, update, add, ...body } = request;
 
         await this.db.$transaction(async (tx) => {
-
             await this.repo.update({ id }, body as Partial<Invoices>, tx);
 
             const detailItems = [...(request.add || []), ...(request.update || [])];

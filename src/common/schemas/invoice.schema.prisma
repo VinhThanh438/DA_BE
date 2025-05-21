@@ -5,12 +5,12 @@ model Invoices {
   payment_method String?
   time_at   DateTime?
   files          Json?         @default("[]")
+
   bank_id         Int? // Tài khoản ngân hàng
   employee_id     Int? // Nhân viên bán hàng
   partner_id      Int? // Khách hàng
   organization_id Int?
   contract_id     Int? // Hợp đồng
-  order_id        Int? // Đơn hàng
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -20,11 +20,12 @@ model Invoices {
   employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: SetNull)
   organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  order    Orders?  @relation(fields: [order_id], references: [id], onDelete: SetNull)
 
   details CommonDetails[]
 
   @@map("invoices")
+  payments Payments[]
+  orders Orders[]
 }
 
 enum PrsInvoiceStatus {

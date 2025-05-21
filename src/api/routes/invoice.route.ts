@@ -1,7 +1,7 @@
 import { InvoiceController } from '@api/controllers/invoice.controller';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { queryById, queryFilter } from '@api/validation/common.validator';
-import { create, update, updateEntity } from '@api/validation/invoice.validator';
+import { queryById } from '@api/validation/common.validator';
+import { create, queryFilter, update, updateEntity } from '@api/validation/invoice.validator';
 import express from 'express';
 
 const router = express.Router();

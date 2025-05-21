@@ -32,3 +32,10 @@ export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
         select: PartnerSelection,
     },
 };
+
+export const InvoiceSelectionWithDetails: Prisma.InvoicesSelect = {
+    ...InvoiceSelection,
+    details: {
+        select: CommonDetailSelectionAll,
+    },
+};

@@ -14,36 +14,6 @@ model Warehouses {
   employee Employees? @relation(fields: [employee_id], references: [id], onDelete: SetNull)
 
   transaction_warehouses TransactionWarehouses[]
-  inventory_details CommonDetails[]
+  inventories Inventories[]
   @@map("warehouses")
-}
-
-enum PrsTransactionWarehouseType {
-  in
-  out
-}
-
-model TransactionWarehouses {
-  id       Int                      @id @default(autoincrement())
-  time_at  DateTime                 @default(now())
-  quantity Int                      @default(0)
-  type     PrsTransactionWarehouseType
-  note     String?
-
-  organization_id Int?
-  warehouse_id    Int?
-  product_id      Int?
-  order_id        Int?
-  inventory_id    Int?
-
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
-  product      Products?      @relation(fields: [product_id], references: [id], onDelete: SetNull)
-  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: SetNull)
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@map("transaction_warehouses")
 }

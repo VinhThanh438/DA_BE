@@ -6,14 +6,22 @@ import { IIdResponse, IPaginationResponse, IUpdateChildAction } from '@common/in
 import { PartnerGroupRepo } from '@common/repositories/partner-group.repo';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { ClauseRepo } from '@common/repositories/clause.repo';
-import { DEFAULT_EXCLUDED_FIELDS, OrderStatus, TransactionOrderType } from '@config/app.constant';
+import {
+    DEFAULT_EXCLUDED_FIELDS,
+    OrderStatus,
+    PaymentRequestStatus,
+    PaymentRequestType,
+    TransactionOrderType,
+} from '@config/app.constant';
 import { RepresentativeRepo } from '@common/repositories/representative.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { OrderRepo } from '@common/repositories/order.repo';
-import { IDebtResponse } from '@common/interfaces/debt.interface';
+import { IDebtDetail, IDebtResponse } from '@common/interfaces/debt.interface';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
+import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
+import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 
 export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect, Prisma.PartnersWhereInput> {
     private static instance: PartnerService;
@@ -24,6 +32,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
     private orderRepo: OrderRepo = new OrderRepo();
     private transactionRepo: TransactionRepo = new TransactionRepo();
     private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
+    private paymentRequestRepo: PaymentRequestRepo = new PaymentRequestRepo();
 
     private constructor() {
         super(new PartnerRepo());
@@ -215,11 +224,6 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             AND: [{ time_at: { lte: endAt, gte: startAt } }, { partner_id: partnerId }],
         };
 
-        let reductData = await this.transactionRepo.findMany(
-            { order_type: TransactionOrderType.ORDER, ...conditions } as Prisma.TransactionsWhereInput,
-            true,
-        );
-
         let increaseData = await this.orderRepo.findMany(
             { status: OrderStatus.CONFIRMED, ...conditions } as Prisma.OrdersWhereInput,
             true,
@@ -229,9 +233,8 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         let ending = currentDebt;
         let increase = 0;
         let reduction = 0;
-        let stt = 1;
 
-        const combinedDetails: any[] = [];
+        const combinedDetails: IDebtDetail[] = [];
 
         for (const ele of enrichedData.data) {
             const {
@@ -239,7 +242,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                 order_expenses,
                 productions,
                 contracts,
-                invoices,
+                invoice,
                 inventories,
                 employee,
                 bank,
@@ -249,35 +252,56 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                 ...orderData
             } = ele;
 
-            ending += ele.total_amount;
             increase += ele.total_amount;
 
-            combinedDetails.push({
-                stt: stt++,
-                order: orderData,
-                time_at: ele.time_at,
-                increase: ele.total_amount,
-                reduction: 0,
-                ending,
-            });
+            const reductData = await this.transactionRepo.findMany(
+                { order_id: orderData.id } as Prisma.TransactionsWhereInput,
+                true,
+            );
+
+            const paymentRequest = await this.paymentRequestRepo.findMany(
+                {
+                    status: PaymentRequestStatus.CONFIRMED,
+                    type: PaymentRequestType.ORDER,
+                } as Prisma.PaymentRequestsWhereInput,
+                true,
+            );
+
+            if (reductData.length > 0) {
+                reductData.forEach((item: any) => {
+                    ending += item.amount;
+                    reduction += item.amount;
+                    combinedDetails.push({
+                        order: orderData,
+                        invoice: orderData.invoice,
+                        total_amount: ele.total_amount,
+                        total_reduction: item.amount,
+                        time_at: item.time_at,
+                        amount: item.amount,
+                        bank: item.bank,
+                        payment_requests: paymentRequest as IPaymentRequest[],
+                    });
+                });
+            } else {
+                combinedDetails.push({
+                    order: orderData,
+                    invoice: orderData.invoice,
+                    total_amount: ele.total_amount,
+                    total_reduction: 0,
+                    time_at: null,
+                    amount: 0,
+                    bank: null,
+                    payment_requests: paymentRequest as IPaymentRequest[],
+                });
+            }
         }
+        
 
-        for (const tran of reductData) {
-            const reductionAmount = Number(tran.amount) || 0;
-            reduction += reductionAmount;
-            ending -= reductionAmount;
-
-            combinedDetails.push({
-                stt: stt++,
-                order: null,
-                time_at: tran.time_at,
-                increase: 0,
-                reduction: reductionAmount,
-                ending,
-            });
-        }
-
-        combinedDetails.sort((a, b) => new Date(a.time_at).getTime() - new Date(b.time_at).getTime());
+        combinedDetails.sort((a, b) => {
+            const aTime = a.invoice?.time_at ? new Date(a.invoice.time_at as unknown as string).getTime() : 0;
+            const bTime = b.invoice?.time_at ? new Date(b.invoice?.time_at as unknown as string).getTime() : 0;
+            return aTime - bTime;
+        });
 
         return {
             beginning_debt: currentDebt,

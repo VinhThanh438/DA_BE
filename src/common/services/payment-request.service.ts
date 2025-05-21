@@ -3,7 +3,7 @@ import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { BaseService } from './base.service';
 import { PaymentRequests, Prisma } from '.prisma/client';
 import { IIdResponse } from '@common/interfaces/common.interface';
-import { IPaymetRequest } from '@common/interfaces/payment-request.interface';
+import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
@@ -32,7 +32,7 @@ export class PaymentRequestService extends BaseService<
     }
 
     public async createPaymentRequest(
-        request: Partial<IPaymetRequest>,
+        request: Partial<IPaymentRequest>,
         tx?: Prisma.TransactionClient,
     ): Promise<IIdResponse> {
         let paymentRequestId: number = 0;
@@ -90,7 +90,7 @@ export class PaymentRequestService extends BaseService<
         return { id: paymentRequestId };
     }
 
-    public async updatePaymentRequest(id: number, request: Partial<IPaymetRequest>): Promise<IIdResponse> {
+    public async updatePaymentRequest(id: number, request: Partial<IPaymentRequest>): Promise<IIdResponse> {
         await this.isExist({ code: request.code, id }, true);
 
         await this.validateForeignKeys(request, {

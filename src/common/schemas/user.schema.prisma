@@ -6,7 +6,6 @@ model Users {
   username            String   @unique
   password            String
   device_uid          String[] @default([])
-  permission_group_id Int?
   employee_id         Int?
   organization_id     Int? // truong nay chi dung de sort user theo to chuc neu can lay thong tin organ thi join qua employee
 
@@ -20,10 +19,10 @@ model Users {
 
   employee                 Employees?        @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   organization             Organizations?        @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  permission_group         PermissionGroups? @relation(fields: [permission_group_id], references: [id], onDelete: SetNull)
   device_requests          DeviceRequests[]  @relation("DeviceRequestUser")
   approved_device_requests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
   tokens                   Tokens[]
+  user_roles               UserRoles[]
 
   @@map("users")
 }

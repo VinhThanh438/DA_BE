@@ -14,8 +14,6 @@ model CommonDetails {
   quotation_id Int?
   contract_id  Int?
   invoice_id   Int?
-  inventory_id Int?
-  warehouse_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -26,8 +24,6 @@ model CommonDetails {
   quotation Quotations? @relation(fields: [quotation_id], references: [id], onDelete: SetNull)
   contract  Contracts?  @relation(fields: [contract_id], references: [id], onDelete: SetNull)
   invoice   Invoices?   @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
-  inventory Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: SetNull)
-  warehouse Warehouses?   @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
 
   @@map("common_details")
   payment_request_details PaymentRequestDetails[]

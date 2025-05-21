@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
 import { IInvoice } from '@common/interfaces/invoice.interface';
 import { InvoiceService } from '@common/services/invoice.service';
+import { IPaginationInput } from '@common/interfaces/common.interface';
 
 export class InvoiceController extends BaseController<Invoices> {
     private static instance: InvoiceController;
@@ -47,7 +48,7 @@ export class InvoiceController extends BaseController<Invoices> {
     public async updateChildEntity(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
-            const body = req.body as IInvoice
+            const body = req.body as IInvoice;
             const data = await this.service.updateInvoiceEntity(id, body);
             res.sendJson(data);
         } catch (error) {

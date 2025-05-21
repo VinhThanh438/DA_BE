@@ -10,6 +10,7 @@ import { AuthEvent } from '@common/events/auth.event';
 import { MailAdapter } from '@common/infrastructure/mail.adapter';
 import { DeviceRequetsEvent } from '@common/events/device-request.event';
 import { UserEvent } from '@common/events/user.event';
+import { InventoryEvent } from '@common/events/inventory.event';
 
 /**
  * Wrapper around the Node process, ExpressServer abstraction and complex dependencies such as services that ExpressServer needs.
@@ -101,5 +102,6 @@ export class Application {
         AuthEvent.register();
         DeviceRequetsEvent.register();
         UserEvent.register();
+        InventoryEvent.register();
     }
 }

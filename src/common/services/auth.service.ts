@@ -1,7 +1,7 @@
 import { Prisma, Tokens, Users } from '.prisma/client';
 import { ADMIN_USER_NAME } from '@common/environment';
 import { APIError } from '@common/error/api.error';
-import { ErrorCode, StatusCode } from '@common/errors';
+import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import eventbus from '@common/eventbus';
 import { TokenHelper } from '@common/helpers/token.helper';
 import {
@@ -17,6 +17,7 @@ import { TokenRepo } from '@common/repositories/token.repo';
 import { UserRepo } from '@common/repositories/user.repo';
 import { REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
 import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGGIN, EVENT_USER_LOGIN } from '@config/event.constant';
+import bcrypt from 'bcryptjs';
 
 export class AuthService {
     private static userRepo: UserRepo = new UserRepo();
@@ -38,10 +39,19 @@ export class AuthService {
             });
         }
 
-        if (body.password !== user.password) {
+        // if (body.password !== user.password) {
+        //     throw new APIError({
+        //         message: 'auth.login.invalid-password',
+        //         status: ErrorCode.BAD_REQUEST,
+        //     });
+        // }
+
+        const isPasswordValid = await bcrypt.compare(body.password, user.password as string);
+        if (!isPasswordValid) {
             throw new APIError({
                 message: 'auth.login.invalid-password',
                 status: ErrorCode.BAD_REQUEST,
+                errors: [`password.${ErrorKey.INCORRECT}`],
             });
         }
 

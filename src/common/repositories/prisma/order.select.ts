@@ -4,12 +4,13 @@ import { CommonDetailSelectionAll } from './common-detail.select';
 import { ContractSelection } from './contract.select';
 import { EmployeeShortSelection } from './employee.select';
 import { InventorySelection } from './inventory.select';
-import { InvoiceSelection } from './invoice.select';
 import { OrderExpenseSelection } from './order-expense.select';
 import { OrganizationSelection } from './organization.select';
-import { PartnerSelectionAll } from './partner.select';
+import { PartnerSelection, PartnerSelectionAll } from './partner.select';
 import { ProductionSelection } from './production.select';
 import { RepresentativeShortSelectionAll } from './representative.select';
+import { ShippingPlanSelectionAll } from './shipping-plan.select';
+import { InvoiceSelection } from './invoice.select';
 
 export const OrderSelection: Prisma.OrdersSelect = {
     id: true,
@@ -47,11 +48,11 @@ export const OrderSelectionAll: Prisma.OrdersSelect = {
     contracts: {
         select: ContractSelection,
     },
-    invoices: {
-        select: InvoiceSelection,
-    },
     inventories: {
         select: InventorySelection,
+    },
+    invoice: {
+        select: InvoiceSelection,
     },
     employee: {
         select: EmployeeShortSelection,
@@ -59,11 +60,21 @@ export const OrderSelectionAll: Prisma.OrdersSelect = {
     bank: {
         select: BankSelectionAll,
     },
+    shipping_plans: {
+        select: ShippingPlanSelectionAll,
+    },
 };
 
 export const orderSelectionDetails: Prisma.OrdersSelect = {
     ...OrderSelection,
     details: {
         select: CommonDetailSelectionAll,
+    },
+};
+
+export const OrderSelectionPartner: Prisma.OrdersSelect = {
+    ...OrderSelection,
+    partner: {
+        select: PartnerSelection,
     },
 };

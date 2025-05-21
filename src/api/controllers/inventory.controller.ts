@@ -1,6 +1,4 @@
 import { BaseController } from './base.controller';
-import { Request, Response, NextFunction } from 'express';
-import logger from '@common/logger';
 import { Inventories } from '.prisma/client';
 import { InventoryService } from '@common/services/inventory.service';
 

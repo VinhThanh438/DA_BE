@@ -10,12 +10,12 @@ enum PrsTransactionOrderType {
 }
 
 model Transactions {
-  id      Int                   @id @default(autoincrement())
-  time_at DateTime              @default(now())
-  type    PrsTransactionType?
-  order_type    PrsTransactionOrderType? @default(order)
-  amount  Decimal?
-  note    String?
+  id         Int                      @id @default(autoincrement())
+  time_at    DateTime                 @default(now())
+  type       PrsTransactionType?
+  order_type PrsTransactionOrderType? @default(order)
+  amount     Decimal?
+  note       String?
 
   partner_id        Int? // Doi tac
   employee_id       Int? // nhan vien giao dich
@@ -24,17 +24,19 @@ model Transactions {
   bank_id           Int? // Tai khoan giao dich
   finance_record_id Int? // Phieu thu chi
   representative_id Int? // Nguoi dai dien
+  payment_id        Int? // Nguoi dai dien
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  partner        Partners?         @relation(fields: [partner_id], references: [id], onDelete: SetNull)
-  employee       Employees?        @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  organization   Organizations?    @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  bank           Banks?            @relation(fields: [bank_id], references: [id], onDelete: SetNull)
-  finance_record FinanceRecords?   @relation(fields: [finance_record_id], references: [id], onDelete: SetNull)
-  order          Orders?           @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  representative Representatives?  @relation(fields: [representative_id], references: [id], onDelete: SetNull)
+  partner        Partners?        @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee       Employees?       @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization   Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  bank           Banks?           @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  finance_record FinanceRecords?  @relation(fields: [finance_record_id], references: [id], onDelete: SetNull)
+  order          Orders?          @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  representative Representatives? @relation(fields: [representative_id], references: [id], onDelete: SetNull)
+  payment        Payments?        @relation(fields: [payment_id], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }

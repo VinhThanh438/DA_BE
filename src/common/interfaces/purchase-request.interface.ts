@@ -15,6 +15,13 @@ export interface IPurchaseRequest {
     organization_id?: number;
 
     details?: IPurchaseRequestDetail[];
+
+    add?: IPurchaseRequestDetail[];
+    update?: IPurchaseRequestDetail[];
+    delete?: number[];
+
+    files_add?: string[];
+    files_delete?: string[];
 }
 
 export interface IPurchaseRequestDetail {

@@ -5,6 +5,7 @@ import { IContract } from './contract.interface';
 import { IInvoice } from './invoice.interface';
 import { ICommonDetails } from './common.interface';
 import { IInventory } from './inventory.interface';
+import { IShippingPlan } from './shipping-plan.interface';
 
 export interface IOrder {
     id?: number;
@@ -30,6 +31,10 @@ export interface IOrder {
     contracts?: IContract[];
     invoices?: IInvoice[];
     inventories: IInventory[];
+    shipping_plans?: IShippingPlan[];
+    shipping_plans_add?: IShippingPlan[];
+    shipping_plans_update?: IShippingPlan[];
+    shipping_plans_delete?: number[];
 
     add?: ICommonDetails[];
     update?: ICommonDetails[];

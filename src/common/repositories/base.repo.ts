@@ -144,13 +144,15 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         return data?.id;
     }
 
-    public async createMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<number> {
+    public async createMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<T[]> {
         let count = 0;
+        let listDataItems: any[] = [];
 
         const db = this.getModel(tx);
         const run = async () => {
             for (const item of bodies) {
-                await db.create({ data: item });
+                const data = await db.create({ data: item });
+                listDataItems.push(data);
                 count++;
             }
         };
@@ -159,7 +161,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         } else {
             await this.dbAdapter.$transaction(run);
         }
-        return count || 0;
+        return listDataItems;
     }
 
     public async updateMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<number> {
@@ -260,5 +262,30 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
             }
         }
         return sanitized;
+    }
+
+    public async aggregate(
+        where: W,
+        aggregateParams: {
+            _count?: boolean | Record<string, boolean>;
+            _sum?: Record<string, boolean>;
+            _avg?: Record<string, boolean>;
+            _min?: Record<string, boolean>;
+            _max?: Record<string, boolean>;
+        },
+        tx?: Prisma.TransactionClient,
+    ): Promise<any> {
+        const model = this.getModel(tx);
+
+        try {
+            const result = await model.aggregate({
+                where,
+                ...aggregateParams,
+            });
+
+            return transformDecimal(result);
+        } catch (error) {
+            throw error;
+        }
     }
 }

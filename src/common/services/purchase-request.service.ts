@@ -12,6 +12,9 @@ import { ProductRepo } from '@common/repositories/product.repo';
 import { PurchaseRequestDetailRepo } from '@common/repositories/purchase-request-details.repo';
 import { ProductionRepo } from '@common/repositories/production.repo';
 import { OrderRepo } from '@common/repositories/order.repo';
+import { handleFiles } from '@common/helpers/handle-files';
+import { UnitRepo } from '@common/repositories/unit.repo';
+import { deleteFileSystem } from '@common/helpers/delete-file-system';
 
 export class PurchaseRequestService extends BaseService<
     PurchaseRequests,
@@ -25,6 +28,7 @@ export class PurchaseRequestService extends BaseService<
     private productRepo: ProductRepo = new ProductRepo();
     private productionRepo: ProductionRepo = new ProductionRepo();
     private orderRepo: OrderRepo = new OrderRepo();
+    private unitRepo: UnitRepo = new UnitRepo();
 
     private constructor() {
         super(new PurchaseRequestRepo());
@@ -88,54 +92,83 @@ export class PurchaseRequestService extends BaseService<
     }
 
     public async updatePurchaseRequest(id: number, request: Partial<IPurchaseRequest>): Promise<IIdResponse> {
-        await this.findById(id);
+        const purchaseReqExist = await this.findById(id);
 
         await this.isExist({ code: request.code, id }, true);
+
+        const { add, update, delete: deleteIds, files_add, files_delete, ...purchaseRequestData } = request;
 
         await this.validateForeignKeys(request, {
             employee_id: this.employeeRepo,
         });
 
-        await this.db.$transaction(async (tx) => {
-            const { details, ...quotationData } = request;
+        try {
+            await this.db.$transaction(async (tx) => {
+                // handle files
+                let filesUpdate = handleFiles(files_add, files_delete, purchaseReqExist?.files);
+                await this.repo.update(
+                    { id },
+                    {
+                        ...purchaseRequestData,
+                        ...(filesUpdate !== null && { files: filesUpdate }),
+                    } as Partial<PurchaseRequests>,
+                    tx,
+                );
 
-            await this.repo.update({ id }, quotationData as Partial<Quotations>, tx);
-
-            if (details) {
-                await this.purchaseRequestDetailRepo.deleteMany({ purchase_request_id: id }, tx);
-
-                if (details.length > 0) {
+                // [add] purchase request details
+                if (add && add.length > 0) {
                     await this.validateForeignKeys(
-                        details,
+                        add,
                         {
-                            product_id: this.productRepo,
+                            material_id: this.productRepo,
+                            unit_id: this.unitRepo,
                         },
                         tx,
                     );
 
-                    const mappedDetails = details.map((item) => {
-                        const { material_id, unit_id, ...rest } = item;
-                        return {
-                            ...rest,
-                            purchase_request: id ? { connect: { id } } : undefined,
-                            product: material_id ? { connect: { id: material_id } } : undefined,
-                            unit: unit_id ? { connect: { id: unit_id } } : undefined,
-                        };
+                    const data = add.map((item) => {
+                        const { key, ...rest } = item;
+                        return { ...rest, purchase_request_id: id };
                     });
-
-                    const filteredData = this.filterData(mappedDetails, DEFAULT_EXCLUDED_FIELDS, ['details']);
-
-                    await this.purchaseRequestDetailRepo.createMany(filteredData, tx);
+                    await this.purchaseRequestDetailRepo.createMany(data, tx);
                 }
-            } else {
-                throw new APIError({
-                    message: `common.status.${StatusCode.BAD_REQUEST}`,
-                    status: ErrorCode.BAD_REQUEST,
-                    errors: [`details.${ErrorKey.INVALID}`],
-                });
-            }
-        });
 
-        return { id };
+                // [update] purchase request details
+                if (update && update.length > 0) {
+                    await this.validateForeignKeys(
+                        update,
+                        {
+                            id: this.purchaseRequestDetailRepo,
+                            product_id: this.productRepo,
+                            unit_id: this.unitRepo,
+                        },
+                        tx,
+                    );
+
+                    const data = update.map((item) => {
+                        const { key, ...rest } = item;
+                        return rest;
+                    });
+                    await this.purchaseRequestDetailRepo.updateMany(data, tx);
+                }
+
+                // [delete] order details
+                if (deleteIds && deleteIds.length > 0) {
+                    await this.purchaseRequestDetailRepo.deleteMany({ id: { in: deleteIds } }, tx, false);
+                }
+            });
+
+            // clean up file
+            if (files_delete && files_delete.length > 0) {
+                deleteFileSystem(files_delete);
+            }
+
+            return { id };
+        } catch (error) {
+            if (files_add && files_add.length > 0) {
+                deleteFileSystem(files_add);
+            }
+            throw error;
+        }
     }
 }

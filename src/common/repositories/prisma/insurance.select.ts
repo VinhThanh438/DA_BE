@@ -1,4 +1,4 @@
-import { Insurances, Prisma } from '.prisma/client';
+import { Prisma } from '.prisma/client';
 
 export const InsuranceSelection: Prisma.InsurancesSelect = {
     id: true,

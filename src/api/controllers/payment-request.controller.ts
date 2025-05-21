@@ -1,7 +1,7 @@
 import { PaymentRequestService } from '@common/services/payment-request.service';
 import { BaseController } from './base.controller';
 import { PaymentRequests } from '.prisma/client';
-import { IPaymetRequest } from '@common/interfaces/payment-request.interface';
+import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
 
@@ -23,7 +23,7 @@ export class PaymentRequestController extends BaseController<PaymentRequests> {
 
     public async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as IPaymetRequest;
+            const body = req.body as IPaymentRequest;
             const result = await this.service.createPaymentRequest(body);
             res.sendJson(result);
         } catch (error) {
@@ -34,7 +34,7 @@ export class PaymentRequestController extends BaseController<PaymentRequests> {
 
     public async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as IPaymetRequest;
+            const body = req.body as IPaymentRequest;
             const id = Number(req.params.id);
             const result = await this.service.updatePaymentRequest(id, body);
             res.sendJson(result);

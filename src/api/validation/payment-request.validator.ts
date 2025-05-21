@@ -2,7 +2,7 @@ import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helpe
 import { PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
-import { IPaymetRequest } from '@common/interfaces/payment-request.interface';
+import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 import { ICommonDetails } from '@common/interfaces/common.interface';
 import { ObjectSchema } from 'joi';
 import { queryFilter as baseQueryFilter } from './common.validator';
@@ -19,7 +19,7 @@ export const queryFilter: schema = {
 
 export const create: schema = {
     body: wrapSchema(
-        Joi.object<IPaymetRequest>({
+        Joi.object<IPaymentRequest>({
             code: Joi.string().max(100).optional(),
             status: Joi.string()
                 .valid(...Object.values(PaymentRequestStatus))

@@ -2,7 +2,7 @@ import { PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
 import { IEmployee } from './employee.interface';
 import { ICommonDetails } from './common.interface';
 
-export interface IPaymetRequest {
+export interface IPaymentRequest {
     id?: number;
     code?: string;
     status: PaymentRequestStatus;

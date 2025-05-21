@@ -1,6 +1,6 @@
 import { Prisma, Users } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
-import { StatusCode } from '@common/errors';
+import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { ICreateUser, IEventUserFirstLoggin, IUpdateEmployeeAccountStatus } from '@common/interfaces/user.interface';
 import { UserRepo } from '@common/repositories/user.repo';
@@ -9,10 +9,17 @@ import logger from '@common/logger';
 import eventbus from '@common/eventbus';
 import { EVENT_USER_CREATED_OR_DELETED } from '@config/event.constant';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
+import { UserRoleRepo } from '@common/repositories/user-role.repo';
+import bcrypt from 'bcryptjs';
+import { RoleRepo } from '@common/repositories/role.repo';
+import { OrganizationRepo } from '@common/repositories/organization.repo';
 
 export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
     private static instance: UserService;
     private employeeRepo: EmployeeRepo = new EmployeeRepo();
+    private userRoleRepo: UserRoleRepo = new UserRoleRepo();
+    private roleRepo: RoleRepo = new RoleRepo();
+    private organizationRepo: OrganizationRepo = new OrganizationRepo();
 
     private constructor() {
         super(new UserRepo());
@@ -37,30 +44,56 @@ export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.U
     }
 
     public async createUser(body: ICreateUser): Promise<IIdResponse> {
-        const existUser = await this.repo.findOne({ username: body.username, email: body.email });
-        if (existUser) {
-            throw new APIError({
-                message: 'user.already-exists',
-                status: StatusCode.BAD_REQUEST,
-            });
-        }
+        try {
+            let id: number = 0;
+            await this.db.$transaction(async (tx) => {
+                await this.isExist({ username: body.username }, false, tx);
 
-        const employee = await this.employeeRepo.findOne({ id: body.employee_id });
-        if (!employee) {
-            throw new APIError({
-                message: 'employee.not-found',
-                status: StatusCode.BAD_REQUEST,
-            });
-        }
+                await this.validateForeignKeys(body, {
+                    employee_id: this.employeeRepo,
+                });
 
-        const id = await this.repo.create(body);
-        if (body.employee_id) {
-            eventbus.emit(EVENT_USER_CREATED_OR_DELETED, {
-                employeeId: body.employee_id,
-                status: true,
-            } as IUpdateEmployeeAccountStatus);
+                const { user_roles, password, ...userData } = body;
+                const hashedPassword = await bcrypt.hash(password, 10);
+                id = await this.repo.create(
+                    {
+                        ...userData,
+                        password: hashedPassword,
+                    },
+                    tx,
+                );
+                if (body.employee_id) {
+                    eventbus.emit(EVENT_USER_CREATED_OR_DELETED, {
+                        employeeId: body.employee_id,
+                        status: true,
+                    } as IUpdateEmployeeAccountStatus);
+                }
+
+                // handle user roles
+                if (user_roles && user_roles.length > 0) {
+                    await this.validateForeignKeys(
+                        user_roles,
+                        {
+                            role_id: this.roleRepo,
+                            organization_id: this.organizationRepo,
+                        },
+                        tx,
+                    );
+
+                    const userRolesToCreate = user_roles.map((role) => ({
+                        user_id: id,
+                        role_id: role.role_id,
+                        organization_id: role.organization_id,
+                    }));
+
+                    await this.userRoleRepo.createMany(userRolesToCreate, tx);
+                }
+            });
+
+            return { id };
+        } catch (error) {
+            throw error;
         }
-        return { id };
     }
 
     public async seedAdmin(body: ICreateUser): Promise<IIdResponse> {
@@ -90,16 +123,55 @@ export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.U
     }
 
     public async updateUser(id: number, body: ICreateUser): Promise<IIdResponse> {
-        const user = await this.repo.isExist({ id });
-        if (!user) {
-            throw new APIError({
-                message: 'common.not-found',
-                status: StatusCode.BAD_REQUEST,
-            });
-        }
+        try {
+            const userExists = await this.findById(id);
+            await this.db.$transaction(async (tx) => {
+                if (body.username && body.username !== userExists.username) {
+                    await this.isExist({ username: body.username }, false, tx);
+                }
 
-        const updatedId = await this.repo.update({ id }, body);
-        return { id: updatedId };
+                if (body.employee_id && body.employee_id !== userExists.employee_id) {
+                    await this.validateForeignKeys(body, {
+                        employee_id: this.employeeRepo,
+                    });
+                }
+
+                const { user_roles, password, ...userData } = body;
+                let updateData: any = { ...userData };
+                if (password) {
+                    const hashedPassword = await bcrypt.hash(password, 10);
+                    updateData.password = hashedPassword;
+                }
+
+                await this.repo.update({ id }, updateData, tx);
+
+                if (user_roles) {
+                    await this.userRoleRepo.deleteMany({ user_id: id }, tx);
+                    if (user_roles.length > 0) {
+                        await this.validateForeignKeys(
+                            user_roles,
+                            {
+                                role_id: this.roleRepo,
+                                organization_id: this.organizationRepo,
+                            },
+                            tx,
+                        );
+
+                        const userRolesToCreate = user_roles.map((role) => ({
+                            user_id: id,
+                            role_id: role.role_id,
+                            organization_id: role.organization_id,
+                        }));
+
+                        await this.userRoleRepo.createMany(userRolesToCreate, tx);
+                    }
+                }
+            });
+
+            return { id };
+        } catch (error) {
+            throw error;
+        }
     }
 
     public async deleteUser(id: number): Promise<IIdResponse> {

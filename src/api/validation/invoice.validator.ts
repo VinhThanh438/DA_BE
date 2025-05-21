@@ -24,6 +24,7 @@ export const create: schema = {
             bank_id: Joi.number().optional().allow(null),
             contract_id: Joi.number().optional().allow(null),
             organization_id: Joi.number().optional().allow(null),
+            order_id: Joi.number().optional().allow(null),
 
             details: Joi.array().items(Joi.object(detailsSchema)).optional().default([]),
         }),
@@ -53,6 +54,7 @@ export const update: schema = {
             bank_id: Joi.number().optional().allow(null),
             contract_id: Joi.number().optional().allow(null),
             organization_id: Joi.number().optional().allow(null),
+            order_id: Joi.number().optional().allow(null),
 
             details: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
         }),
@@ -82,6 +84,7 @@ export const updateEntity: schema = {
             bank_id: Joi.number().optional().allow(null),
             contract_id: Joi.number().optional().allow(null),
             organization_id: Joi.number().optional().allow(null),
+            order_id: Joi.number().optional().allow(null),
 
             add: Joi.array().items(Joi.object(detailsSchema)).optional().default([]),
 

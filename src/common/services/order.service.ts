@@ -7,7 +7,7 @@ import { IOrder } from '@common/interfaces/order.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
-import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
+import { DEFAULT_EXCLUDED_FIELDS, ShippingPlanStatus } from '@config/app.constant';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { ContractService } from './contract.service';
@@ -15,13 +15,14 @@ import { InvoiceService } from './invoice.service';
 import { OrderExpenseService } from './order-expense.service';
 import { ProductionService } from './production.service';
 import { InventoryService } from './inventory.service';
-import logger from '@common/logger';
 import { RepresentativeRepo } from '@common/repositories/representative.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import { UnitRepo } from '@common/repositories/unit.repo';
-import { mergeFileUrl } from '@common/helpers/merge-file-url';
 import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
+import { handleFiles } from '@common/helpers/handle-files';
+import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
+import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';
 
 export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prisma.OrdersWhereInput> {
     private static instance: OrderService;
@@ -32,12 +33,12 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     private bankRepo: BankRepo = new BankRepo();
     private unitRepo: UnitRepo = new UnitRepo();
     private contractService: ContractService = ContractService.getInstance();
-    private invoiceService: InvoiceService = InvoiceService.getInstance();
     private orderExpenseService: OrderExpenseService = OrderExpenseService.getInstance();
     private productionService: ProductionService = ProductionService.getInstance();
     private inventoryService: InventoryService = InventoryService.getInstance();
     private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
     private transactionRepo: TransactionRepo = new TransactionRepo();
+    private shippingPlanRepo: ShippingPlanRepo = new ShippingPlanRepo();
 
     private constructor() {
         super(new OrderRepo());
@@ -135,7 +136,8 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             bank_id: this.bankRepo,
         });
 
-        const { details, contracts, invoices, order_expenses, productions, inventories, ...orderData } = request;
+        const { shipping_plans, details, contracts, order_expenses, productions, inventories, ...orderData } =
+            request;
 
         await this.db.$transaction(async (tx) => {
             const { partner_id, employee_id, bank_id, representative_id, ...restData } = orderData;
@@ -172,15 +174,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         contracts.map((ele) => {
                             ele.order_id = orderId;
                             return this.contractService.createContract(ele, tx);
-                        }),
-                    );
-                }
-
-                if (invoices && invoices.length > 0) {
-                    await Promise.all(
-                        invoices.map((ele) => {
-                            ele.order_id = orderId;
-                            return this.invoiceService.createInvoice(ele, tx);
                         }),
                     );
                 }
@@ -222,23 +215,26 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     errors: [`details.${ErrorKey.INVALID}`],
                 });
             }
+
+            if (shipping_plans && shipping_plans.length > 0) {
+                await this.validateForeignKeys(
+                    shipping_plans,
+                    {
+                        partner_id: this.partnerRepo,
+                    },
+                    tx,
+                );
+                const data = shipping_plans.map((item) => {
+                    const { key, ...rest } = item;
+                    return { ...rest, order_id: orderId };
+                });
+                await this.shippingPlanRepo.createMany(data, tx);
+            }
         });
         return { id: orderId };
     }
 
     public async updateOrder(id: number, request: IOrder): Promise<IIdResponse> {
-        const orderExists = await this.findById(id);
-        if (!orderExists) {
-            return { id };
-        }
-
-        await this.validateForeignKeys(request, {
-            partner_id: this.partnerRepo,
-            employee_id: this.employeeRepo,
-            representative_id: this.representativeRepo,
-            bank_id: this.bankRepo,
-        });
-
         const {
             details,
             add,
@@ -252,82 +248,150 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             files_add,
             files_delete,
             files,
+            shipping_plans_add,
+            shipping_plans_delete,
+            shipping_plans_update,
             ...orderData
         } = request;
 
-        // handle files
-        let filesUpdate = null;
-        if (files || files_add || files_delete) {
-            const updatedFiles = mergeFileUrl({
-                current: (orderExists.files || []) as string[],
-                deletes: files_delete || [],
-                update: files_add || [],
+        try {
+            const orderExists = await this.findById(id);
+            if (!orderExists) {
+                return { id };
+            }
+
+            await this.validateForeignKeys(request, {
+                partner_id: this.partnerRepo,
+                employee_id: this.employeeRepo,
+                representative_id: this.representativeRepo,
+                bank_id: this.bankRepo,
             });
 
-            filesUpdate = updatedFiles;
+            // handle files
+            let filesUpdate = handleFiles(files_add, files_delete, orderExists.files);
 
+            await this.db.$transaction(async (tx) => {
+                await this.repo.update(
+                    { id },
+                    { ...orderData, ...(filesUpdate !== null && { files: filesUpdate }) } as Partial<Orders>,
+                    tx,
+                );
+
+                // [add] order details
+                if (add && add.length > 0) {
+                    await this.validateForeignKeys(
+                        add,
+                        {
+                            product_id: this.productRepo,
+                            unit_id: this.unitRepo,
+                        },
+                        tx,
+                    );
+
+                    const data = add.map((item) => {
+                        const { key, ...rest } = item;
+                        return { ...rest, order_id: id };
+                    });
+                    await this.orderDetailRepo.createMany(data, tx);
+                }
+
+                // [update] order details
+                if (update && update.length > 0) {
+                    await this.validateForeignKeys(
+                        update,
+                        {
+                            id: this.orderDetailRepo,
+                            product_id: this.productRepo,
+                            unit_id: this.unitRepo,
+                        },
+                        tx,
+                    );
+
+                    const data = update.map((item) => {
+                        const { key, ...rest } = item;
+                        return rest;
+                    });
+                    await this.orderDetailRepo.updateMany(data, tx);
+                }
+
+                // [delete] order details
+                if (deleteIds && deleteIds.length > 0) {
+                    await this.orderDetailRepo.deleteMany({ id: { in: deleteIds } }, tx, false);
+                }
+
+                // [add] shippings
+                if (shipping_plans_add && shipping_plans_add.length > 0) {
+                    await this.validateForeignKeys(
+                        shipping_plans_add,
+                        {
+                            partner_id: this.partnerRepo,
+                        },
+                        tx,
+                    );
+
+                    const data = shipping_plans_add.map((item) => {
+                        const { key, ...rest } = item;
+                        return { ...rest, order_id: id };
+                    });
+                    await this.shippingPlanRepo.createMany(data, tx);
+                }
+
+                // [update] shippings
+                if (shipping_plans_update && shipping_plans_update.length > 0) {
+                    await this.validateForeignKeys(
+                        shipping_plans_update,
+                        {
+                            id: this.shippingPlanRepo,
+                            partner_id: this.partnerRepo,
+                        },
+                        tx,
+                    );
+
+                    const data = shipping_plans_update.map((item) => {
+                        const { key, ...rest } = item;
+                        return rest;
+                    });
+                    await this.shippingPlanRepo.updateMany(data, tx);
+                }
+
+                // [delete] shippings
+                if (shipping_plans_delete && shipping_plans_delete.length > 0) {
+                    await this.orderDetailRepo.deleteMany({ id: { in: shipping_plans_delete } }, tx, false);
+                }
+
+                // handle invoices
+
+                // handle expenses
+
+                // handle productions
+
+                // handle inventories
+            });
+
+            // clean up file
             if (files_delete && files_delete.length > 0) {
-                await deleteFileSystem(files_delete);
+                deleteFileSystem(files_delete);
             }
+
+            return { id };
+        } catch (error) {
+            if (files_add && files_add.length > 0) {
+                deleteFileSystem(files_add);
+            }
+            throw error;
         }
+    }
 
-        await this.db.$transaction(async (tx) => {
-            await this.repo.update(
-                { id },
-                { ...orderData, ...(filesUpdate !== null && { files: filesUpdate }) } as Partial<Orders>,
-                tx,
-            );
-
-            // [add] order details
-            if (add && add.length > 0) {
-                await this.validateForeignKeys(
-                    add,
-                    {
-                        product_id: this.productRepo,
-                        unit_id: this.unitRepo,
-                    },
-                    tx,
-                );
-
-                const data = add.map((item) => {
-                    const { key, ...rest } = item;
-                    return { ...rest, order_id: id };
-                });
-                await this.orderDetailRepo.createMany(data, tx);
-            }
-
-            // [update] order details
-            if (update && update.length > 0) {
-                await this.validateForeignKeys(
-                    update,
-                    {
-                        id: this.orderDetailRepo,
-                        product_id: this.productRepo,
-                        unit_id: this.unitRepo,
-                    },
-                    tx,
-                );
-
-                const data = update.map((item) => {
-                    const { key, ...rest } = item;
-                    return rest;
-                });
-                await this.orderDetailRepo.updateMany(data, tx);
-            }
-
-            // [delete] order details
-            if (deleteIds && deleteIds.length > 0) {
-                await this.orderDetailRepo.deleteMany({ id: { in: deleteIds } }, tx, false);
-            }
-
-            // handle invoices
-
-            // handle expenses
-
-            // handle productions
-
-            // handle inventories
-        });
+    public async approveShippingPlan(id: number, body: IShippingPlan): Promise<IIdResponse> {
+        const shippingPlanExist = await this.shippingPlanRepo.findOne({ id });
+        if (shippingPlanExist?.status !== ShippingPlanStatus.PENDING) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`status.${ErrorKey.INVALID}`],
+            });
+        }
+        await this.shippingPlanRepo.update({ id }, body);
 
         return { id };
     }

@@ -1,4 +1,5 @@
 import { PrsInventoryType, PrismaClient } from '.prisma/client';
+import { IRoleModule } from '@common/interfaces/role.interface';
 import { StringValue } from 'ms';
 const prisma = new PrismaClient();
 
@@ -74,6 +75,12 @@ export enum PrefixCode {
     INVOICE = 'HD',
     WAREHOUSE = 'KH',
     INVENTORY = 'INV',
+    INVENTORY_NORMAL_In = 'INI',
+    INVENTORY_FINISHED_In = 'IFI',
+    INVENTORY_MATERIAL_In = 'IMI',
+    INVENTORY_NORMAL_OUT = 'INO',
+    INVENTORY_FINISHED_OUT = 'IFO',
+    INVENTORY_MATERIAL_OUT = 'IMO',
     PRODUCTION = 'XS',
     FINANCE_RECORD = 'FN',
     FINANCE_IMCOME = 'TH',
@@ -107,6 +114,12 @@ export const ModelPrefixMap: Record<string, PrefixCode> = {
     INVOICE: PrefixCode.INVOICE,
     WAREHOUSE: PrefixCode.WAREHOUSE,
     INVENTORY: PrefixCode.INVENTORY,
+    INVENTORY_NORMAL_In: PrefixCode.INVENTORY_NORMAL_In,
+    INVENTORY_FINISHED_In: PrefixCode.INVENTORY_FINISHED_In,
+    INVENTORY_MATERIAL_In: PrefixCode.INVENTORY_MATERIAL_In,
+    INVENTORY_NORMAL_OUT: PrefixCode.INVENTORY_NORMAL_OUT,
+    INVENTORY_FINISHED_OUT: PrefixCode.INVENTORY_FINISHED_OUT,
+    INVENTORY_MATERIAL_OUT: PrefixCode.INVENTORY_MATERIAL_OUT,
     PRODUCTION: PrefixCode.PRODUCTION,
     FINANCERECORD: PrefixCode.FINANCE_RECORD,
     FINANCE_IMCOME: PrefixCode.FINANCE_IMCOME,
@@ -141,6 +154,12 @@ export const ModelStringMaps: Record<string, any> = {
     INVOICE: prisma.invoices,
     WAREHOUSE: prisma.warehouses,
     INVENTORY: prisma.inventories,
+    INVENTORY_NORMAL_In: prisma.inventories,
+    INVENTORY_FINISHED_In: prisma.inventories,
+    INVENTORY_MATERIAL_In: prisma.inventories,
+    INVENTORY_NORMAL_OUT: prisma.inventories,
+    INVENTORY_FINISHED_OUT: prisma.inventories,
+    INVENTORY_MATERIAL_OUT: prisma.inventories,
     PRODUCTION: prisma.productions,
     FINANCE_RECORD: prisma.financeRecords,
     FINANCE_IMCOME: prisma.financeRecords,
@@ -174,6 +193,12 @@ export enum CodeType {
     INVOICE = 'invoice',
     WAREHOUSE = 'warehouse',
     INVENTORY = 'inventory',
+    INVENTORY_NORMAL_In = 'inventory_normal_in',
+    INVENTORY_FINISHED_In = 'inventory_finished_in',
+    INVENTORY_MATERIAL_In = 'inventory_material_in',
+    INVENTORY_NORMAL_OUT = 'inventory_normal_out',
+    INVENTORY_FINISHED_OUT = 'inventory_finished_out',
+    INVENTORY_MATERIAL_OUT = 'inventory_material_out',
     PRODUCTION = 'production',
     FINANCE_RECORDS = 'finance_record',
     FINANCE_IMCOME = 'finance_imcome',
@@ -267,6 +292,11 @@ export enum FinanceRecordType {
     EXPENSE = 'expense',
 }
 
+export enum TransactionWarehouseType {
+    IN = 'in',
+    OUT = 'out',
+}
+
 export const InventoryType = {
     FINISHED_IN: PrsInventoryType.finished_in,
     FINISHED_OUT: PrsInventoryType.finished_out,
@@ -275,6 +305,18 @@ export const InventoryType = {
     MATERIAL_IN: PrsInventoryType.material_in,
     MATERIAL_OUT: PrsInventoryType.material_out,
 } as const;
+
+export const InventoryTypeDirectionMap: Record<
+    (typeof InventoryType)[keyof typeof InventoryType],
+    TransactionWarehouseType
+> = {
+    [InventoryType.FINISHED_IN]: TransactionWarehouseType.IN,
+    [InventoryType.NORMAL_IN]: TransactionWarehouseType.IN,
+    [InventoryType.MATERIAL_IN]: TransactionWarehouseType.IN,
+    [InventoryType.FINISHED_OUT]: TransactionWarehouseType.OUT,
+    [InventoryType.NORMAL_OUT]: TransactionWarehouseType.OUT,
+    [InventoryType.MATERIAL_OUT]: TransactionWarehouseType.OUT,
+};
 
 export type InventoryType = (typeof InventoryType)[keyof typeof InventoryType];
 
@@ -309,3 +351,11 @@ export enum TransactionOrderType {
     ORDER = 'order',
     COMMISSION = 'commission',
 }
+
+export enum ShippingPlanStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
+}
+
+

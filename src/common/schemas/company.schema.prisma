@@ -53,6 +53,8 @@ model Organizations {
   purchase_requests PurchaseRequests[]
   clauses Clauses[]
   users Users[]
+  user_roles UserRoles[]
+  banks Banks[]
 }
 
 model Positions {

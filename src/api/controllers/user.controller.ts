@@ -4,6 +4,7 @@ import { Users } from '.prisma/client';
 import { BaseController } from './base.controller';
 import { UserService } from '@common/services/user.service';
 import { ICreateUser } from '@common/interfaces/user.interface';
+import { IPaginationInput } from '@common/interfaces/common.interface';
 
 export class UserController extends BaseController<Users> {
     private static instance: UserController;
@@ -44,6 +45,18 @@ export class UserController extends BaseController<Users> {
         }
     }
 
+    public async updateUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const body = req.body as ICreateUser;
+            const result = await this.service.updateUser(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.updateUser: `, error);
+            next(error);
+        }
+    }
+
     public async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
@@ -55,4 +68,3 @@ export class UserController extends BaseController<Users> {
         }
     }
 }
-

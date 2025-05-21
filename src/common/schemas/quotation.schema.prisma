@@ -14,7 +14,7 @@ model Quotations {
   id           Int       @id @default(autoincrement())
   code         String    @default(cuid())
   time_at      DateTime? @default(now())
-  expired_date DateTime?
+  expired_date DateTime? @default(now())
   note         String?
   rejected_reason String?
   type         PrsQuatationType @default(supplier) // loại báo giá

@@ -27,7 +27,7 @@ export class OrderController extends BaseController<Orders> {
             const body = req.body as IApproveRequest;
             const id = Number(req.params.id);
             if (body.status === OrderStatus.CONFIRMED) {
-                body.rejected_reason = ''
+                body.rejected_reason = '';
             }
             const result = await this.service.update(id, body);
             res.sendJson(result);
@@ -45,6 +45,18 @@ export class OrderController extends BaseController<Orders> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.updateOrderRequest: `, error);
+            next(error);
+        }
+    }
+
+    public async approveShippingPlan(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IApproveRequest;
+            const id = Number(req.params.id);
+            const result = await this.service.approveShippingPlan(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.approveShippingPlanRequest: `, error);
             next(error);
         }
     }

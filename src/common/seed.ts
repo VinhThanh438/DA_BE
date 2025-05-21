@@ -237,8 +237,6 @@ async function main() {
             discount: 5,
             note: 'Steel plates for INV001',
             product_id: product.id,
-            inventory_id: inventory1.id,
-            warehouse_id: warehouse1.id,
         },
     });
 
@@ -249,8 +247,6 @@ async function main() {
             discount: 3,
             note: 'Raw materials for INV002',
             product_id: product.id,
-            inventory_id: inventory2.id,
-            warehouse_id: warehouse2.id,
         },
     });
 
@@ -263,8 +259,6 @@ async function main() {
             note: 'Stocked steel plates in main warehouse',
             organization_id: organization.id,
             warehouse_id: warehouse1.id,
-            product_id: product.id,
-            order_id: order.id,
             inventory_id: inventory1.id,
         },
     });
@@ -277,8 +271,6 @@ async function main() {
             note: 'Stocked raw materials in secondary warehouse',
             organization_id: organization.id,
             warehouse_id: warehouse2.id,
-            product_id: product.id,
-            order_id: null,
             inventory_id: inventory2.id,
         },
     });

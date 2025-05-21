@@ -8,6 +8,7 @@ export const ContractSelection: Prisma.ContractsSelect = {
     id: true,
     code: true,
     tax: true,
+    note: true,
     time_at: true,
     contract_date: true,
     status: true,

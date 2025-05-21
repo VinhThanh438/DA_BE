@@ -28,7 +28,7 @@ export class RepresentativeService extends BaseService<
         return this.instance;
     }
 
-    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+    public async paginate({ type, ...query }: IPaginationInput): Promise<IPaginationResponse> {
         const data = await this.repo.paginate(query, true);
 
         const result = {

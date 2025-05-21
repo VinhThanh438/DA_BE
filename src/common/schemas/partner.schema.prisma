@@ -43,6 +43,7 @@ model Partners {
   transactions  Transactions[]
   contracts           Contracts[]
   representatives Representatives[]
+  shippings        ShippingPlans[]
 
   inventory_as_supplier Inventories[] @relation("Supplier")
   inventory_as_customer Inventories[] @relation("Customer")

@@ -21,10 +21,10 @@ model Products {
   production_details        ProductionDetails[]
   bom_details               BillOfMaterialDetails[]
   material_budgets          MaterialBudgets[]
-  transaction_warehouses    TransactionWarehouses[]
   @@map("products")
   purchase_request_details PurchaseRequestDetails[]
   bill_of_materials BillOfMaterials[]
+  inventory_details InventoryDetails[]
 }
 
 enum PrsProductType {
@@ -46,6 +46,7 @@ model Units {
   details CommonDetails[]
   purchase_request_details PurchaseRequestDetails[]
   production_details ProductionDetails[]
+  inventory_details InventoryDetails[]
 }
 
 model ProductGroups {

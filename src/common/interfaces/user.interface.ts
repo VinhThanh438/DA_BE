@@ -1,9 +1,12 @@
+import { IUserRole } from "./role.interface";
+
 export interface ICreateUser {
     username: string;
     password: string;
     email?: string;
     employee_id?: number;
     device_uid?: string[];
+    user_roles?: IUserRole[];
 }
 
 export interface IEventUserFirstLoggin {

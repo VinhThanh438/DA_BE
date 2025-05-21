@@ -1,7 +1,7 @@
 import { wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
 import { values } from 'lodash';
-import { ContractStatus } from '@config/app.constant';
+import { ContractStatus, ContractType } from '@config/app.constant';
 import { IContract } from '@common/interfaces/contract.interface';
 import { detailsSchema } from './common.validator';
 
@@ -10,6 +10,7 @@ export const create: schema = {
         Joi.object<IContract>({
             code: Joi.string().optional().allow(null, '').max(100),
             tax: Joi.string().optional().allow(null, '').max(20),
+            note: Joi.string().optional().allow(null, ''),
             time_at: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
@@ -20,6 +21,10 @@ export const create: schema = {
 
             status: Joi.string()
                 .valid(...values(ContractStatus))
+                .optional()
+                .allow(null, ''),
+            type: Joi.string()
+                .valid(...values(ContractType))
                 .optional()
                 .allow(null, ''),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
@@ -39,6 +44,7 @@ export const update: schema = {
         Joi.object<IContract>({
             code: Joi.string().optional().allow(null, '').max(100),
             tax: Joi.string().optional().allow(null, '').max(20),
+            note: Joi.string().optional().allow(null, ''),
             time_at: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),
@@ -69,6 +75,7 @@ export const updateEntity: schema = {
         Joi.object<IContract>({
             code: Joi.string().optional().allow(null, '').max(100),
             tax: Joi.string().optional().allow(null, '').max(20),
+            note: Joi.string().optional().allow(null, ''),
             time_at: Joi.string().isoDate().optional().allow(null),
             delivery_date: Joi.string().isoDate().optional().allow(null),
             contract_date: Joi.string().isoDate().optional().allow(null),

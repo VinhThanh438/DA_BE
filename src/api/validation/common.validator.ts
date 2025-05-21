@@ -24,6 +24,8 @@ export const queryFilter: schema = {
             startAt: Joi.string().isoDate().optional().allow(null),
             endAt: Joi.string().isoDate().optional().allow(null),
             keyword: Joi.string().optional().allow(null, ''),
+            type: Joi.string().optional().allow(null, ''),
+            // organizationId: Joi.string().optional().allow(null, ''),
         }),
     ),
 };
