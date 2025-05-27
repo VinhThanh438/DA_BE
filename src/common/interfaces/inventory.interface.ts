@@ -11,7 +11,11 @@ export interface IInventory extends IUpdateChildAction {
     note?: string;
     time_at?: Date;
     files?: string[];
-    license_plate?: string;
+    plate?: string;
+    vehicle?: string;
+    delivery_cost?: number;
+    identity_code?: string;
+    representative_name?: string;
 
     customer_id?: number;
     employee_id?: number;
@@ -21,23 +25,23 @@ export interface IInventory extends IUpdateChildAction {
     order_id?: number;
     warehouse_id?: number;
 
-    details: ICommonDetails[];
+    details: InventoryDetail[]; // replace ICommonDetails -> InventoryDetail
+    files_add?: string[];
+    files_delete?: string[];
+    add?: InventoryDetail[];
+    update?: InventoryDetail[];
+    delete?: number[];
 }
 
-export interface IUpdateWarehouseTransaction {
-    
-}
+export interface IUpdateWarehouseTransaction {}
 
 export interface InventoryDetail {
     id?: number;
-    product_id: number;
-    unit_id: number;
+    order_detail_id: number;
     real_quantity: number;
     quantity?: number;
-    price: number;
-    discount?: number;
-    vat?: number;
     note?: string;
-    commission?: number;
     key?: string;
+    // unit?: any
+    // product?: any;
 }

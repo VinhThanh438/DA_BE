@@ -38,7 +38,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
         const currentPage = page ?? 1;
         const limit = size ?? 10;
         const skip = (currentPage - 1) * limit;
-        const { keyword, startAt, endAt } = args ?? {};
+        const { keyword, startAt, endAt, organization_id } = args ?? {};
 
         const conditions: Prisma.EmployeesWhereInput = {
             ...(startAt || endAt
@@ -53,6 +53,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
             NOT: {
                 name: ADMIN_USER_NAME,
             },
+            organization_id,
         };
 
         if (keyword) {
@@ -81,7 +82,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
             }
         });
         return {
-            data,
+            data: transformDecimal(data),
             pagination: {
                 totalPages: totalPages,
                 totalRecords: totalRecords,

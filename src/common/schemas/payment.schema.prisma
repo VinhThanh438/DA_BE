@@ -11,13 +11,21 @@ model PaymentRequests {
   payment_date    DateTime                @default(now())
 
   employee_id Int?
+  approver_id Int?
+  partner_id Int?
+  organization_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee Employees?              @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  employee Employees?              @relation("RequesterEmployee", fields: [employee_id], references: [id], onDelete: SetNull)
+  approver Employees?               @relation("ApproverEmployee", fields: [approver_id], references: [id], onDelete: SetNull)
+  partner Partners?               @relation("ApproverEmployee", fields: [partner_id], references: [id], onDelete: SetNull)
+  organization Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+
   payments Payments[]
   details  PaymentRequestDetails[]
+  // financeRecords FinanceRecords[]
 
   @@map("payment_requests")
 }
@@ -28,13 +36,15 @@ model PaymentRequestDetails {
   amount Float?
 
   payment_request_id Int?
-  order_detail_id    Int?
+  order_id    Int?
+  invoice_id    Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   payment_request PaymentRequests? @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
-  order_detail    CommonDetails?   @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
+  order    Orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  invoice    Invoices?   @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
 
   @@map("payment_request_details")
 }
@@ -54,20 +64,31 @@ model Payments {
   id              Int                     @id @default(autoincrement())
   code            String                  @default(cuid())
   status          PrsPaymentRequestStatus @default(pending)
-  type            PrsdPaymentRequestType  @default(order)
+  type            PrsFinanceRecordType  @default(income)
   files           Json?                   @default("[]")
   note            String?
   rejected_reason String?
   time_at         DateTime                @default(now())
   payment_date    DateTime                @default(now())
+  description        String? // dien giai
+  payment_method     String? // hinh thuc thanh toan
+  amount             Decimal?
+  counterparty            String?   // Nguoi nhan tien/nguoi nop tien
+  attached_documents String? // ching tu kem theo
 
   payment_request_id Int?
+  organization_id Int?
   order_id Int?
   invoice_id Int?
+  bank_id Int?
+  partner_id Int?
 
   payment_request PaymentRequests? @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
   order Orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
   invoice Invoices? @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  bank Banks? @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  partner Partners? @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  organization Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

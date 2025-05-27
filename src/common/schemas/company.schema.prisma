@@ -55,6 +55,14 @@ model Organizations {
   users Users[]
   user_roles UserRoles[]
   banks Banks[]
+  employees Employees[] @relation("EmployeeOrganization")
+  payment_requests PaymentRequests[]
+  products Products[]
+  units Units[]
+  product_groups ProductGroups[]
+  warehouses Warehouses[]
+  payments Payments[]
+  partner_groups PartnerGroups[]
 }
 
 model Positions {

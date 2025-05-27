@@ -4,6 +4,7 @@ import { OrganizationSelection } from './organization.select';
 import { PartnerSelection } from './partner.select';
 import { InventoryDetailSelectionAll } from './inventory-detail.select';
 import { WarehouseSelectionAll } from './warehouse.select';
+import { OrderSelection } from './order.select';
 
 export const InventorySelection: Prisma.InventoriesSelect = {
     id: true,
@@ -12,7 +13,14 @@ export const InventorySelection: Prisma.InventoriesSelect = {
     type: true,
     note: true,
     files: true,
-    license_plate: true,
+    status: true,
+    plate: true,
+    vehicle: true,
+    delivery_cost: true,
+    identity_code: true,
+    representative_name: true,
+    order_id: true,
+    warehouse_id: true,
 };
 
 export const InventorySelectionAll: Prisma.InventoriesSelect = {
@@ -33,7 +41,10 @@ export const InventorySelectionAll: Prisma.InventoriesSelect = {
         select: PartnerSelection,
     },
     warehouse: {
-        select: WarehouseSelectionAll
+        select: WarehouseSelectionAll,
+    },
+    order: {
+        select: OrderSelection,
     },
     details: {
         select: InventoryDetailSelectionAll,

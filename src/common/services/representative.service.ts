@@ -77,7 +77,7 @@ export class RepresentativeService extends BaseService<
             { status: OrderStatus.CONFIRMED, ...beforeConditions } as Prisma.OrdersWhereInput,
             true,
         );
-        const beforeEnriched = this.enrichOrderTotals({ data: beforeOrders } as IPaginationResponse);
+        const beforeEnriched = this.enrichTotals({ data: beforeOrders } as IPaginationResponse);
         const beginningDebt = beforeEnriched.data.reduce(
             (sum: any, item: any) => sum + Number(item.total_amount || 0),
             0,
@@ -106,7 +106,7 @@ export class RepresentativeService extends BaseService<
             true,
         );
 
-        const enrichedData = this.enrichOrderTotals({ data: increaseData } as IPaginationResponse);
+        const enrichedData = this.enrichTotals({ data: increaseData } as IPaginationResponse);
         let ending = currentDebt;
         let increase = 0;
         let reduction = 0;

@@ -6,6 +6,7 @@ model CommonDetails {
   commission Float? @default(0)
   vat      Float? // %vat
   note     String?
+  imported_quantity  Int?     @default(0)
 
   product_id Int?
   unit_id Int?
@@ -13,7 +14,6 @@ model CommonDetails {
   order_id     Int?
   quotation_id Int?
   contract_id  Int?
-  invoice_id   Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -23,8 +23,8 @@ model CommonDetails {
   order     Orders?     @relation(fields: [order_id], references: [id], onDelete: SetNull)
   quotation Quotations? @relation(fields: [quotation_id], references: [id], onDelete: SetNull)
   contract  Contracts?  @relation(fields: [contract_id], references: [id], onDelete: SetNull)
-  invoice   Invoices?   @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  inventory_details   InventoryDetails[]
+  invoice_details InvoiceDetails[]
 
   @@map("common_details")
-  payment_request_details PaymentRequestDetails[]
 }

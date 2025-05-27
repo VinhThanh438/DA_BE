@@ -26,6 +26,9 @@ export const create: schema = {
             partner_id: Joi.number().optional(),
             employee_id: Joi.number().optional(),
             organization_id: Joi.number().optional(),
+
+            // order_id: Joi.number().optional(),
+            // payment_request_id: Joi.number().optional(),
         }),
     ),
 };
@@ -54,6 +57,9 @@ export const update: schema = {
             partner_id: Joi.number().optional(),
             employee_id: Joi.number().optional(),
             organization_id: Joi.number().optional(),
+
+            // order_id: Joi.number().optional(),
+            // payment_request_id: Joi.number().optional(),
         }),
     ),
 };

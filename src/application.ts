@@ -11,6 +11,7 @@ import { MailAdapter } from '@common/infrastructure/mail.adapter';
 import { DeviceRequetsEvent } from '@common/events/device-request.event';
 import { UserEvent } from '@common/events/user.event';
 import { InventoryEvent } from '@common/events/inventory.event';
+import { PaymentEvent } from '@common/events/payment.event';
 
 /**
  * Wrapper around the Node process, ExpressServer abstraction and complex dependencies such as services that ExpressServer needs.
@@ -58,7 +59,7 @@ export class Application {
 
                 if (workerServer) await workerServer.kill();
                 if (socketServer) await socketServer.kill();
-                
+
                 // await RedisAdapter.disconnect();
                 // await MailAdapter.disconnect();
                 await this.databaseInstance.disconnect();
@@ -103,5 +104,6 @@ export class Application {
         DeviceRequetsEvent.register();
         UserEvent.register();
         InventoryEvent.register();
+        PaymentEvent.register();
     }
 }

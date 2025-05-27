@@ -1,4 +1,5 @@
 import { WarehouseController } from '@api/controllers/warehouse.controller';
+import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { queryById, queryFilter } from '@api/validation/common.validator';
 import { createAndUpdate } from '@api/validation/warehouse.validator';
@@ -11,7 +12,12 @@ router.get('/', validateRequest(queryFilter), controller.paginate.bind(controlle
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post('/', validateRequest(createAndUpdate), controller.create.bind(controller));
+router.post(
+    '/',
+    validateRequest(createAndUpdate),
+    SpatialClassificationMiddleware.assignInfoToRequest,
+    controller.create.bind(controller),
+);
 
 router.put('/:id', validateRequest(createAndUpdate), controller.update.bind(controller));
 

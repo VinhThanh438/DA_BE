@@ -10,6 +10,7 @@ export interface IShippingPlan {
     created_at?: Date;
     updated_at?: Date;
     key?: string;
+    files?: string[];
 
     files_add?: string[];
     files_delete?: string[];

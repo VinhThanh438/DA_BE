@@ -12,6 +12,7 @@ export interface IOrder {
     code?: string;
     type: OrderType;
     address?: string;
+    payment_method?: string;
     phone?: string;
     note?: string;
     time_at?: Date;
@@ -24,6 +25,7 @@ export interface IOrder {
     representative_id?: number;
     organization_id?: number;
     bank_id?: number;
+    delivery_progress?: number;
 
     details?: ICommonDetails[];
     order_expenses?: IOrderExpense[];
@@ -39,10 +41,7 @@ export interface IOrder {
     add?: ICommonDetails[];
     update?: ICommonDetails[];
     delete?: number[];
-}
 
-export interface IApproveRequest {
-    status: OrderStatus;
-    type: OrderType;
+    status?: OrderStatus;
     rejected_reason?: string;
 }

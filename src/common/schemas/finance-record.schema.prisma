@@ -17,13 +17,17 @@ model FinanceRecords {
 
   organization_id Int? // doi tuong thu chi
 
+  // order_id Int? // 
+  // payment_request_id Int? // 
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   partner            Partners?           @relation(fields: [partner_id], references: [id], onDelete: SetNull)
   employee           Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   organization       Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  transactions Transactions[]
+  // order               Orders?      @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  // paymentRequest      PaymentRequests?      @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
 
   @@map("finance_records")
 }

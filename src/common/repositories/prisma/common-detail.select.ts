@@ -10,6 +10,7 @@ export const CommonDetailSelection: Prisma.CommonDetailsSelect = {
     vat: true,
     note: true,
     commission: true,
+    imported_quantity: true,
 };
 
 export const CommonDetailSelectionAll: Prisma.CommonDetailsSelect = {

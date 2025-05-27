@@ -1,5 +1,6 @@
 import { Column, DataValidation } from 'exceljs';
 import { ICustomizeCell, IHeader, ListStyle } from '../interfaces/excel.interface';
+import { IDataImportWarehousePDF } from '@common/interfaces/warehouse.interface';
 
 export const importWarehouseHeader: IHeader[] = [
     {
@@ -744,23 +745,7 @@ export const importWarehouseFooter: ICustomizeCell[] = [
     },
 ];
 
-interface IFakeData {
-    id: number;
-    product_name: string;
-    product_code: string;
-    unit: string;
-    unit_name: string;
-    quantity: number;
-    document: number;
-    real: number;
-    price: number;
-    total_price: number;
-    incidental_costs: number;
-    kg: number;
-    money: number;
-}
-
-export const fakeImportWarehouseData: IFakeData[] = [
+export const fakeImportWarehouseData: IDataImportWarehousePDF[] = [
     {
         id: 1,
         product_name: 'Sắt hộp 20x40x1.2',

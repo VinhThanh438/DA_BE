@@ -2,8 +2,7 @@ import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helpe
 import { PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
-import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
-import { ICommonDetails } from '@common/interfaces/common.interface';
+import { IPaymentRequest, IPaymentRequestDetail } from '@common/interfaces/payment-request.interface';
 import { ObjectSchema } from 'joi';
 import { queryFilter as baseQueryFilter } from './common.validator';
 
@@ -11,8 +10,9 @@ export const queryFilter: schema = {
     query: wrapSchema(
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             type: Joi.string()
-                .required()
+                .optional()
                 .valid(...values(PaymentRequestType)),
+            status: Joi.string().optional().allow(null, ''),
         }),
     ),
 };
@@ -33,12 +33,15 @@ export const create: schema = {
             payment_date: Joi.string().isoDate().optional().allow(null),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
 
-            employee_id: Joi.number().optional(),
+            employee_id: Joi.number().optional().allow(null),
+            approver_id: Joi.number().optional().allow(null),
+            partner_id: Joi.number().optional().allow(null),
 
             details: Joi.array()
                 .items(
-                    Joi.object<ICommonDetails>({
-                        order_detail_id: Joi.number().required(),
+                    Joi.object<IPaymentRequestDetail>({
+                        order_id: Joi.number().required(),
+                        invoice_id: Joi.number().optional().allow(null),
                         amount: Joi.number().min(0).optional(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),

@@ -1,15 +1,20 @@
 import { Prisma } from '.prisma/client';
-import { CommonDetailSelectionAll } from './common-detail.select';
+import { OrderSelectionDetails } from './order.select';
+import { InvoiceSelection } from './invoice.select';
 
 export const PaymentRequestDetailSelection: Prisma.PaymentRequestDetailsSelect = {
     id: true,
-    order_detail_id: true,
     amount: true,
     note: true,
+    order_id: true,
+    invoice_id: true,
 };
 export const PaymentRequestDetailSelectionAll: Prisma.PaymentRequestDetailsSelect = {
     ...PaymentRequestDetailSelection,
-    order_detail: {
-        select: CommonDetailSelectionAll,
+    order: {
+        select: OrderSelectionDetails,
+    },
+    invoice: {
+        select: InvoiceSelection,
     },
 };

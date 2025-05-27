@@ -72,4 +72,6 @@ export enum ErrorKey {
     REQUIRED = 'required',
     EXISTED = 'existed',
     INCORRECT = 'incorrect',
+    FULFILLED = 'fulfilled',
+    CANNOT_EDIT = 'cannot_edit',
 }

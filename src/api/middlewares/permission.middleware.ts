@@ -1,13 +1,7 @@
 import { APIError } from '@common/error/api.error';
 import { StatusCode } from '@common/errors';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import {
-    IPermissionCheck,
-    IRoleAction,
-    IRoleModule,
-    IRouteModule,
-    ROUTE_MODULES,
-} from '@common/interfaces/role.interface';
+import { IRoleAction, IRoleModule, IRouteModule } from '@common/interfaces/role.interface';
 import logger from '@common/logger';
 import { Request, Response, NextFunction } from 'express';
 import 'dotenv/config';
@@ -31,11 +25,8 @@ export class PermissionMiddleware {
 
                 // parse type
                 const targetModule = this.resolveModuleFromType(req, module);
-                console.log('');
 
                 const organizationId = Number(req.query.organizationId);
-                console.log('organizationId', organizationId);
-                console.log('userId', userId);
 
                 if (!userId || !organizationId) {
                     throw new APIError({
@@ -125,7 +116,6 @@ export class PermissionMiddleware {
     private static hasAnyPermissionForModule(userRoles: any[], module: IRoleModule): boolean {
         for (const userRole of userRoles) {
             const permissions = userRole.role.permissions as Record<IRoleModule, IRoleAction[]>;
-            console.log('permissions ', permissions);
 
             if (permissions[module] && Array.isArray(permissions[module]) && permissions[module].length > 0) {
                 return true;

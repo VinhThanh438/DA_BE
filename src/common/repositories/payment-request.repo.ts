@@ -1,7 +1,7 @@
 import { Prisma, PaymentRequests } from '.prisma/client';
 import { BaseRepo } from './base.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { PaymentRequestSelect, PaymentRequestSelectAll } from './prisma/payment-request.select';
+import { PaymentRequestSelectAll } from './prisma/payment-request.select';
 
 export class PaymentRequestRepo extends BaseRepo<
     PaymentRequests,
@@ -9,7 +9,7 @@ export class PaymentRequestRepo extends BaseRepo<
     Prisma.PaymentRequestsWhereInput
 > {
     protected db = DatabaseAdapter.getInstance().paymentRequests;
-    protected defaultSelect = PaymentRequestSelect;
+    protected defaultSelect = PaymentRequestSelectAll;
     protected detailSelect = PaymentRequestSelectAll;
     protected modelKey: keyof Prisma.TransactionClient = 'paymentRequests';
     protected searchableFields = ['code'];

@@ -26,7 +26,7 @@ export const createUser: schema = {
 export const updateUser: schema = {
     params: Joi.object({
         id: Joi.number().required(),
-    }).unknown(true),
+    }),
     body: wrapSchema(
         Joi.object({
             username: Joi.string().required().min(1).max(50),
@@ -60,5 +60,5 @@ export const filterUser: schema = {
 export const getUserById: schema = {
     params: Joi.object({
         id: Joi.number().required(),
-    }).unknown(true),
+    }),
 };

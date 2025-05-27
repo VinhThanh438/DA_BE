@@ -20,12 +20,16 @@ export const OrderSelection: Prisma.OrdersSelect = {
     address: true,
     phone: true,
     status: true,
+    payment_method: true,
     rejected_reason: true,
     files: true,
     note: true,
+    partner_id: true,
+    employee_id: true,
     organization: {
         select: OrganizationSelection,
     },
+    delivery_progress: true,
 };
 
 export const OrderSelectionAll: Prisma.OrdersSelect = {
@@ -51,7 +55,7 @@ export const OrderSelectionAll: Prisma.OrdersSelect = {
     inventories: {
         select: InventorySelection,
     },
-    invoice: {
+    invoices: {
         select: InvoiceSelection,
     },
     employee: {
@@ -65,7 +69,7 @@ export const OrderSelectionAll: Prisma.OrdersSelect = {
     },
 };
 
-export const orderSelectionDetails: Prisma.OrdersSelect = {
+export const OrderSelectionDetails: Prisma.OrdersSelect = {
     ...OrderSelection,
     details: {
         select: CommonDetailSelectionAll,

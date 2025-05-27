@@ -20,6 +20,7 @@ model Banks {
   invoices           Invoices[]
   transactions Transactions[]
   orders Orders[]
+  payments Payments[]
 
   @@map("banks")
 }

@@ -443,3 +443,39 @@ export const importQuotationCustomizeFooter: ICustomizeCell[] = [
     //     },
     // },
 ];
+
+export const dataFakeQuotation = [
+    {
+        id: 1,
+        product: 'Thép ABC',
+        unit: 'Kg',
+        quantity: 100,
+        price: 2000000,
+        intoMoney: 200000000,
+        vat: '10%',
+        value: 20000000,
+        total: 200000000 - 20000000,
+    },
+    {
+        id: 2,
+        product: 'Thép ABC',
+        unit: 'Kg',
+        quantity: 100,
+        price: 2000000,
+        intoMoney: 200000000,
+        vat: '10%',
+        value: 20000000,
+        total: 200000000 - 20000000,
+    },
+    {
+        id: 3,
+        product: 'Thép ABC',
+        unit: 'Kg',
+        quantity: 100,
+        price: 2000000,
+        intoMoney: 200000000,
+        vat: '10%',
+        value: 20000000,
+        total: 200000000 - 20000000,
+    },
+];

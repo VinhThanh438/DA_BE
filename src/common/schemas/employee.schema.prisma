@@ -75,14 +75,16 @@ model Employees {
   transactions Transactions[]
 
   job_position  JobPositions?   @relation(fields: [job_position_id], references: [id], onDelete: SetNull)
-  organizations Organizations[]
+  organization  Organizations?   @relation("EmployeeOrganization", fields: [organization_id], references: [id], onDelete: SetNull)
 
   @@map("employees")
   productions Productions[]
   contracts Contracts[]
   purchase_requests PurchaseRequests[]
   warehouses Warehouses[]
-  payment_requests PaymentRequests[]
+  payment_requests_requested PaymentRequests[] @relation("RequesterEmployee")
+  payment_requests_approved PaymentRequests[] @relation("ApproverEmployee")
+  organizations Organizations[]
 }
 
 enum PrsAddressType {

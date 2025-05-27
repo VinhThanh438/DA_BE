@@ -17,17 +17,6 @@ export abstract class BaseController<T = any> {
         }
     }
 
-    public async getAll(req: Request, res: Response, next: NextFunction) {
-        try {
-            const query = req.query as IPaginationInput;
-            const data = await this.service.paginate(query);
-            res.sendJson(data);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.paginate: `, error);
-            next(error);
-        }
-    }
-
     public async getById(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);

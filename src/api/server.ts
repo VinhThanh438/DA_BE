@@ -12,7 +12,6 @@ import { PublicPath } from '@config/app.constant';
 import i18nMiddleware from 'i18next-http-middleware';
 import i18n from '@api/middlewares/i18.middleware';
 import { RateLimiterMiddleware } from './middlewares/ratelimiter.middleware';
-import { EnsureAdminAccountMiddleware } from './middlewares/ensure-admin.middleware';
 
 /**
  * Abstraction around the raw Express.js server and Nodes' HTTP server.
@@ -30,7 +29,6 @@ export class ExpressServer {
         this.setupSecurityMiddlewares(server);
         this.configureRoutes(server);
         this.setupErrorHandlers(server);
-        await this.ensureAdminAccount();
 
         this.httpServer = this.listen(server, port);
         this.server = server;
@@ -97,10 +95,6 @@ export class ExpressServer {
 
     private async i18next(server: Express) {
         server.use(i18nMiddleware.handle(await i18n.getI18n()));
-    }
-
-    private async ensureAdminAccount() {
-        await EnsureAdminAccountMiddleware.handleOnStartup();
     }
 
     private setupStandardMiddlewares(server: Express) {

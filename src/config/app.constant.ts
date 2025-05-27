@@ -75,19 +75,20 @@ export enum PrefixCode {
     INVOICE = 'HD',
     WAREHOUSE = 'KH',
     INVENTORY = 'INV',
-    INVENTORY_NORMAL_In = 'INI',
-    INVENTORY_FINISHED_In = 'IFI',
-    INVENTORY_MATERIAL_In = 'IMI',
+    INVENTORY_NORMAL_IN = 'INI',
+    INVENTORY_FINISHED_IN = 'IFI',
+    INVENTORY_MATERIAL_IN = 'IMI',
     INVENTORY_NORMAL_OUT = 'INO',
     INVENTORY_FINISHED_OUT = 'IFO',
     INVENTORY_MATERIAL_OUT = 'IMO',
     PRODUCTION = 'XS',
     FINANCE_RECORD = 'FN',
-    FINANCE_IMCOME = 'TH',
+    FINANCE_INCOME = 'TH',
     FINANCE_EXPENSE = 'CH',
     OTHER = 'OTH',
     ORDER_EXPENSE = 'CPH',
     PURCHASE_REQUEST = 'DN',
+    PAYMENT_REQUEST = 'YTT',
 }
 
 export const ModelPrefixMap: Record<string, PrefixCode> = {
@@ -114,20 +115,21 @@ export const ModelPrefixMap: Record<string, PrefixCode> = {
     INVOICE: PrefixCode.INVOICE,
     WAREHOUSE: PrefixCode.WAREHOUSE,
     INVENTORY: PrefixCode.INVENTORY,
-    INVENTORY_NORMAL_In: PrefixCode.INVENTORY_NORMAL_In,
-    INVENTORY_FINISHED_In: PrefixCode.INVENTORY_FINISHED_In,
-    INVENTORY_MATERIAL_In: PrefixCode.INVENTORY_MATERIAL_In,
+    INVENTORY_NORMAL_IN: PrefixCode.INVENTORY_NORMAL_IN,
+    INVENTORY_FINISHED_IN: PrefixCode.INVENTORY_FINISHED_IN,
+    INVENTORY_MATERIAL_IN: PrefixCode.INVENTORY_MATERIAL_IN,
     INVENTORY_NORMAL_OUT: PrefixCode.INVENTORY_NORMAL_OUT,
     INVENTORY_FINISHED_OUT: PrefixCode.INVENTORY_FINISHED_OUT,
     INVENTORY_MATERIAL_OUT: PrefixCode.INVENTORY_MATERIAL_OUT,
     PRODUCTION: PrefixCode.PRODUCTION,
     FINANCERECORD: PrefixCode.FINANCE_RECORD,
-    FINANCE_IMCOME: PrefixCode.FINANCE_IMCOME,
+    FINANCE_INCOME: PrefixCode.FINANCE_INCOME,
     FINANCE_EXPENSE: PrefixCode.FINANCE_EXPENSE,
     CONTRACT: PrefixCode.CONTRACT,
     ORDEREXPENSE: PrefixCode.ORDER_EXPENSE,
     PURCHASEREQUEST: PrefixCode.PURCHASE_REQUEST,
     OTHER: PrefixCode.OTHER,
+    PAYMENT_REQUEST: PrefixCode.PAYMENT_REQUEST,
 };
 
 export const ModelStringMaps: Record<string, any> = {
@@ -154,19 +156,20 @@ export const ModelStringMaps: Record<string, any> = {
     INVOICE: prisma.invoices,
     WAREHOUSE: prisma.warehouses,
     INVENTORY: prisma.inventories,
-    INVENTORY_NORMAL_In: prisma.inventories,
-    INVENTORY_FINISHED_In: prisma.inventories,
-    INVENTORY_MATERIAL_In: prisma.inventories,
+    INVENTORY_NORMAL_IN: prisma.inventories,
+    INVENTORY_FINISHED_IN: prisma.inventories,
+    INVENTORY_MATERIAL_IN: prisma.inventories,
     INVENTORY_NORMAL_OUT: prisma.inventories,
     INVENTORY_FINISHED_OUT: prisma.inventories,
     INVENTORY_MATERIAL_OUT: prisma.inventories,
     PRODUCTION: prisma.productions,
     FINANCE_RECORD: prisma.financeRecords,
-    FINANCE_IMCOME: prisma.financeRecords,
+    FINANCE_INCOME: prisma.financeRecords,
     FINANCE_EXPENSE: prisma.financeRecords,
     PURCHASE_REQUEST: prisma.purchaseRequests,
     CONTRACT: prisma.contracts,
     ORDEREXPENSE: prisma.orderExpenses,
+    PAYMENT_REQUEST: prisma.paymentRequests,
 };
 
 export enum CodeType {
@@ -193,19 +196,20 @@ export enum CodeType {
     INVOICE = 'invoice',
     WAREHOUSE = 'warehouse',
     INVENTORY = 'inventory',
-    INVENTORY_NORMAL_In = 'inventory_normal_in',
-    INVENTORY_FINISHED_In = 'inventory_finished_in',
-    INVENTORY_MATERIAL_In = 'inventory_material_in',
+    INVENTORY_NORMAL_IN = 'inventory_normal_in',
+    INVENTORY_FINISHED_IN = 'inventory_finished_in',
+    INVENTORY_MATERIAL_IN = 'inventory_material_in',
     INVENTORY_NORMAL_OUT = 'inventory_normal_out',
     INVENTORY_FINISHED_OUT = 'inventory_finished_out',
     INVENTORY_MATERIAL_OUT = 'inventory_material_out',
     PRODUCTION = 'production',
     FINANCE_RECORDS = 'finance_record',
-    FINANCE_IMCOME = 'finance_imcome',
+    FINANCE_INCOME = 'finance_income',
     FINANCE_EXPENSE = 'finance_expense',
     CONTRACT = 'contract',
     ORDER_EXPENSE = 'orderexpense',
     PURCHASE_REQUEST = 'purchase_request',
+    PAYMENT_REQUEST = 'payment_request',
 }
 
 export enum QuotationRequestType {
@@ -239,8 +243,9 @@ export enum ContractStatus {
 }
 
 export enum InvoiceStatus {
-    DRAFT = 'draft',
-    RELEASED = 'released',
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
 }
 
 export enum OrderExpenseType {
@@ -288,7 +293,7 @@ export enum QuotationType {
 }
 
 export enum FinanceRecordType {
-    IMCOME = 'income',
+    INCOME = 'income',
     EXPENSE = 'expense',
 }
 
@@ -329,6 +334,8 @@ export const DECIMAL_KEYS = [
     'contract_value',
     'remaining_amount',
     'commission',
+    'insurance_salary',
+    'salary',
 ];
 
 export enum PaymentRequestStatus {
@@ -352,10 +359,29 @@ export enum TransactionOrderType {
     COMMISSION = 'commission',
 }
 
+export enum TransactionType {
+    IN = 'in',
+    OUT = 'out',
+}
+
 export enum ShippingPlanStatus {
     PENDING = 'pending',
     CONFIRMED = 'confirmed',
     REJECTED = 'rejected',
 }
 
+export enum PaymentType {
+    INCOME = 'income',
+    EXPENSE = 'expense',
+}
 
+export enum TransactionType {
+    INCOME = 'income',
+    EXPENSE = 'expense',
+}
+
+export enum CommonApproveStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
+}

@@ -15,7 +15,7 @@ import { IEventUserFirstLoggin } from '@common/interfaces/user.interface';
 import logger from '@common/logger';
 import { TokenRepo } from '@common/repositories/token.repo';
 import { UserRepo } from '@common/repositories/user.repo';
-import { REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
+import { OrganizationType, REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
 import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGGIN, EVENT_USER_LOGIN } from '@config/event.constant';
 import bcrypt from 'bcryptjs';
 
@@ -122,6 +122,28 @@ export class AuthService {
         return user;
     }
 
+    private static flattenOrganizations(org?: any): any[] {
+        if (!org) return [];
+
+        const result: any[] = [];
+        const stack = [org];
+
+        while (stack.length) {
+            const current = stack.pop();
+            if (current) {
+                const { sub_organization, ...orgWithoutChildren } = current;
+                if ([OrganizationType.COMPANY, OrganizationType.HEAD_QUARTER].includes(orgWithoutChildren.type)) {
+                    result.push(orgWithoutChildren);
+                }
+                if (Array.isArray(sub_organization)) {
+                    stack.push(...sub_organization);
+                }
+            }
+        }
+
+        return result;
+    }
+
     public static async getInfo(id: number): Promise<Partial<Users>> {
         let user = await this.userRepo.findOne({ id }, true);
 
@@ -133,7 +155,7 @@ export class AuthService {
         }
 
         const { organization, ...userData } = user as any;
-        Object.assign(userData, { organizations: [organization] });
+        userData.organizations = this.flattenOrganizations(organization);
 
         return userData;
     }

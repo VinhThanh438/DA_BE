@@ -150,7 +150,6 @@ async function main() {
             order_id: order.id,
             quotation_id: null,
             contract_id: null,
-            invoice_id: null,
         },
     });
 
@@ -165,7 +164,6 @@ async function main() {
             order_id: order.id,
             quotation_id: null,
             contract_id: null,
-            invoice_id: null,
         },
     });
 
@@ -200,7 +198,7 @@ async function main() {
             files: JSON.stringify([
                 { name: 'delivery-note.pdf', path: 'https://example.com/uploads/delivery-note.pdf' },
             ]),
-            license_plate: '29H-12345',
+            plate: '29H-12345',
             employee_id: employee.id,
             supplier_id: partner.id,
             customer_id: null,
@@ -219,7 +217,7 @@ async function main() {
             files: JSON.stringify([
                 { name: 'material-receipt.pdf', path: 'https://example.com/uploads/material-receipt.pdf' },
             ]),
-            license_plate: '29H-67890',
+            plate: '29H-67890',
             employee_id: employee.id,
             supplier_id: partner.id,
             customer_id: null,

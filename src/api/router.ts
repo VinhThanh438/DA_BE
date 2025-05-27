@@ -30,15 +30,18 @@ import paymentRequestRoutes from '@api/routes/payment-request.route';
 import representativeRoutes from '@api/routes/representative.route';
 import paymentRoutes from '@api/routes/payment.route';
 import excelRouter from '@api/routes/excel.route';
+import transactionRouter from '@api/routes/transaction.route';
 import publicRoutes from '@api/routes/public.route';
 import shippingPlanRoutes from '@api/routes/shipping-plan.route';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
+import { SpatialClassificationMiddleware } from './middlewares/spatial-classification.middleware';
 
 const router = express.Router();
 
 router.use(UserDeviceMiddleware.getUserDevice);
 router.use('/auth', authRoutes);
+router.use(SpatialClassificationMiddleware.handle);
 router.use('/', publicRoutes);
 router.use(AuthMiddleware.authenticate);
 router.use('/', otherRoutes);
@@ -71,6 +74,7 @@ router.use('/payment-request', paymentRequestRoutes);
 router.use('/representative', representativeRoutes);
 router.use('/excel', excelRouter);
 router.use('/payment', paymentRoutes);
-router.use('/shipping-plans', shippingPlanRoutes);
+router.use('/shipping-plan', shippingPlanRoutes);
+router.use('/transaction', transactionRouter);
 
 export default router;

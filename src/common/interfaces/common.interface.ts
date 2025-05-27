@@ -1,4 +1,4 @@
-import { RequestStatus } from '@config/app.constant';
+import { CommonApproveStatus, RequestStatus } from '@config/app.constant';
 
 export interface IPaginationInfo {
     totalPages: number;
@@ -31,6 +31,7 @@ export interface IPaginationInput extends IArrayDataInput {
     startAt?: DateString;
     endAt?: DateString;
     keyword?: string;
+    organization_id?: any;
 }
 
 export interface ICreateAndUpdateResponse {
@@ -66,6 +67,7 @@ export interface ICommonDetails {
     commission?: number;
     note?: string;
     key?: string;
+    imported_quantity?: number;
 
     order_id?: number;
     quotation_id?: number;
@@ -80,4 +82,10 @@ export interface IUpdateChildAction {
     add?: any[];
     update?: any[];
     delete?: number[];
+}
+
+export interface IApproveRequest {
+    status: CommonApproveStatus;
+    rejected_reason?: string;
+    files?: string[];
 }

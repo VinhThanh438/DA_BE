@@ -1,5 +1,5 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
+import { PaymentRequestStatus, PaymentRequestType, PaymentType } from '@config/app.constant';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
 import { IPayment } from '@common/interfaces/payment.interface';
@@ -15,6 +15,7 @@ export const queryFilter: schema = {
             status: Joi.string()
                 .valid(...values(PaymentRequestStatus))
                 .optional(),
+            bankId: Joi.number().optional(),
         }),
     ),
 };
@@ -24,7 +25,7 @@ export const create: schema = {
         Joi.object<IPayment>({
             code: Joi.string().max(100).optional(),
             type: Joi.string()
-                .valid(...Object.values(PaymentRequestType))
+                .valid(...Object.values(PaymentType))
                 .required(),
             note: Joi.string().allow(null, '').max(1000).optional(),
             time_at: Joi.string().isoDate().optional().allow(null),
@@ -34,7 +35,15 @@ export const create: schema = {
             payment_request_id: Joi.number().positive().required(),
             order_id: Joi.number().optional(),
             invoice_id: Joi.number().optional(),
-        }).unknown(true),
+            partner_id: Joi.number().required(),
+
+            bank_id: Joi.number().optional(),
+            amount: Joi.number().optional(),
+            description: Joi.string().allow(null, '').optional(),
+            payment_method: Joi.string().allow(null, '').optional(),
+            counterparty: Joi.string().allow(null, '').optional(),
+            attached_documents: Joi.string().allow(null, '').optional(),
+        }),
     ),
 };
 
@@ -48,7 +57,7 @@ export const update: schema = {
         Joi.object<IPayment>({
             code: Joi.string().max(100).optional(),
             type: Joi.string()
-                .valid(...Object.values(PaymentRequestType))
+                .valid(...Object.values(PaymentType))
                 .optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
             time_at: Joi.string().isoDate().optional().allow(null),
@@ -60,30 +69,18 @@ export const update: schema = {
             payment_request_id: Joi.number().positive().optional(),
             order_id: Joi.number().optional(),
             invoice_id: Joi.number().optional(),
-        }).unknown(true),
+            partner_id: Joi.number().optional(),
+
+            bank_id: Joi.number().optional(),
+            amount: Joi.number().min(0).optional(),
+            description: Joi.string().allow(null, '').optional(),
+            payment_method: Joi.string().allow(null, '').optional(),
+            counterparty: Joi.string().allow(null, '').optional(),
+            // payment_type: Joi.string()
+            //     .valid(...Object.values(PaymentType))
+            //     .optional(),
+            attached_documents: Joi.string().allow(null, '').optional(),
+        }),
     ),
 };
 
-export const approve: schema = {
-    params: wrapSchema(
-        Joi.object({
-            id: Joi.number().positive().required(),
-        }),
-    ),
-    body: wrapSchema(
-        Joi.object({
-            status: Joi.string()
-                .valid(...Object.values(PaymentRequestStatus))
-                .required(),
-            type: Joi.string()
-                .valid(...values(PaymentRequestType))
-                .required(),
-            rejected_reason: Joi.string().when('status', {
-                is: PaymentRequestStatus.REJECTED,
-                then: Joi.string().min(1).required(),
-                otherwise: Joi.string().allow(null, '').optional(),
-            }),
-            files: Joi.array().items(Joi.string()).optional().default([]),
-        }),
-    ),
-};

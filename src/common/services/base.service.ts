@@ -10,7 +10,7 @@ import {
 } from '@common/interfaces/common.interface';
 import logger from '@common/logger';
 import { BaseRepo } from '@common/repositories/base.repo';
-import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
+import { DEFAULT_EXCLUDED_FIELDS, OrderStatus } from '@config/app.constant';
 import { Prisma } from '@prisma/client';
 
 export abstract class BaseService<T, S, W> {
@@ -173,10 +173,10 @@ export abstract class BaseService<T, S, W> {
         }
     }
 
-    public async getAll(): Promise<Partial<T>[]> {
+    public async getAll(data: W, isDefaultSelect = false): Promise<Partial<T>[]> {
         try {
-            const data = await this.repo.findMany();
-            return data;
+            const result = await this.repo.findMany(data as W, isDefaultSelect);
+            return result;
         } catch (error) {
             logger.error(`${this.constructor.name}.getAll: `, error);
             throw error;
@@ -348,7 +348,7 @@ export abstract class BaseService<T, S, W> {
         return files;
     }
 
-    protected enrichOrderTotals(responseData: IPaginationResponse): IPaginationResponse {
+    protected enrichTotals(responseData: IPaginationResponse): IPaginationResponse {
         const enrichedData = responseData.data.map((order: any) => {
             let total_money = 0;
             let total_vat = 0;
@@ -403,5 +403,33 @@ export abstract class BaseService<T, S, W> {
                 currentPage,
             },
         };
+    }
+
+    async validateStatusApprove(id: number, repo: any = this.repo) {
+        const entity = await repo.findOne({ id, status: OrderStatus.PENDING } as any);
+
+        if (!entity) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`status.${ErrorKey.INVALID}`],
+            });
+        }
+
+        return entity;
+    }
+
+    async canEdit(id: number, entityName: string, repo: any = this.repo) {
+        const entity = await repo.findOne({ id, status: OrderStatus.PENDING } as any);
+
+        if (!entity) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`${entityName}.${ErrorKey.CANNOT_EDIT}`],
+            });
+        }
+
+        return entity;
     }
 }

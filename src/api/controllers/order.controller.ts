@@ -1,6 +1,7 @@
 import { BaseController } from './base.controller';
 import { Orders } from '.prisma/client';
-import { IApproveRequest, IOrder } from '@common/interfaces/order.interface';
+import { IApproveRequest } from '@common/interfaces/common.interface';
+import { IOrder } from '@common/interfaces/order.interface';
 import logger from '@common/logger';
 import { OrderService } from '@common/services/order.service';
 import { OrderStatus } from '@config/app.constant';
@@ -26,10 +27,7 @@ export class OrderController extends BaseController<Orders> {
         try {
             const body = req.body as IApproveRequest;
             const id = Number(req.params.id);
-            if (body.status === OrderStatus.CONFIRMED) {
-                body.rejected_reason = '';
-            }
-            const result = await this.service.update(id, body);
+            const result = await this.service.approve(id, body);
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.approveRequest: `, error);
@@ -57,6 +55,17 @@ export class OrderController extends BaseController<Orders> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.approveShippingPlanRequest: `, error);
+            next(error);
+        }
+    }
+
+    public async getPurchaseProcessing(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const result = await this.service.getPurchaseProcessing(id);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.getPurchaseProcessingRequest: `, error);
             next(error);
         }
     }

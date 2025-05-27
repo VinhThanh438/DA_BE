@@ -4,20 +4,23 @@ import { CommonDetailSelectionAll } from './common-detail.select';
 import { ContractSelection } from './contract.select';
 import { EmployeeShortSelection } from './employee.select';
 import { PartnerSelection } from './partner.select';
+import { OrderSelection } from './order.select';
+import { InvoiceDetailSelectionAll } from './invoice-detail.select';
 
 export const InvoiceSelection: Prisma.InvoicesSelect = {
     id: true,
     code: true,
-    payment_method: true,
     time_at: true,
+    invoice_date: true,
     status: true,
+    rejected_reason: true,
     files: true,
 };
 
 export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
     ...InvoiceSelection,
     details: {
-        select: CommonDetailSelectionAll,
+        select: InvoiceDetailSelectionAll,
     },
     bank: {
         select: BankSelection,
@@ -31,11 +34,14 @@ export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
     partner: {
         select: PartnerSelection,
     },
+    order: {
+        select: OrderSelection,
+    },
 };
 
 export const InvoiceSelectionWithDetails: Prisma.InvoicesSelect = {
     ...InvoiceSelection,
     details: {
-        select: CommonDetailSelectionAll,
+        select: InvoiceDetailSelectionAll,
     },
 };

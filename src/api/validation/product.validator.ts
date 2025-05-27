@@ -46,7 +46,8 @@ export const updateProduct: schema = {
             image: Joi.string().allow('', null).max(250),
             type: Joi.string()
                 .valid(...values(ProductType))
-                .optional().allow(null, ''),
+                .optional()
+                .allow(null, ''),
 
             unit_id: Joi.number().integer().optional().min(1),
             product_group_id: Joi.number().integer().optional().min(1),
@@ -118,7 +119,8 @@ export const queryFilter: schema = {
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             type: Joi.string()
                 .valid(...values(ProductType))
-                .optional().allow(null, ''),
+                .optional()
+                .allow(null, ''),
         }),
     ),
 };

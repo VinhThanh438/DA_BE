@@ -211,7 +211,7 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
 
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
         const result = await this.repo.paginate(query, true);
-        const data = this.enrichOrderTotals(result);
+        const data = this.enrichTotals(result);
         return transformDecimal(data);
     }
 }

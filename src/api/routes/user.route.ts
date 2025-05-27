@@ -1,5 +1,6 @@
 import { UserController } from '@api/controllers/user.controller';
 import { PermissionMiddleware } from '@api/middlewares/permission.middleware';
+import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { queryById, queryFilter } from '@api/validation/common.validator';
 import { createUser, updateUser } from '@api/validation/user.validator';
@@ -10,14 +11,19 @@ const controller = UserController.getInstance();
 
 router.get(
     '/',
-    PermissionMiddleware.hasPermission('warehouse', 'c'),
+    // PermissionMiddleware.hasPermission('warehouse', 'c'),
     validateRequest(queryFilter),
-    controller.getAll.bind(controller),
+    controller.paginate.bind(controller),
 );
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post('/', validateRequest(createUser), controller.create.bind(controller));
+router.post(
+    '/',
+    validateRequest(createUser),
+    SpatialClassificationMiddleware.assignInfoToRequest,
+    controller.create.bind(controller),
+);
 
 router.put('/:id', validateRequest(updateUser), controller.updateUser.bind(controller));
 

@@ -6,15 +6,18 @@ model Products {
   vat              Float?
   packing_standard String?
   note             String?
+  type             PrsProductType @default(main_material)
+
   product_group_id Int?
   unit_id          Int?
-  type             PrsProductType @default(main_material)
+  organization_id          Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   product_group ProductGroups? @relation(fields: [product_group_id], references: [id])
   unit          Units?         @relation(fields: [unit_id], references: [id])
+  organization          Organizations?         @relation(fields: [organization_id], references: [id])
 
   extra_units               ProductUnits[]
   common_details            CommonDetails[]
@@ -24,7 +27,7 @@ model Products {
   @@map("products")
   purchase_request_details PurchaseRequestDetails[]
   bill_of_materials BillOfMaterials[]
-  inventory_details InventoryDetails[]
+  transaction_warehouses TransactionWarehouses[]
 }
 
 enum PrsProductType {
@@ -41,18 +44,24 @@ model Units {
   product_units ProductUnits[]
   products      Products[]
 
+  organization_id Int?
+  organization Organizations? @relation(fields: [organization_id], references: [id])
+
   @@map("units")
   bill_of_material_details BillOfMaterialDetails[]
   details CommonDetails[]
   purchase_request_details PurchaseRequestDetails[]
   production_details ProductionDetails[]
-  inventory_details InventoryDetails[]
 }
 
 model ProductGroups {
   id       Int        @id @default(autoincrement())
   name     String
   type             PrsProductType @default(main_material)
+
+  organization_id Int?
+  organization Organizations? @relation(fields: [organization_id], references: [id])
+
   products Products[]
 
   @@map("product_groups")

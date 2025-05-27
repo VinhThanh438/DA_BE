@@ -1,4 +1,5 @@
 import { ContractController } from '@api/controllers/contract.controller';
+import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { queryById, queryFilter } from '@api/validation/common.validator';
 import { create, update, updateEntity } from '@api/validation/contract.validator';
@@ -11,7 +12,12 @@ router.get('/', validateRequest(queryFilter), controller.paginate.bind(controlle
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post('/', validateRequest(create), controller.create.bind(controller));
+router.post(
+    '/',
+    validateRequest(create),
+    SpatialClassificationMiddleware.assignInfoToRequest,
+    controller.create.bind(controller),
+);
 
 router.put('/update/:id', validateRequest(update), controller.update.bind(controller));
 

@@ -37,7 +37,7 @@ export class ExcelController {
 
             switch (type) {
                 case 'purchaseOrder': // don dat hang
-                    path = await this.excelService.exportExcelPurchaseOrder(id);
+                    path = await this.excelService.exportExcelPurchaseOrder(req.query);
                     break;
                 case 'salesOrder': // don ban hang
                     path = await this.excelService.exportExcelPurchaseOrder(id);
@@ -52,7 +52,7 @@ export class ExcelController {
                     path = await this.excelService.exportExcelSalesCommission(req.query);
                     break;
                 case 'inventoryReceipt': // phieu nhap kho
-                    path = await this.excelService.exportExcelImportWarehouse(id);
+                    path = await this.excelService.exportExcelImportWarehouse(req.query);
                     break;
                 case 'purchaseContract': // hop dong mua hang
                     path = await this.excelService.exportExcelPurchaseContract(id);
@@ -61,7 +61,7 @@ export class ExcelController {
                     path = await this.excelService.exportExcelTransaction(req.query);
                     break;
                 case 'Quotation': // bao gia
-                    path = await this.excelService.exportExcelQuotation(id);
+                    path = await this.excelService.exportExcelQuotation(req.query);
                     break;
                 default:
                     throw new APIError({

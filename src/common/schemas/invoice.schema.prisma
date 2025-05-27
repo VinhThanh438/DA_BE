@@ -1,16 +1,18 @@
 model Invoices {
-  id             Int           @id @default(autoincrement())
-  code           String        @unique
-  status         PrsInvoiceStatus @default(draft)
-  payment_method String?
-  time_at   DateTime?
-  files          Json?         @default("[]")
+  id              Int           @id @default(autoincrement())
+  code            String        @unique
+  status          PrsInvoiceStatus @default(pending)
+  time_at         DateTime?
+  invoice_date         DateTime?  @default(now())
+  files           Json?         @default("[]")
+  rejected_reason String?
 
   bank_id         Int? // Tài khoản ngân hàng
   employee_id     Int? // Nhân viên bán hàng
   partner_id      Int? // Khách hàng
   organization_id Int?
   contract_id     Int? // Hợp đồng
+  order_id     Int? // Hợp đồng
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -19,16 +21,33 @@ model Invoices {
   contract        Contracts?      @relation(fields: [contract_id], references: [id], onDelete: SetNull)
   employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  order         Orders?       @relation(fields: [order_id], references: [id], onDelete: SetNull)
   organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-
-  details CommonDetails[]
 
   @@map("invoices")
   payments Payments[]
-  orders Orders[]
+  payment_request_details PaymentRequestDetails[]
+  transactions Transactions[]
+  details InvoiceDetails[]
+}
+
+model InvoiceDetails {
+  id          Int       @id @default(autoincrement())
+  note        String?
+  invoice_id  Int?
+  order_detail_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  invoice Invoices? @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  order_detail CommonDetails? @relation(fields: [order_detail_id], references: [id], onDelete: Cascade)
+
+  @@map("invoice_details")
 }
 
 enum PrsInvoiceStatus {
-  draft
-  released
+  pending
+  rejected
+  confirmed
 }

@@ -10,17 +10,17 @@ export class UserEvent {
      * Register user event
      */
     static register(): void {
-        eventbus.on(EVENT_USER_CREATED_OR_DELETED, this.updateEmployeeAccountStatusHandler);
+        eventbus.on(EVENT_USER_CREATED_OR_DELETED, this.updateEmployeeStatusHandler);
     }
 
-    private static employeeService = EmployeeService.getInstance()
+    private static employeeService = EmployeeService.getInstance();
 
-    private static async updateEmployeeAccountStatusHandler(body: IUpdateEmployeeAccountStatus): Promise<void> {
+    private static async updateEmployeeStatusHandler(body: IUpdateEmployeeAccountStatus): Promise<void> {
         try {
             await this.employeeService.update(body.employeeId, { has_user_account: body.status } as IEmployee);
-            logger.info('UserEvent.updateEmployeeAccountStatusHandler: Employee status updated successfully!');
+            logger.info('UserEvent.updateEmployeeStatusHandler: Employee status updated successfully!');
         } catch (error: any) {
-            logger.error('UserEvent.updateEmployeeAccountStatusHandler:', error.message);
+            logger.error('UserEvent.updateEmployeeStatusHandler:', error.message);
         }
     }
 }

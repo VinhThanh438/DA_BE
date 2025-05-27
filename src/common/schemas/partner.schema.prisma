@@ -44,11 +44,13 @@ model Partners {
   contracts           Contracts[]
   representatives Representatives[]
   shippings        ShippingPlans[]
+  payments        Payments[]
 
   inventory_as_supplier Inventories[] @relation("Supplier")
   inventory_as_customer Inventories[] @relation("Customer")
   inventory_as_delivery Inventories[] @relation("Delivery")
   @@map("partners")
+  payment_requests PaymentRequests[] @relation("ApproverEmployee")
 }
 
 
@@ -56,8 +58,11 @@ model PartnerGroups {
   id       Int         @id @default(autoincrement())
   name     String
   type     PrsPartnerType @default(customer) // loai doi tac
-  partners Partners[]
 
+  organization_id  Int?
+
+  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  partners Partners[]
   @@map("partner_groups")
 }
 

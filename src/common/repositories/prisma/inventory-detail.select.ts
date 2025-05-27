@@ -1,6 +1,5 @@
 import { Prisma } from '.prisma/client';
-import { ProductSelection } from './product.select';
-import { UnitSelection } from './unit.select';
+import { CommonDetailSelectionAll } from './common-detail.select';
 
 export const InventoryDetailSelection: Prisma.InventoryDetailsSelect = {
     id: true,
@@ -11,14 +10,12 @@ export const InventoryDetailSelection: Prisma.InventoryDetailsSelect = {
     vat: true,
     note: true,
     commission: true,
+    order_detail_id: true,
 };
 
 export const InventoryDetailSelectionAll: Prisma.InventoryDetailsSelect = {
     ...InventoryDetailSelection,
-    product: {
-        select: ProductSelection
+    order_detail: {
+        select: CommonDetailSelectionAll,
     },
-    unit: {
-        select: UnitSelection
-    }
 };

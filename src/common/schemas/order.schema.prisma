@@ -17,16 +17,17 @@ model Orders {
   address    String?
   phone      String?
   note       String?
+  payment_method       String?
   status     PrsOrderStatus?  @default(pending)
   rejected_reason String?
   time_at DateTime @default(now())
   files      Json?     @default("[]")
+  delivery_progress Float? @default(0)
 
   employee_id     Int?
   partner_id      Int?
   organization_id Int?
   representative_id Int?
-  invoice_id      Int?
   bank_id         Int?
 
   partner        Partners?        @relation(fields: [partner_id], references: [id])
@@ -34,7 +35,6 @@ model Orders {
   employee       Employees?       @relation(fields: [employee_id], references: [id])
   organization   Organizations?   @relation(fields: [organization_id], references: [id])
   representative Representatives? @relation(fields: [representative_id], references: [id])
-  invoice        Invoices? @relation(fields: [invoice_id], references: [id])
 
   created_at             DateTime                @default(now())
   updated_at             DateTime                @updatedAt
@@ -50,4 +50,8 @@ model Orders {
   transactions Transactions[]
   shipping_plans ShippingPlans[] 
   payments Payments[]
+  transaction_warehouses TransactionWarehouses[]
+  payment_request_details PaymentRequestDetails[]
+  invoices Invoices[]
+  // financeRecords FinanceRecords[]
 }

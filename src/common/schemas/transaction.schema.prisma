@@ -21,8 +21,8 @@ model Transactions {
   employee_id       Int? // nhan vien giao dich
   organization_id   Int?
   order_id          Int? // Don hang
+  invoice_id          Int? // Hoa don
   bank_id           Int? // Tai khoan giao dich
-  finance_record_id Int? // Phieu thu chi
   representative_id Int? // Nguoi dai dien
   payment_id        Int? // Nguoi dai dien
 
@@ -33,10 +33,10 @@ model Transactions {
   employee       Employees?       @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   organization   Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   bank           Banks?           @relation(fields: [bank_id], references: [id], onDelete: SetNull)
-  finance_record FinanceRecords?  @relation(fields: [finance_record_id], references: [id], onDelete: SetNull)
   order          Orders?          @relation(fields: [order_id], references: [id], onDelete: SetNull)
   representative Representatives? @relation(fields: [representative_id], references: [id], onDelete: SetNull)
   payment        Payments?        @relation(fields: [payment_id], references: [id], onDelete: SetNull)
+  invoice        Invoices?        @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }

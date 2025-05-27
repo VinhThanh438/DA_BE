@@ -46,7 +46,7 @@ export class OrganizationController extends BaseController<Organizations> {
 
     public async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const id = Number(req.params.id)
+            const id = Number(req.params.id);
             const body = req.body as ICreateOrganization;
             const result = await this.service.updateOrganization(id, body);
             res.sendJson(result);
@@ -58,8 +58,8 @@ export class OrganizationController extends BaseController<Organizations> {
 
     public async paginate(req: Request, res: Response, next: NextFunction) {
         try {
-            const { parentId, ...query} = req.query as IPaginationInput;
-            query.parent_id = parentId ? Number(parentId) : {}
+            const { parentId, organization_id, ...query } = req.query as IPaginationInput;
+            query.parent_id = parentId ? Number(parentId) : {};
             const result = await this.service.paginate(query);
             result.data = result.data.sort((a: any, b: any) => {
                 const indexA = OrganizationTypeIndex.get(a.type) ?? Infinity;

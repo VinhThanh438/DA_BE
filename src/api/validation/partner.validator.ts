@@ -15,6 +15,14 @@ export const queryDebtFilter: schema = {
     ),
 };
 
+export const queryByConditions: schema = {
+    query: wrapSchema(
+        Joi.object({
+            tax: Joi.string().optional(),
+        }),
+    ),
+};
+
 const PartnerBody = {
     id: Joi.number().optional().allow(null, ''),
     code: Joi.string().optional(),
@@ -90,8 +98,9 @@ export const queryFilter: schema = {
     query: wrapSchema(
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             type: Joi.string()
-                .required()
+                .optional()
                 .valid(...values(PartnerType)),
+            isCommission: Joi.boolean().optional(),
         }),
     ),
 };

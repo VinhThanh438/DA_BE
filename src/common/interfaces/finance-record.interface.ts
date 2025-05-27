@@ -16,4 +16,7 @@ export interface IFinanceRecord {
     partner_id?: number;
     employee_id?: number;
     organization_id?: number;
+
+    order_id?: number;
+    payment_request_id?: number;
 }

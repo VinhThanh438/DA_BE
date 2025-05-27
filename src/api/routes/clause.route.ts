@@ -3,6 +3,7 @@ import { validateRequest } from '@api/middlewares/validate.middleware';
 import { ClauseController } from '@api/controllers/clause.controller';
 import { createClause, updateClause } from '@api/validation/clause.validator';
 import { queryById, queryFilter } from '@api/validation/common.validator';
+import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 
 const router = express.Router();
 const controller = ClauseController.getInstance();
@@ -11,7 +12,12 @@ router.get('/', validateRequest(queryFilter), controller.paginate.bind(controlle
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post('/', validateRequest(createClause), controller.create.bind(controller));
+router.post(
+    '/',
+    validateRequest(createClause),
+    SpatialClassificationMiddleware.assignInfoToRequest,
+    controller.create.bind(controller),
+);
 
 router.put('/:id', validateRequest(updateClause), controller.update.bind(controller));
 

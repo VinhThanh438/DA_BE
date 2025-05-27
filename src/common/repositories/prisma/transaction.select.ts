@@ -5,6 +5,7 @@ import { OrderSelection } from './order.select';
 import { OrganizationSelection } from './organization.select';
 import { PartnerSelection } from './partner.select';
 import { RepresentativeSelection } from './representative.select';
+import { InvoiceSelection } from './invoice.select';
 
 export const TransactionSelect: Prisma.TransactionsSelect = {
     id: true,
@@ -31,6 +32,9 @@ export const TransactionSelectAll: Prisma.TransactionsSelect = {
     },
     order: {
         select: OrderSelection,
+    },
+    invoice: {
+        select: InvoiceSelection,
     },
     representative: {
         select: RepresentativeSelection,

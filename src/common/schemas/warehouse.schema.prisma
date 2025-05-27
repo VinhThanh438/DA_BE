@@ -10,8 +10,10 @@ model Warehouses {
   updated_at            DateTime                @updatedAt
 
   employee_id Int? // Quan kho
+  organization_id Int? // Quan kho
 
   employee Employees? @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   transaction_warehouses TransactionWarehouses[]
   inventories Inventories[]
