@@ -14,6 +14,7 @@ export const TransactionSelect: Prisma.TransactionsSelect = {
     order_type: true,
     amount: true,
     note: true,
+    is_closed: true,
 };
 
 export const TransactionSelectAll: Prisma.TransactionsSelect = {
@@ -38,5 +39,30 @@ export const TransactionSelectAll: Prisma.TransactionsSelect = {
     },
     representative: {
         select: RepresentativeSelection,
+    },
+};
+
+export const TransactionSelectWithBankOrder: Prisma.TransactionsSelect = {
+    ...TransactionSelect,
+    bank: {
+        select: BankSelectionAll,
+    },
+    partner: {
+        select: PartnerSelection,
+    },
+    organization: {
+        select: OrganizationSelection,
+    },
+    order: {
+        select: OrderSelection,
+    },
+    payment: {
+        select: {
+            id: true,
+            type: true
+        }
+    },
+    invoice: {
+        select: InvoiceSelection,
     },
 };

@@ -22,10 +22,12 @@ export class BankController extends BaseController<Banks> {
 
     public async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const query = req.query;
-            const { organizationId, ...restQuery } = query;
-            restQuery.organization_id = organizationId;
-            const result = await this.service.getAll(restQuery);
+            const { page, size, keyword, ...query } = req.query;
+            let result;
+            if (page || size) {
+                result = await this.service.paginate(req.query);
+            }
+            result = await this.service.getAll(query);
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.getAll: `, error);

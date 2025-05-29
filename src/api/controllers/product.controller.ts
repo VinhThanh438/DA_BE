@@ -1,4 +1,4 @@
-import { ICreateProduct, IUpdateProduct } from '@common/interfaces/product.interface';
+import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
 import logger from '@common/logger';
 import { ProductService } from '@common/services/product.service';
 import { NextFunction, Request, Response } from 'express';
@@ -23,7 +23,7 @@ export class ProductController extends BaseController<Products> {
 
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as ICreateProduct;
+            const body = req.body as IProduct;
             const output = await this.service.createProduct(body);
             res.sendJson(output);
         } catch (error) {

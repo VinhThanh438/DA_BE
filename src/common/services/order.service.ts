@@ -437,7 +437,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
 
     public async calculateTotalConvertedQuantity(orderId: number) {
         const orderDetails = await this.orderDetailRepo.findMany({ order_id: orderId }, true);
-        console.log('ỏderDetails length', orderDetails);
 
         if (!orderDetails || orderDetails.length === 0) return 0;
 
@@ -531,7 +530,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 product_id: productId,
                 product: orderProduct.product,
                 imports: productImports,
-                total: totalQuantity,
+                total_quantity: totalQuantity,
             };
         });
 
@@ -564,11 +563,16 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         order_detail_id: orderDetail.id,
                     },
                     select: {
-                        real_quantity: true,
-                        order_detail_id: true,
-                        order_detail: {
+                        // real_quantity: true,
+                        // order_detail_id: true,
+                        // order_detail: {
+                        //     select: {
+                        //         product_id: true,
+                        //     },
+                        // },
+                        transaction_warehouses: {
                             select: {
-                                product_id: true,
+                                convert_quantity: true,
                             },
                         },
                     },
@@ -595,7 +599,15 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
 
             if (hasDetails) {
                 // Sum quantities across all matching details (usually just one)
-                const batchQuantity = transaction.details.reduce((sum, detail) => sum + (detail.real_quantity || 0), 0);
+                const batchQuantity =
+                    transaction.details?.reduce((sum, detail) => {
+                        const transactionWarehouses = detail?.transaction_warehouses;
+                        const convertQuantity =
+                            Array.isArray(transactionWarehouses) && transactionWarehouses.length > 0
+                                ? transactionWarehouses[0]?.convert_quantity || 0
+                                : 0;
+                        return sum + convertQuantity;
+                    }, 0) || 0;
 
                 if (batchQuantity > 0) {
                     productImports.push({

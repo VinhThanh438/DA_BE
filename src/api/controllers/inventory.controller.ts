@@ -1,4 +1,4 @@
-import { IApproveRequest } from '@common/interfaces/common.interface';
+import { IApproveRequest, IPaginationInput } from '@common/interfaces/common.interface';
 import { BaseController } from './base.controller';
 import { Inventories } from '.prisma/client';
 import { IInventory } from '@common/interfaces/inventory.interface';
@@ -37,7 +37,8 @@ export class InventoryController extends BaseController<Inventories> {
         try {
             const id = Number(req.params.id);
             const body = req.body as IInventory;
-            const data = await this.service.updateInventory(id, body);
+            const isAdmin = Boolean(req.user.isAdmin) || false;
+            const data = await this.service.updateInventory(id, body, isAdmin);
             res.sendJson(data);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);
@@ -53,6 +54,52 @@ export class InventoryController extends BaseController<Inventories> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.approveRequest: `, error);
+            next(error);
+        }
+    }
+
+    public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const id = Number(req.params.id);
+            const isAdmin = Boolean(req.user.isAdmin) || false;
+            const data = await this.service.deleteInventory(id, isAdmin);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.delete: `, error);
+            next(error);
+        }
+    }
+
+    public async getInventoryReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const isAdmin = Boolean(req.user.isAdmin) || false;
+            const query = req.query as IPaginationInput;
+            const data = await this.service.getInventoryReport(query);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.getInventoryReport: `, error);
+            next(error);
+        }
+    }
+
+    public async getInventoryReportDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const query = req.query as IPaginationInput;
+            const data = await this.service.getInventoryReportDetail(query);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.getInventoryReportDetail: `, error);
+            next(error);
+        }
+    }
+
+    public async getInventoryImportDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const query = req.query as IPaginationInput;
+            const data = await this.service.getInventoryImportDetail(query);
+            res.sendJson(data);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.getInventoryImportDetail: `, error);
             next(error);
         }
     }

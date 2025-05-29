@@ -63,6 +63,7 @@ model Organizations {
   warehouses Warehouses[]
   payments Payments[]
   partner_groups PartnerGroups[]
+  positions Positions[]
 }
 
 model Positions {
@@ -70,8 +71,10 @@ model Positions {
   name        String
   level       String?
   description String?
+  organization_id Int?
 
   job_positions JobPositions[]
+  organization Organizations? @relation(fields: [organization_id], references: [id])
 
   @@map("positions")
 }

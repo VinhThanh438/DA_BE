@@ -1,4 +1,5 @@
 import { CommonApproveStatus, RequestStatus } from '@config/app.constant';
+import { IProducts } from './product.interface';
 
 export interface IPaginationInfo {
     totalPages: number;
@@ -76,6 +77,7 @@ export interface ICommonDetails {
     inventory_id?: number;
     warehouse_id?: number;
     order_detail_id?: number;
+    product?: IProducts
 }
 
 export interface IUpdateChildAction {

@@ -12,6 +12,7 @@ import { DeviceRequetsEvent } from '@common/events/device-request.event';
 import { UserEvent } from '@common/events/user.event';
 import { InventoryEvent } from '@common/events/inventory.event';
 import { PaymentEvent } from '@common/events/payment.event';
+import { BankEvent } from '@common/events/bank.event';
 
 /**
  * Wrapper around the Node process, ExpressServer abstraction and complex dependencies such as services that ExpressServer needs.
@@ -105,5 +106,6 @@ export class Application {
         UserEvent.register();
         InventoryEvent.register();
         PaymentEvent.register();
+        BankEvent.register();
     }
 }

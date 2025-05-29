@@ -1,6 +1,6 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { IInventory, InventoryDetail } from '@common/interfaces/inventory.interface';
-import { identity, values } from 'lodash';
+import { values } from 'lodash';
 import { schema } from 'express-validation';
 import Joi, { ObjectSchema } from 'joi';
 import { InventoryType } from '@config/app.constant';
@@ -38,6 +38,7 @@ export const create: schema = {
                         quantity: Joi.number().min(0).optional(),
                         note: Joi.string().allow(null, '').max(500).optional(),
                         key: Joi.string().allow(null, ''),
+                        order_detail: Joi.object().optional()
                     }),
                 )
                 .optional()
@@ -84,6 +85,7 @@ export const update: schema = {
                         real_quantity: Joi.number().min(0).required(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
+                        order_detail: Joi.object().optional()
                     }),
                 )
                 .optional()
@@ -96,6 +98,7 @@ export const update: schema = {
                         real_quantity: Joi.number().min(0).required(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
+                        order_detail: Joi.object().optional()
                     }),
                 )
                 .optional()

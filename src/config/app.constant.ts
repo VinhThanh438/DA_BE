@@ -336,6 +336,7 @@ export const DECIMAL_KEYS = [
     'commission',
     'insurance_salary',
     'salary',
+    'balance',
 ];
 
 export enum PaymentRequestStatus {
@@ -385,3 +386,11 @@ export enum CommonApproveStatus {
     CONFIRMED = 'confirmed',
     REJECTED = 'rejected',
 }
+
+export enum BankType {
+    LOAN = 'loan',
+    DISBURSEMENT = 'disbursement',
+}
+
+export const logoLeft = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo.png';
+export const logoRight = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo2.png';

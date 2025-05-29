@@ -42,3 +42,10 @@ export const UserSelectionAll: Prisma.UsersSelect = {
         select: UserRoleSelection,
     },
 };
+
+export const UserSelectionInfo: Prisma.UsersSelect = {
+    ...UserSelectionWithoutPassword,
+    employee: {
+        select: EmployeeSelection,
+    },
+};

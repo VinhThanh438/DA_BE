@@ -86,13 +86,29 @@ export class PermissionMiddleware {
      * Check if a user is an admin
      * @private
      */
-    private static async isAdminUser(db: any, userId: number): Promise<boolean> {
+    public static async checkAdmin(req: Request, res: Response, next: NextFunction) {
+        try {
+            const db = DatabaseAdapter.getInstance();
+            const userId = req.user?.id;
+
+            const isAdmin = await PermissionMiddleware.isAdminUser(db, userId);
+            req.user.isAdmin = isAdmin;
+
+            return next();
+        } catch (error) {
+            logger.error('Admin check failed:', error);
+            next(error);
+        }
+    }
+
+    private static async isAdminUser(db: any, userId: number) {
         const user = await db.users.findUnique({
             select: { username: true },
-            where: { id: userId },
+            where: { id: Number(userId) },
         });
 
-        return user && user.username === process.env.ADMIN_USER_NAME;
+        if (!user) return false;
+        return user.username === process.env.ADMIN_USER_NAME;
     }
 
     /**

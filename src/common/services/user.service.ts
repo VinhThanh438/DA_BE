@@ -13,6 +13,8 @@ import { UserRoleRepo } from '@common/repositories/user-role.repo';
 import bcrypt from 'bcryptjs';
 import { RoleRepo } from '@common/repositories/role.repo';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
+import { EmployeeSelection } from '@common/repositories/prisma/employee.select';
+import { OrganizationSelection } from '@common/repositories/prisma/organization.select';
 
 export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
     private static instance: UserService;
@@ -190,5 +192,18 @@ export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.U
         }
         const deletedId = await this.repo.delete({ id });
         return { id: deletedId };
+    }
+
+    async getEmployeeByUser(id: number) {
+        const data = await this.db.users.findFirst({
+            where: { id },
+            select: {
+                id: true,
+                employee: { select: EmployeeSelection },
+                organization: { select: OrganizationSelection },
+            },
+        });
+
+        return data?.employee || null;
     }
 }

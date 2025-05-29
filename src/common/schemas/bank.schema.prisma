@@ -5,6 +5,8 @@ model Banks {
   account_number String?
   name           String?
   branch         String?
+  balance        Decimal? @default(0)
+  type           PrsBankType @default(disbursement)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -23,4 +25,9 @@ model Banks {
   payments Payments[]
 
   @@map("banks")
+}
+
+enum PrsBankType {
+  loan
+  disbursement
 }

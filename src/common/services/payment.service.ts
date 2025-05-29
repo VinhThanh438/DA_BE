@@ -6,18 +6,18 @@ import { PaymentRepo } from '@common/repositories/payment.repo';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { handleFiles } from '@common/helpers/handle-files';
 import { deleteFileSystem } from '@common/helpers/delete-file-system';
-import { TransactionRepo } from '@common/repositories/transaction.repo';
-import { PaymentRequestStatus, PaymentType, TransactionType } from '@config/app.constant';
-import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-details.repo';
-import { APIError } from '@common/error/api.error';
-import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
+import { PaymentType, TransactionType } from '@config/app.constant';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import eventbus from '@common/eventbus';
-import { EVENT_PAYMENT_APPROVED } from '@config/event.constant';
-import { ITransaction } from '@common/interfaces/transaction.interface';
+import { EVENT_PAYMENT_CREATED, EVENT_PAYMENT_DELETED } from '@config/event.constant';
+import { IPaymentCreatedEvent, IPaymentDeletedEvent, ITransaction } from '@common/interfaces/transaction.interface';
+import { OrganizationRepo } from '@common/repositories/organization.repo';
+import { TransactionRepo } from '@common/repositories/transaction.repo';
+import { APIError } from '@common/error/api.error';
+import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 
 export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect, Prisma.PaymentsWhereInput> {
     private static instance: PaymentService;
@@ -26,6 +26,8 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
     private invoiceRepo: InvoiceRepo = new InvoiceRepo();
     private partnerRepo: PartnerRepo = new PartnerRepo();
     private bankRepo: BankRepo = new BankRepo();
+    private transactionRepo: TransactionRepo = new TransactionRepo();
+    private organizationRepo: OrganizationRepo = new OrganizationRepo();
 
     private constructor() {
         super(new PaymentRepo());
@@ -46,9 +48,30 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                 invoice_id: this.invoiceRepo,
                 partner_id: this.partnerRepo,
                 bank_id: this.bankRepo,
+                organization_id: this.organizationRepo,
             });
 
-            const { id, payment_request_id, order_id, invoice_id, partner_id, bank_id, ...paymentData } = request;
+            const {
+                id,
+                payment_request_id,
+                order_id,
+                invoice_id,
+                partner_id,
+                bank_id,
+                organization_id,
+                ...paymentData
+            } = request;
+            let bank = null;
+            if (bank_id) {
+                bank = await this.bankRepo.findOne({ id: bank_id });
+                if (bank && bank.balance != null && (paymentData.amount ?? 0) > Number(bank.balance)) {
+                    throw new APIError({
+                        message: `common.status.${StatusCode.BAD_REQUEST}`,
+                        status: ErrorCode.BAD_REQUEST,
+                        errors: [`balance.${ErrorKey.INVALID}`],
+                    });
+                }
+            }
             paymentData.payment_request = payment_request_id
                 ? ({ connect: { id: payment_request_id } } as any)
                 : undefined;
@@ -56,11 +79,33 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
             paymentData.invoice = invoice_id ? ({ connect: { id: invoice_id } } as any) : undefined;
             paymentData.partner = partner_id ? ({ connect: { id: partner_id } } as any) : undefined;
             paymentData.bank = bank_id ? ({ connect: { id: bank_id } } as any) : undefined;
+            paymentData.organization = organization_id ? ({ connect: { id: organization_id } } as any) : undefined;
 
             const resultId = await this.repo.create(paymentData);
+
+            if (resultId) {
+                const transaction = {
+                    note: request.description,
+                    new_bank_balance: Number(bank?.balance) - Number(request.amount),
+                    amount: request.amount,
+                    bank_id: request.bank_id,
+                    bank: request.bank_id ? { connect: { id: request.bank_id } } : undefined,
+                    payment: { connect: { id: resultId } },
+                    type:
+                        request.type && (request.type as unknown) === PaymentType.INCOME
+                            ? TransactionType.IN
+                            : TransactionType.OUT,
+                    invoice: request.invoice_id ? { connect: { id: request.invoice_id } } : undefined,
+                    order: request.order_id ? { connect: { id: request.order_id } } : undefined,
+                    partner: request.partner_id ? { connect: { id: request.partner_id } } : undefined,
+                    organization: request.organization_id ? { connect: { id: request.organization_id } } : undefined,
+                    payment_request_id: request.payment_request_id,
+                };
+                eventbus.emit(EVENT_PAYMENT_CREATED, transaction as IPaymentCreatedEvent);
+            }
             return { id: resultId };
         } catch (error) {
-            if (request.files && request.files.length > 0) {
+            if (request.files?.length) {
                 deleteFileSystem(request.files);
             }
             throw error;
@@ -104,16 +149,7 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
     }
 
     public async approve(id: number, body: IApproveRequest): Promise<IIdResponse> {
-        // const payment = await this.findOne({ id, status: PaymentRequestStatus.PENDING }, false);
-        // if (!payment) {
-        //     throw new APIError({
-        //         message: `common.status.${StatusCode.BAD_REQUEST}`,
-        //         status: ErrorCode.BAD_REQUEST,
-        //         errors: [`payment.${ErrorKey.INVALID}`],
-        //     });
-        // }
         const payment = await this.validateStatusApprove(id);
-        console.log('payment: ', payment);
 
         const paymentUpdateId = await this.repo.update({ id }, body);
 
@@ -126,10 +162,39 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                 invoice: payment.invoice_id ? { connect: { id: payment.invoice_id } } : undefined,
                 order: payment.order_id ? { connect: { id: payment.order_id } } : undefined,
                 partner: payment.partner_id ? { connect: { id: payment.partner_id } } : undefined,
+                organization: payment.organization_id ? { connect: { id: payment.organization_id } } : undefined,
+                payment_request_id: payment.payment_request_id,
             };
-            eventbus.emit(EVENT_PAYMENT_APPROVED, transaction as ITransaction);
+            eventbus.emit(EVENT_PAYMENT_CREATED, transaction as ITransaction);
         }
 
         return { id };
     }
+
+    public async close(request: any): Promise<void> {
+        const { startAt, endAt, ...rest } = request;
+        const conditions = { time_at: { lte: endAt, gte: startAt }, is_closed: false };
+        await this.transactionRepo.updateManyByCondition(conditions, {
+            is_closed: true,
+        });
+    }
+
+    public async delete(id: number): Promise<IIdResponse> {
+        const payment = await this.repo.findOne({ id });
+        if (!payment) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`id.${ErrorKey.INVALID}`],
+            });
+        }
+        const deletedId = await this.repo.delete({ id });
+        if (deletedId) {
+            const refund = payment.amount;
+            eventbus.emit(EVENT_PAYMENT_DELETED, { bank_id: payment.bank_id, refund } as IPaymentDeletedEvent);
+        }
+        return { id: deletedId };
+    }
+
+    public async report(request: any) {}
 }

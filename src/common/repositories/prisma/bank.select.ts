@@ -9,6 +9,8 @@ export const BankSelection: Prisma.BanksSelect = {
     account_number: true,
     branch: true,
     name: true,
+    type: true,
+    balance: true,
     responsibility: true,
 };
 export const BankSelectionAll: Prisma.BanksSelect = {

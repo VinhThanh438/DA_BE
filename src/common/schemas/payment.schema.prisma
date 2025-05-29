@@ -2,7 +2,7 @@
 model PaymentRequests {
   id              Int                     @id @default(autoincrement())
   code            String                  @default(cuid())
-  status          PrsPaymentRequestStatus @default(pending)
+  status          PrsPaymentRequestStatus @default(confirmed)
   type            PrsdPaymentRequestType  @default(order)
   files           Json?                   @default("[]")
   note            String?
@@ -63,7 +63,7 @@ enum PrsdPaymentRequestType {
 model Payments {
   id              Int                     @id @default(autoincrement())
   code            String                  @default(cuid())
-  status          PrsPaymentRequestStatus @default(pending)
+  status          PrsPaymentRequestStatus @default(confirmed)
   type            PrsFinanceRecordType  @default(income)
   files           Json?                   @default("[]")
   note            String?

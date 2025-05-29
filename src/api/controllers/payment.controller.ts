@@ -35,6 +35,28 @@ export class PaymentController extends BaseController<Payments> {
         }
     }
 
+    public async report(req: Request, res: Response, next: NextFunction) {
+        try {
+            const query = req.query as IPaginationInput;
+            const result = await this.service.report(query);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.report: `, error);
+            next(error);
+        }
+    }
+
+    public async close(req: Request, res: Response, next: NextFunction) {
+        try {
+            const query = req.query as IPaginationInput;
+            const result = await this.service.close(query);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.close: `, error);
+            next(error);
+        }
+    }
+
     public async approve(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IApproveRequest;

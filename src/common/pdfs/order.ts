@@ -1,3 +1,5 @@
+import { logoLeft, logoRight } from "@config/app.constant";
+
 export const orderPDF = (data: any[], header: any, sum: any) => {
     return `<!doctype html>
 <html lang="en">
@@ -23,61 +25,52 @@ export const orderPDF = (data: any[], header: any, sum: any) => {
             text-align: center;
         }
     </style>
-    <body>
-        <div style="padding: 0 18px;">
-            <div style="display: flex; align-items: center">
-                <div style="width: 25%; display: flex; flex-direction: column; align-items: center;">
-                    <img
-                        style="height: 100px"
-                        src=${header.logo}
-                    />
-                    <p>ISO 9001:2015</p>
-                </div>
-                <div style="flex: 1">
-                    <h2>${header.company}</h2>
-                    <div style="display: flex; align-items: center; justify-content: space-between">
-                        <div>
-                            <p>Địa chỉ: ${header.address}</p>
-                            <p>${header.cotact}</p>
-                            <p>${header.tax_code}</p>
-                        </div>
-                        <img
-                            style="height: 80px"
-                            src=${header.logo}
-                        />
-                    </div>
-                </div>
+
+    <body style="padding: 0 20px">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px">
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <img style="height: 100px" src=${logoLeft} />
+                <p>ISO 9001:2015</p>
             </div>
+            <div style="display: flex; align-items: left; flex-direction: column">
+                <h2>${header.company}</h2>
+                <p>Địa chỉ: ${header.address}</p>
+                <p>${header.contact}</p>
+                <p>MST: ${header.tax_code}</p>
+            </div>
+            <img style="height: 80px" src=${logoRight} />
         </div>
+        <hr style="margin-bottom: 1px" />
         <hr />
-        <div style="display: flex">
-            <div style="padding: 0 18px;">
-                <div style="display: flex; align-items: center; justify-content: space-between">
-                    <p>Số: 010325 ĐA/DA</p>
-                    <i>${header.time_at}</i>
-                </div>
-                <h1 style="text-align: center">ĐƠN ĐẶT HÀNG</h1>
-                <p style="font-weight: 800">
-                    <span style="text-decoration: underline">Tên nhà cung cấp</span>: ${header.partner_name}
-                </p>
-                <p>Địa chỉ: ${header.oAddress}</p>
-                <div style="display: flex; align-items: center">
-                    <p style="flex: 1">Đại diện: ${header.represent}</p>
-                    <p style="flex: 1">ĐT: ${header.phone_number}</p>
-                    <p style="flex: 1">Email: ${header.email}</p>
-                </div>
-                <i
-                    >Căn cứ vào báo giá số………...., ${header.note} gửi đến quý công ty đơn hàng với nội
-                    dung sau:</i
-                >
+
+        <div style="padding: 0 20px">
+            <div style="display: flex; align-items: center; justify-content: space-between">
+                <p>Số: 010325 ĐA/DA</p>
+                <i>${header.time_at}</i>
             </div>
-            <div style="flex: 1; align-content: end;">
-                <h2 style="text-align: center">Hoa hồng</h2>
-                <p><b>${header.commission_name}</b></p>
-                <p>Tài khoản: ${header.commission_account}</p>
-                <p>Số điện thoại: 123456789</p>
+            <h1 style="text-align: center">ĐƠN ĐẶT HÀNG</h1>
+            <div style="display: flex; align-items: center; width: 100%">
+                <p style="text-decoration: underline; font-weight: 700; flex: 3">Tên nhà cung cấp</p>
+                <p style="font-weight: 700; flex: 1">:</p>
+                <p style="flex: 15">${header.partner_name}</p>
             </div>
+            <div style="display: flex; align-items: center; width: 100%">
+                <p style="text-decoration: underline; font-weight: 700; flex: 3">Địa chỉ</p>
+                <p style="font-weight: 700; flex: 1">:</p>
+                <p style="flex: 15">${header.oAddress}</p>
+            </div>
+            <div style="display: flex; align-items: center; width: 100%">
+                <p style="text-decoration: underline; font-weight: 700; flex: 3">Đại diện</p>
+                <p style="font-weight: 700; flex: 1">:</p>
+                <div style="flex: 15; display: flex; gap: 30px">
+                    <p>${header.name}</p>
+                    <p>ĐT: ${header.phone_number}</p>
+                    <p>Email: ${header.email}</p>
+                </div>
+            </div>
+            <i>Căn cứ vào báo giá số………...., ${header.company} gửi đến quý công ty đơn hàng với nội dung sau:</i>
         </div>
+        
         <table>
             <tr>
                 <th rowspan="2">STT</th>
@@ -88,8 +81,6 @@ export const orderPDF = (data: any[], header: any, sum: any) => {
                 <th>Thành tiền</th>
                 <th colspan="2">VAT</th>
                 <th>Tổng tiền</th>
-                <th rowspan="2">Hoa hồng cho người bán</th>
-                <th>Thành tiền</th>
             </tr>
             <tr>
                 <th>Vnđ</th>
@@ -97,23 +88,22 @@ export const orderPDF = (data: any[], header: any, sum: any) => {
                 <th>%</th>
                 <th>Vnđ</th>
                 <th>Vnđ</th>
-                <th>Dự kiến</th>
             </tr>
             ${data.map((item) => {
-                return `<tr>
-                    <td>${item.stt}</td>
-                    <td>${item.product_name}</td>
-                    <td>${item.unit}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.price}</td>
-                    <td>${item.total_money}</td>
-                    <td>${item.vat}%</td>
-                    <td>${item.total_money_vat}</td>
-                    <td>${item.total_money_all}</td>
-                    <td>${item.commission_vat}%</td>
-                    <td>${item.commission_money}</td>
-                </tr>`;
-            })}
+                return `
+            <tr>
+                <td>${item.stt}</td>
+                <td>${item.product_name}</td>
+                <td>${item.unit}</td>
+                <td>${item.quantity}</td>
+                <td>${item.price}</td>
+                <td>${item.total_money}</td>
+                <td>${item.vat}%</td>
+                <td>${item.total_money_vat}</td>
+                <td>${item.total_money_all}</td>
+            </tr>
+            `;
+            }).join('')}
             <tr>
                 <th colspan="2">Tổng</th>
                 <th>Kg</th>
@@ -123,14 +113,13 @@ export const orderPDF = (data: any[], header: any, sum: any) => {
                 <th></th>
                 <th>${sum.total_money_vat}</th>
                 <th>${sum.total_money_all}</th>
-                <th>${sum.commission_vat}%</th>
-                <th>${sum.commission_money}</th>
             </tr>
             <tr>
                 <td colspan="9" style="text-align: left"><i>Bằng chữ:</i></td>
             </tr>
         </table>
-        <div style="display: flex; align-items: center">
+
+        <div style="display: flex; align-items: center;margin-top: 10px;">
             <p style="margin: 0 8px">1</p>
             <b>Chất lượng hàng: </b>
             <i>&nbspMới 100%, chưa qua sử dụng, chất lượng theo công bố</i>
@@ -163,11 +152,11 @@ export const orderPDF = (data: any[], header: any, sum: any) => {
         <p style="text-align: center">
             <b><i>Rất mong nhận được sự hợp tác của Quý công ty</i></b>
         </p>
+        <br />
         <div style="display: flex; align-items: center">
             <h3 style="flex: 1; text-align: center">XÁC NHẬN CỦA KHÁCH HÀNG</h3>
             <h3 style="flex: 1; text-align: center">CT.TNHH SX TM THÉP ĐÔNG ANH</h3>
         </div>
     </body>
-</html>
-`;
+</html>`;
 };

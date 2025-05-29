@@ -36,6 +36,7 @@ import shippingPlanRoutes from '@api/routes/shipping-plan.route';
 import { AuthMiddleware } from './middlewares/auth.middleware';
 import { UserDeviceMiddleware } from './middlewares/user-device.middleware';
 import { SpatialClassificationMiddleware } from './middlewares/spatial-classification.middleware';
+import { PermissionMiddleware } from './middlewares/permission.middleware';
 
 const router = express.Router();
 
@@ -44,6 +45,7 @@ router.use('/auth', authRoutes);
 router.use(SpatialClassificationMiddleware.handle);
 router.use('/', publicRoutes);
 router.use(AuthMiddleware.authenticate);
+router.use(PermissionMiddleware.checkAdmin);
 router.use('/', otherRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/user', userRoutes);

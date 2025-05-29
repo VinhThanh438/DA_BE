@@ -5,6 +5,9 @@ export interface IBank extends IArrayDataInput {
     bank: string;
     account_number?: string;
     name: string;
+    balance?: number;
     partner_id: number | null;
     organization_id: number | null;
+    type?: string;
+    branch?: string;
 }

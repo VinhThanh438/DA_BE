@@ -40,4 +40,7 @@ export interface ICreateUpdateJobPosition {
     description?: string;
     position_id?: number;
     organization_id?: number;
+
+    position?: any;
+    organization?: any;
 }

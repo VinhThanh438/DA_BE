@@ -42,6 +42,7 @@ export interface InventoryDetail {
     quantity?: number;
     note?: string;
     key?: string;
+    order_detail?: ICommonDetails; // This can be replaced with a more specific type if needed
     // unit?: any
     // product?: any;
 }

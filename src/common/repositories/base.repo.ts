@@ -104,12 +104,29 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         });
     }
 
+    private sanitizeInOperators(obj: any): any {
+        if (typeof obj !== 'object' || obj === null) return obj;
+
+        const newObj: any = Array.isArray(obj) ? [] : {};
+
+        for (const key in obj) {
+            if (key === 'in' && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                newObj[key] = Object.values(obj[key]);
+            } else {
+                newObj[key] = this.sanitizeInOperators(obj[key]);
+            }
+        }
+
+        return newObj;
+    }
+
     public async findMany(
         where: W = {} as W,
         includeRelations: boolean = false,
         tx?: Prisma.TransactionClient,
     ): Promise<Partial<T>[]> {
-        const sanitizedWhere = this.sanitizeJsonFilters(where);
+        let sanitizedWhere = this.sanitizeJsonFilters(where);
+
         for (const logicKey of ['AND', 'OR', 'NOT']) {
             if (
                 sanitizedWhere[logicKey] &&
@@ -119,6 +136,9 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
                 sanitizedWhere[logicKey] = Object.values(sanitizedWhere[logicKey]);
             }
         }
+
+        sanitizedWhere = this.sanitizeInOperators(sanitizedWhere);
+
         const db = this.getModel(tx);
         const data = await db.findMany({
             where: sanitizedWhere,
@@ -139,9 +159,25 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
 
     public async create(body: any, tx?: Prisma.TransactionClient): Promise<number> {
         const db = this.getModel(tx);
-        const data = await db.create({ data: body });
-
-        return data?.id;
+        const organizationId = body.organization_id;
+        try {
+            if (organizationId) {
+                body.organization = { connect: { id: organizationId } };
+                delete body.organization_id;
+            }
+            const data = await db.create({ data: body });
+            return data?.id;
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientValidationError) {
+                if (organizationId) {
+                    delete body.organization;
+                    body.organization_id = organizationId;
+                }
+                const data = await db.create({ data: body });
+                return data?.id;
+            }
+            throw error;
+        }
     }
 
     public async createMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<T[]> {
@@ -162,6 +198,20 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
             await this.dbAdapter.$transaction(run);
         }
         return listDataItems;
+    }
+
+    public async updateManyByCondition(
+        where: W = {} as W,
+        body: any,
+        tx?: Prisma.TransactionClient,
+        needSanitized = true,
+    ): Promise<void> {
+        const db = this.getModel(tx);
+        const sanitizedWhere = this.sanitizeJsonFilters(where);
+        await db.updateMany({
+            where: needSanitized ? sanitizedWhere : where,
+            data: body,
+        });
     }
 
     public async updateMany(bodies: any[], tx?: Prisma.TransactionClient): Promise<number> {

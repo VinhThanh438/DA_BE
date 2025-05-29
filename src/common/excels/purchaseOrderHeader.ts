@@ -21,7 +21,7 @@ export const purchaseOrderHeader: IHeader[] = [
         header: 'Stt',
         key: 'stt',
         width: 5,
-        formula: 'IF(OR(B{i}<>"",C{i}<>"",D{i}<>"",E{i}<>""),ROW()-ROW($A${i}),"")',
+        // formula: 'IF(OR(B{i}<>"",C{i}<>"",D{i}<>"",E{i}<>""),ROW()-ROW($A${i}),"")',
         style: ListStyle.WHITE as Partial<Column>,
         children: [],
     },
@@ -482,7 +482,7 @@ export const purchaseOrderCustomizeHeader: ICustomizeCell[] = [
 
 export const purchaseOrderFooter: ICustomizeCell[] = [
     {
-        key: 'f_total_title',
+        key: '',
         cell: 'A20',
         value: 'Tổng',
         colSpan: 1,

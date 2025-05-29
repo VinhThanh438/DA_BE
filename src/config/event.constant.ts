@@ -14,4 +14,6 @@ export const EVENT_INVENTORY_CREATED = 'event-inventory-created';
 
 export const EVENT_ORDER_IMPORT_QUANTITY = 'event-order-import-quantity';
 
-export const EVENT_PAYMENT_APPROVED = 'event-payment-approved';
+export const EVENT_PAYMENT_CREATED = 'event-payment-created';
+
+export const EVENT_PAYMENT_DELETED = 'event-payment-deleted';

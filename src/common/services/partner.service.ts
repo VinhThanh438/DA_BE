@@ -33,6 +33,7 @@ import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
 import { IInvoice } from '@common/interfaces/invoice.interface';
+import { InvoiceService } from './invoice.service';
 
 export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect, Prisma.PartnersWhereInput> {
     private static instance: PartnerService;
@@ -44,6 +45,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
     private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
     private paymentRequestRepo: PaymentRequestRepo = new PaymentRequestRepo();
     private invoiceRepo: InvoiceRepo = new InvoiceRepo();
+    private invoiceService: InvoiceService = InvoiceService.getInstance();
 
     private constructor() {
         super(new PartnerRepo());
@@ -218,7 +220,9 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             { status: InvoiceStatus.CONFIRMED, ...beforeConditions } as Prisma.InvoicesWhereInput,
             true,
         );
-        const beforeTotal = this.enrichTotals({ data: beforeInvoices } as IPaginationResponse);
+        const beforeTotal = await this.invoiceService.enrichInvoiceTotals({
+            data: beforeInvoices,
+        } as IPaginationResponse);
         const beginningDebt = beforeTotal.data.reduce((sum: any, item: any) => sum + Number(item.total_amount || 0), 0);
 
         const beforeTransactions = await this.transactionRepo.findMany(
@@ -239,8 +243,11 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             { status: InvoiceStatus.CONFIRMED, ...conditions } as Prisma.InvoicesWhereInput,
             true,
         );
+        increaseData = (await Promise.all(
+            increaseData.map(async (invoice: any) => this.invoiceService.attachPaymentInfoToOrder(invoice)),
+        )) as any;
+        const totalData = await this.invoiceService.enrichInvoiceTotals({ data: increaseData } as IPaginationResponse);
 
-        const totalData = this.enrichTotals({ data: increaseData } as IPaginationResponse);
         let ending = currentDebt;
         let increase = 0;
         let reduction = 0;
@@ -254,7 +261,11 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             increase += ele.total_amount;
 
             const reductData = await this.transactionRepo.findMany(
-                { invoice_id: invoiceData.id, ...timeCondition } as Prisma.TransactionsWhereInput,
+                {
+                    invoice_id: invoiceData.id,
+                    order_type: TransactionOrderType.ORDER,
+                    ...timeCondition,
+                } as Prisma.TransactionsWhereInput,
                 true,
             );
 
@@ -356,7 +367,9 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             true,
         );
 
-        const beforeInvoiceTotal = this.enrichTotals({ data: befortDataInvoice } as IPaginationResponse);
+        const beforeInvoiceTotal = await this.invoiceService.enrichInvoiceTotals({
+            data: befortDataInvoice,
+        } as IPaginationResponse);
 
         const beginningDebt = beforeInvoiceTotal.data.reduce(
             (sum: any, item: any) => sum + Number(item.total_commission || 0),
@@ -376,12 +389,17 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             AND: [{ time_at: { lte: endAt, gte: startAt } }, { partner_id: partnerId }],
         };
 
-        const increaseInvoiceData = await this.invoiceRepo.findMany(
+        let increaseInvoiceData = await this.invoiceRepo.findMany(
             { status: InvoiceStatus.CONFIRMED, ...conditions } as Prisma.InvoicesWhereInput,
             true,
         );
+        increaseInvoiceData = (await Promise.all(
+            increaseInvoiceData.map(async (invoice: any) => this.invoiceService.attachPaymentInfoToOrder(invoice)),
+        )) as any;
 
-        const commissionTotalData = this.enrichTotals({ data: increaseInvoiceData } as IPaginationResponse);
+        const commissionTotalData = await this.invoiceService.enrichInvoiceTotals({
+            data: increaseInvoiceData,
+        } as IPaginationResponse);
         let ending = currentCommissionDebt;
         let increase = 0;
         let reduction = 0;
@@ -395,7 +413,11 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             increase += ele.total_commission;
 
             const reductData = await this.transactionRepo.findMany(
-                { invoice_id: invoiceData.id, time_at: { lte: endAt, gte: startAt } } as Prisma.TransactionsWhereInput,
+                {
+                    invoice_id: invoiceData.id,
+                    time_at: { lte: endAt, gte: startAt },
+                    order_type: TransactionOrderType.COMMISSION,
+                } as Prisma.TransactionsWhereInput,
                 true,
             );
 
@@ -476,12 +498,10 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
     }
 
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
-        const { isCommission, ...queryFilter } = query;
+        const { isCommission, startAt, endAt, ...queryFilter } = query;
         const result = await this.repo.paginate(queryFilter, true);
 
-        if (query.startAt && query.endAt) {
-            const { startAt, endAt } = query;
-
+        if (startAt && endAt) {
             result.data = await Promise.all(
                 result.data.map(async (partner: any) => {
                     const partnerId = partner.id;
@@ -495,10 +515,12 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
 
                         // 1. Tính công nợ đầu kỳ (hoa hồng)
                         const beforeInvoices = await this.invoiceRepo.findMany(
-                            beforeConditions as Prisma.InvoicesWhereInput,
+                            { status: InvoiceStatus.CONFIRMED, ...beforeConditions },
                             true,
                         );
-                        const beforeInvoiceTotal = this.enrichTotals({ data: beforeInvoices } as IPaginationResponse);
+                        const beforeInvoiceTotal = await this.invoiceService.enrichInvoiceTotals({
+                            data: beforeInvoices,
+                        } as IPaginationResponse);
 
                         const beginningDebt = beforeInvoiceTotal.data.reduce(
                             (sum: any, item: any) => sum + Number(item.total_commission || 0),
@@ -529,7 +551,9 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                             true,
                         );
 
-                        const enrichedCurrent = this.enrichTotals({ data: invoicesInPeriod } as IPaginationResponse);
+                        const enrichedCurrent = await this.invoiceService.enrichInvoiceTotals({
+                            data: invoicesInPeriod,
+                        } as IPaginationResponse);
 
                         let increase = 0;
                         let reduction = 0;
@@ -553,25 +577,26 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                         }
 
                         const endingDebt = currentCommissionDebt + increase - reduction;
-                        const paymentRequest = await this.paymentRequestRepo.findOne(
+
+                        let paymentRequests = await this.paymentRequestRepo.findMany(
                             {
-                                status: PaymentRequestStatus.PENDING,
                                 partner_id: partnerId,
                                 type: PaymentRequestType.COMMISSION,
                             } as Prisma.PaymentRequestsWhereInput,
                             false,
                         );
-                        const totalAmount =
-                            paymentRequest && (paymentRequest as IPaymentRequest).details
-                                ? (paymentRequest as IPaymentRequest).details.reduce(
-                                      (sum, item) => sum + Number(item.amount || 0),
-                                      0,
-                                  )
-                                : 0;
 
-                        const paymentRequestWithTotal = paymentRequest
-                            ? { ...(paymentRequest as object), total_amount: totalAmount }
-                            : null;
+                        paymentRequests = paymentRequests.map((item: any) => {
+                            const { details, ...parentInfo } = item;
+                            const totalAmount = details
+                                ? details.reduce((sum: number, detail: any) => sum + Number(detail.amount || 0), 0)
+                                : 0;
+                            return {
+                                ...parentInfo,
+                                total_amount: totalAmount,
+                                details: details || [],
+                            };
+                        });
 
                         return {
                             ...partner,
@@ -579,7 +604,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                             debt_increase: increase,
                             debt_reduction: reduction,
                             ending_debt: endingDebt,
-                            payment_request: paymentRequestWithTotal,
+                            payment_requests: paymentRequests,
                         };
                     } else {
                         // === NORMAL ORDER DEBT ===
@@ -589,7 +614,9 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                             { status: InvoiceStatus.CONFIRMED, ...beforeConditions } as Prisma.InvoicesWhereInput,
                             true,
                         );
-                        const enrichedBefore = this.enrichTotals({ data: beforeInvoices } as IPaginationResponse);
+                        const enrichedBefore = await this.invoiceService.enrichInvoiceTotals({
+                            data: beforeInvoices,
+                        } as IPaginationResponse);
                         const beginningDebt = enrichedBefore.data.reduce(
                             (sum: any, item: any) => sum + Number(item.total_amount || 0),
                             0,
@@ -618,7 +645,9 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                             { status: InvoiceStatus.CONFIRMED, ...duringConditions },
                             true,
                         );
-                        const enrichedCurrent = this.enrichTotals({ data: currentInvoices } as IPaginationResponse);
+                        const enrichedCurrent = await this.invoiceService.enrichInvoiceTotals({
+                            data: currentInvoices,
+                        } as IPaginationResponse);
 
                         let increase = 0;
                         let reduction = 0;
@@ -627,7 +656,10 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                             increase += ele.total_amount;
 
                             const reductData = await this.transactionRepo.findMany(
-                                { invoice_id: ele.id } as Prisma.TransactionsWhereInput,
+                                {
+                                    invoice_id: ele.id,
+                                    order_type: TransactionOrderType.ORDER,
+                                } as Prisma.TransactionsWhereInput,
                                 true,
                             );
 
@@ -641,7 +673,6 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
                         const endingDebt = currentDebt + increase - reduction;
                         let paymentRequests = await this.paymentRequestRepo.findMany(
                             {
-                                status: PaymentRequestStatus.PENDING,
                                 partner_id: partnerId,
                                 type: PaymentRequestType.ORDER,
                             } as Prisma.PaymentRequestsWhereInput,

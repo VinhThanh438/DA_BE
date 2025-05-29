@@ -6,6 +6,7 @@ model Invoices {
   invoice_date         DateTime?  @default(now())
   files           Json?         @default("[]")
   rejected_reason String?
+  note String?
 
   bank_id         Int? // Tài khoản ngân hàng
   employee_id     Int? // Nhân viên bán hàng

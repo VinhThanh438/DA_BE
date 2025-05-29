@@ -1,8 +1,4 @@
 import { TransactionOrderType, TransactionType } from '@config/app.constant';
-import { IBank } from './bank.interface';
-import { IOrder } from './order.interface';
-import { IInvoice } from './invoice.interface';
-import { IPayment } from './payment.interface';
 
 export interface ITransaction {
     id?: number;
@@ -10,7 +6,7 @@ export interface ITransaction {
     type?: TransactionType;
     order_type?: TransactionOrderType;
     amount?: number;
-    note?: Date;
+    note?: string;
 
     partner_id?: number;
     employee_id?: number;
@@ -26,4 +22,13 @@ export interface ITransaction {
     // order?: IOrder;
     // invoice?: IInvoice;
     // payment?: IPayment;
+}
+
+export interface IPaymentCreatedEvent extends ITransaction {
+    new_bank_balance?: number;
+}
+
+export interface IPaymentDeletedEvent {
+    bank_id?: number;
+    refund?: number;
 }

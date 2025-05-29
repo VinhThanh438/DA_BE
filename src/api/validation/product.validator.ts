@@ -1,5 +1,5 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { ICreateProduct, IUpdateProduct } from '@common/interfaces/product.interface';
+import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
 import { ProductType } from '@config/app.constant';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
@@ -8,7 +8,7 @@ import { queryFilter as baseQueryFilter } from './common.validator';
 
 export const createProduct: schema = {
     body: wrapSchema(
-        Joi.object<ICreateProduct>({
+        Joi.object<IProduct>({
             name: Joi.string().trim().required().max(255),
             code: Joi.string().trim().required().max(100),
             vat: Joi.number().optional().allow('', null).min(0).max(100),

@@ -1,6 +1,5 @@
 import { Prisma } from '.prisma/client';
 import { BankSelection } from './bank.select';
-import { CommonDetailSelectionAll } from './common-detail.select';
 import { ContractSelection } from './contract.select';
 import { EmployeeShortSelection } from './employee.select';
 import { PartnerSelection } from './partner.select';
@@ -14,6 +13,7 @@ export const InvoiceSelection: Prisma.InvoicesSelect = {
     invoice_date: true,
     status: true,
     rejected_reason: true,
+    note: true,
     files: true,
 };
 

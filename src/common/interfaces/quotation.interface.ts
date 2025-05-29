@@ -1,9 +1,10 @@
-import { QuotationStatus, QuotationType } from "@config/app.constant";
-import { ICommonDetails, IPaginationInput, IUpdateChildAction } from "./common.interface";
-import { IEmployee } from "./employee.interface";
+import { QuotationStatus, QuotationType } from '@config/app.constant';
+import { ICommonDetails, IPaginationInput, IUpdateChildAction } from './common.interface';
+import { IEmployee } from './employee.interface';
 
 export interface IQuotation extends IUpdateChildAction {
     partner_id?: number;
+    organization_id?: number;
     code: string;
     time_at?: Date;
     note?: string;
@@ -38,9 +39,9 @@ export interface ISupplierQuotationRequest {
 }
 
 export interface IApproveRequest {
-    status: QuotationStatus,
-    type: QuotationType,
-    rejected_reason?: string,
+    status: QuotationStatus;
+    type: QuotationType;
+    rejected_reason?: string;
 }
 
 export interface IQueryQuotation extends IPaginationInput {

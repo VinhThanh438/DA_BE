@@ -25,6 +25,34 @@ export const queryFilter: schema = {
             endAt: Joi.string().isoDate().optional().allow(null),
             keyword: Joi.string().optional().allow(null, ''),
             organization_id: Joi.any().optional().allow(null, ''),
+            warehouseIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+            productIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
         }),
     ),
 };

@@ -9,6 +9,7 @@ import { queryFilter as baseQueryFilter, detailsSchema } from './common.validato
 
 const QuotationBody = {
     partner_id: Joi.number().required(),
+    organization_id: Joi.number().required(),
     code: Joi.string().optional().allow(null, '').max(100),
     time_at: Joi.string().isoDate().optional().allow(null),
     expired_date: Joi.string().isoDate().optional().allow(null),
@@ -27,6 +28,7 @@ const CustomerQuotationBody = {
 
 const SupplierQuotationBody = {
     organization_name: Joi.string().required(),
+    organization_id: Joi.number().required(),
     tax: Joi.string().required(),
     name: Joi.string().required(),
     phone: Joi.string().required(),
@@ -64,7 +66,8 @@ export const approve: schema = {
         Joi.object({
             type: Joi.string()
                 .valid(...values(QuotationType))
-                .optional().allow(null, ''),
+                .optional()
+                .allow(null, ''),
             status: Joi.string()
                 .valid(...values([QuotationStatus.REJECTED, QuotationStatus.CONFIRMED]))
                 .required(),
@@ -97,7 +100,7 @@ export const queryFilter: schema = {
             type: Joi.string()
                 .required()
                 .valid(...values(QuotationType)),
-            isMain: Joi.boolean().optional().default(false)
+            isMain: Joi.boolean().optional().default(false),
         }),
     ),
 };

@@ -29,11 +29,16 @@ export const paymentHeaderDPF = (startAt: string, endAt: string, data: any[], su
     </style>
 
     <body>
-        <h2>CÔNG TY TNHH SX TM THÉP ĐÔNG ANH</h2>
+        <h3>CÔNG TY TNHH SX TM THÉP ĐÔNG ANH</h3>
         <h1 style = "text-align: center">BÁO CÁO CÔNG NỢ PHẢI TRẢ</h1>
-        <div style=" display: flex; justify-content: center;">
-            <p style="margin: 0 40px">Từ ngày: ${startAt}</p>
-            <p style="margin: 0 40px">Đến ngày: ${endAt}</p>
+        <div style=" display: flex; justify-content: center; justify-content: space-between">
+            <div style=" display: flex; justify-content: center;">
+                <p style="margin: 0 40px">Từ ngày: ${startAt}</p>
+                <p style="margin: 0 40px">Đến ngày: ${endAt}</p>
+            </div>
+            <div>
+                Đvt: VNĐ
+            </div>
         </div>
         <br/>
         <table>
@@ -59,22 +64,21 @@ export const paymentHeaderDPF = (startAt: string, endAt: string, data: any[], su
                 <th>0</th>
                 <th>0</th>
             </tr>
-            <tr>
+            
             ${data.map((item) => {
-                return `<td>${item.id}</td> 
-                        <td>${item.code}</td> 
-                        <td>${item.partner}</td>
-                        <td>${item.type}</td>
-                        <td>${item.payStart}</td>
-                        <td>${item.payUp}</td>
-                        <td>${item.payDown}</td>
-                        <td>${item.payEnd}</td>
-                        <td>${item.paymentDue}</td>
-                        <td>${item.payRequest}</td>
-                        <td>${item.payApproval}</td>
-                        `;
+                return `<tr><td>${item.id}</td> 
+                        <td style="text-align: left">${item.code}</td> 
+                        <td style="text-align: left">${item.partner}</td>
+                        <td style="text-align: left">${item.type}</td>
+                        <td style="text-align: right">${item.payStart}</td>
+                        <td style="text-align: right">${item.payUp}</td>
+                        <td style="text-align: right">${item.payDown}</td>
+                        <td style="text-align: right">${item.payEnd}</td>
+                        <td style="text-align: right">${item.paymentDue}</td>
+                        <td style="text-align: right">${item.payRequest}</td>
+                        <td style="text-align: right">${item.payApproval}</td>
+                        </tr>`;
             })}
-            </tr>
         </table>
     </body>
 </html>

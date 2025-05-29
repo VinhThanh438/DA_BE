@@ -2,8 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import logger from '@common/logger';
 import { OrganizationType } from '@config/app.constant';
-import { APIError } from '@common/error/api.error';
-import { ErrorKey, StatusCode } from '@common/errors';
 
 export class SpatialClassificationMiddleware {
     public static async handle(req: Request, res: Response, next: NextFunction) {
@@ -18,14 +16,6 @@ export class SpatialClassificationMiddleware {
                 parent_id: organizationId,
                 OR: [{ type: OrganizationType.DEPARTMENT }, { type: OrganizationType.COMPANY }],
             });
-
-            if (!children || children.length === 0) {
-                throw new APIError({
-                    message: 'common.not-found',
-                    status: StatusCode.REQUEST_NOT_FOUND,
-                    errors: [`organizationId.${ErrorKey.NOT_FOUND}`],
-                });
-            }
 
             const organizationIds = [organizationId, ...children.map((org) => org.id)].filter(
                 (id): id is number => typeof id === 'number' && id !== undefined,

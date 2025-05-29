@@ -4,6 +4,7 @@ import { IOrder } from './order.interface';
 import { IInvoice } from './invoice.interface';
 import { IPartner } from './partner.interface';
 import { IBank } from './bank.interface';
+import { ICreateOrganization } from './company.interface';
 
 export interface IPayment {
     id?: number;
@@ -23,12 +24,14 @@ export interface IPayment {
     invoice_id?: number;
     bank_id?: number;
     partner_id?: number;
+    organization_id?: number;
 
     order?: IOrder;
     invoice?: IInvoice;
     partner?: IPartner;
     payment_request?: IPaymentRequest;
     bank?: IBank;
+    organization?: ICreateOrganization;
 
     description?: string;
     payment_method?: string;

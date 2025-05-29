@@ -81,6 +81,7 @@ model TransactionWarehouses {
   time_at  DateTime                 @default(now())
   quantity Int @default(0)
   real_quantity Int? @default(0)
+  convert_quantity Int? @default(0)
   type     PrsTransactionWarehouseType
   note     String?
 

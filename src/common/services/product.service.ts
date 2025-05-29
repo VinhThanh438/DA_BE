@@ -3,7 +3,7 @@ import { APIError } from '@common/error/api.error';
 import { ErrorKey, StatusCode } from '@common/errors';
 
 import { IIdResponse } from '@common/interfaces/common.interface';
-import { ICreateProduct, IExtraUnits, IProducts, IUpdateProduct } from '@common/interfaces/product.interface';
+import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
 import { ProductRepo } from '@common/repositories/product.repo';
 import { BaseService } from './base.service';
 import { UnitRepo } from '@common/repositories/unit.repo';
@@ -130,7 +130,7 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         return { id: output };
     }
 
-    async createProduct(body: ICreateProduct): Promise<IIdResponse> {
+    async createProduct(body: IProduct): Promise<IIdResponse> {
         await this.isExist({ code: body.code });
         const unitNotFound: string[] = [];
         const unit = await this.unitRepo.findOne({ id: body.unit_id });

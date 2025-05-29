@@ -51,8 +51,13 @@ export class PaymentRequestService extends BaseService<
         );
 
         const runTransaction = async (transaction: Prisma.TransactionClient) => {
-            const { details, ...paymentRequestData } = request;
+            const { details, partner_id, employee_id, approver_id, organization_id, ...paymentRequestData } =
+                request as any;
 
+            paymentRequestData.partner = partner_id ? { connect: { id: partner_id } } : undefined;
+            paymentRequestData.employee = employee_id ? { connect: { id: employee_id } } : undefined;
+            paymentRequestData.approver = approver_id ? { connect: { id: approver_id } } : undefined;
+            paymentRequestData.organization = organization_id ? { connect: { id: organization_id } } : undefined;
             paymentRequestId = await this.repo.create(paymentRequestData as Partial<PaymentRequest>, transaction);
 
             if (details && details.length > 0) {
@@ -65,7 +70,7 @@ export class PaymentRequestService extends BaseService<
                     transaction,
                 );
 
-                const mappedDetails = details.map((item) => {
+                const mappedDetails = details.map((item: any) => {
                     const { order_id, invoice_id, ...rest } = item;
                     return {
                         ...rest,

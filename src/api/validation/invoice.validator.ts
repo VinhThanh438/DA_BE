@@ -8,7 +8,6 @@ const InvoiceDetail = {
     id: Joi.number().optional().min(1),
     key: Joi.string().allow(null, ''),
     order_detail_id: Joi.number().required(),
-    quantity: Joi.number().required(),
     note: Joi.string().optional().allow(null, ''),
 };
 
@@ -24,6 +23,7 @@ export const create: schema = {
                 .optional(),
 
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            note: Joi.string().optional().allow(null, ''),
 
             organization_id: Joi.number().optional().allow(null),
             order_id: Joi.number().optional().allow(null),
@@ -44,6 +44,7 @@ export const update: schema = {
             code: Joi.string().optional().allow(null, '').max(100),
             time_at: Joi.string().isoDate().optional().allow(null),
             invoice_date: Joi.string().isoDate().optional().allow(null),
+            note: Joi.string().optional().allow(null, ''),
 
             status: Joi.string()
                 .valid(...values(InvoiceStatus))

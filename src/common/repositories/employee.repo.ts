@@ -109,13 +109,15 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
         where: Prisma.EmployeesWhereInput = {},
         includeRelations: boolean = false,
     ): Promise<Partial<Employees> | null> {
-        return this.db.findFirst({
+        const data = await this.db.findFirst({
             where: {
                 ...where,
                 is_deleted: false,
             },
             select: getSelection(includeRelations),
         });
+
+        return transformDecimal(data);
     }
 
     public async isExist(where: Prisma.EmployeesWhereInput = {}): Promise<Partial<Employees> | null> {
@@ -141,6 +143,11 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
             insurances,
             ...rest
         } = data;
+
+        if (rest.organization_id) {
+            rest.organization = { connect: { id: rest.organization_id } } as any;
+            delete rest.organization_id;
+        }
 
         const result = await this.db.create({
             data: {

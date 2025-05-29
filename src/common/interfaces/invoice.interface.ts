@@ -12,6 +12,7 @@ export interface IInvoice extends IUpdateChildAction {
     code: string;
     time_at?: DateString;
     invoice_date?: DateString;
+    note?: string;
     files?: string[];
     status?: InvoiceStatus;
 

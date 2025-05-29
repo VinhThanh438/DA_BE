@@ -1,6 +1,14 @@
-import { IDataImportWarehousePDF } from '@common/interfaces/warehouse.interface';
+import { formatNumberWithDots } from '@common/helpers/format-number-with-dots';
+import { formatPhoneNumber } from '@common/helpers/formatPhoneNumber';
+import { TimeHelper } from '@common/helpers/time.helper';
+import { logoLeft } from '@config/app.constant';
 
-export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) => {
+export const importWarehousePDF = (data: any) => {
+    let sumQty = 0;
+    let sumRealQty = 0;
+    let sumPrice = 0;
+    let sumTotalMoney = 0;
+    const vat = 10;
     return `<!doctype html>
 <html lang="en">
     <head>
@@ -13,13 +21,15 @@ export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) =>
             padding: 0;
             margin: 0;
             line-height: 1.5;
+            box-sizing: border-box;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            border: 1px solid black;
         }
         th,
-        td {
+        td, tr {
             border: 1px solid black;
             padding: 10px;
             text-align: center;
@@ -31,15 +41,15 @@ export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) =>
                 <div style="width: 25%; display: flex; flex-direction: column; align-items: center;">
                     <img
                         style="height: 100px"
-                        src="https://www.techsmith.com/blog/wp-content/uploads/2022/03/resize-image.png"
+                        src=${logoLeft}
                     />
                     <p>ISO 9001:2015</p>
                 </div>
                 <div style="flex: 1">
-                    <h2>Công ty TNHH Sản Xuất Và Thương mại Thép Đông Anh</h2>
-                    <p>Địa chỉ: Tổ 28 – Thị trấn Đông Anh - Hà Nội</p>
-                    <p>Điện thoại: 0243.968.6769 – Hotline: 0978.993.999</p>
-                    <p>Mã số thuế: 0102378256</p>
+                    <h2>${data?.organization?.name || ''}</h2>
+                    <p>Địa chỉ: ${data?.organization?.address || ''}</p>
+                    <p>Điện thoại: ${data?.organization?.phone ? formatPhoneNumber(data?.organization?.phone) : ''} – Hotline: ${data?.organization?.phone ? formatPhoneNumber(data?.organization?.hotline) : ''}</p>
+                    <p>Mã số thuế: ${data?.organization?.tax_code || ''}</p>
                     <p>Tài khoản: 2141.0000.378769 – NH Đầu tư và PT Đông Hà Nội</p>
                 </div>
             </div>
@@ -49,20 +59,20 @@ export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) =>
             <h1 style="flex: 1; text-align: center">Phiếu Nhập Kho</h1>
             <div style="text-align: center; position: absolute; right: 0">
                 <p style="color: red">Số: 10098</p>
-                <p>Ngày: 20-03-2025</p>
+                <p>Ngày: ${TimeHelper.format(new Date(), 'DD-MM-YYYY')}</p>
             </div>
         </div>
         <p>- Căn cứ vào Báo giá / Đơn đặt hàng / Hợp đồng số ... Ngày ... tháng ... năm ...</p>
         <p>- Căn cứ vào lệnh điều động số ... Ngày ... tháng ... năm ... Của...</p>
-        <b>Đơn vị giao hàng: CÔNG TY TNHH ĐẤT VIỆT</b>
+        <b>Đơn vị giao hàng: ${data?.delivery?.name || ''}</b>
         <div style="display: flex; align-items: center">
-            <b style="flex: 1">Đại diện giao hàng: Trần Văn Anh</b>
-            <p style="flex: 1">CCCD số: 123456789</p>
+            <b style="flex: 1">Đại diện giao hàng: ${data?.representative_name || ''}</b>
+            <p style="flex: 1">CCCD số: ${data?.identity_code || ''}</p>
             <p style="flex: 1">Giấy ủy quyền số: ........</p>
         </div>
         <div style="display: flex; align-items: center">
-            <b style="flex: 1">Phương tiện vận chuyển: Xe tải</b>
-            <p style="flex: 1">Biển kiểm soát: 29C-12345</p>
+            <b style="flex: 1">Phương tiện vận chuyển: ${data?.vehicle || ''}</b>
+            <p style="flex: 1">Biển kiểm soát: ${data?.plate || ''}</p>
             <p style="flex: 1">Xe thuê / Xe nhà / Xe khách</p>
         </div>
         <div style="display: flex; align-items: center">
@@ -70,6 +80,7 @@ export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) =>
             <p style="flex: 1">Xuất tại kho: ............</p>
             <p style="flex: 1">Thủ kho: ............</p>
         </div>
+        </br>
         <table>
             <tr>
                 <th rowspan="2">STT</th>
@@ -80,46 +91,44 @@ export const importWarehousePDF = (data: IDataImportWarehousePDF[], sum: any) =>
                 <th colspan="2">Số lượng</th>
                 <th rowspan="2">Đơn giá (vnđ)</th>
                 <th rowspan="2">Thành tiền (vnđ)</th>
-                <th colspan="2">Đưa vào chi phí phát sinh</th>
             </tr>
             <tr>
                 <td>Chứng từ</td>
                 <td>Thực nhận</td>
-                <td>Kg chênh lệch</td>
-                <td>Thành tiền chênh lệch</td>
             </tr>
-            ${data.map((item) => {
+            ${(data?.details || []).map((item: any, index: number) => {
+                sumQty += item?.quantity || 0;
+                sumRealQty += item?.real_quantity || 0;
+                const total_price =
+                    item?.quantity && item?.order_detail?.price ? item?.quantity * item?.order_detail?.price : 0;
+                sumTotalMoney += total_price;
                 return `<tr>
-                    <td>${item.id}</td>
-                    <td>${item.product_name}</td>
-                    <td>${item.product_code}</td>
-                    <td>${item.unit}</td>
-                    <td>${item.unit_name}</td>
-                    <td>${item.document}</td>
-                    <td>${item.real}</td>
-                    <td>${item.price}</td>
-                    <td>${item.total_price}</td>
-                    <td>${item.kg}</td>
-                    <td>${item.money}</td>
+                    <td>${index + 1}</td>
+                    <td>${item?.order_detail?.product?.name || ''}</td>
+                    <td>${item?.order_detail?.product?.code || ''}</td>
+                    <td>0000</td>
+                    <td>${item?.order_detail?.unit?.name || ''}</td>
+                    <td>${item?.quantity ? formatNumberWithDots(item?.quantity) : ''}</td>
+                    <td>${item?.real_quantity ? formatNumberWithDots(item?.real_quantity) : ''}</td>
+                    <td>${item?.order_detail?.price ? formatNumberWithDots(item?.order_detail?.price) : ''}</td>
+                    <td>${formatNumberWithDots(total_price)}</td>
                 </tr>`;
-            })}
+            }).join('')}
             <tr>
                 <td colspan="5" rowspan="3">Đề nghị kiểm tra, đối chiếu kỹ trước khi ký phiếu</td>
-                <td>${sum.document}</td>
-                <td>${sum.real_price}</td>
+                <td>${sumQty ? formatNumberWithDots(sumQty) : ''}</td>
+                <td>${sumRealQty ? formatNumberWithDots(sumRealQty) : ''}</td>
                 <td>Tổng</td>
-                <td>${sum.total_price}</td>
-                <td>${sum.kg}</td>
-                <td>${sum.money}</td>
+                <td>${sumTotalMoney ? formatNumberWithDots(sumTotalMoney) : ''}</td>
             </tr>
             <tr>
                 <td colspan="2">Thuế VAT</td>
-                <td>${sum.vat}%</td>
-                <td>${sum.price_vat}</td>
+                <td>Fake: ${vat}</td>
+                <td>${formatNumberWithDots((sumTotalMoney * 10) / 100)}</td>
             </tr>
             <tr>
                 <td colspan="3">Tổng cộng có VAT</td>
-                <td>${sum.total}</td>
+                <td>${formatNumberWithDots((sumTotalMoney * 10) / 100 + sumTotalMoney)}</td>
             </tr>
         </table>
         <br />

@@ -1,4 +1,4 @@
-import { renderExcelHeader } from '@common/helpers/excel';
+import { getMaxDepth, renderExcelHeader } from '@common/helpers/excel';
 import * as ExcelJS from 'exceljs';
 import {
     importWarehouseHeader,
@@ -38,12 +38,19 @@ import { quotationPDF } from '@common/pdfs/quotation';
 import { orderPDF } from '@common/pdfs/order';
 import { QuotationService } from './quotation.service';
 import { importWarehousePDF } from '@common/pdfs/ImportWarehouse';
+import { EmployeeService } from './employee.service';
+import { UserService } from './user.service';
+import { InventoryService } from './inventory.service';
+import { TransactionService } from './transaction.service';
 export class ExcelService {
     private static instance: ExcelService;
     private orderService = OrderService.getInstance();
     private organizationService = OrganizationService.getInstance();
     private partnerService = PartnerService.getInstance();
     private quotationService = QuotationService.getInstance();
+    private userService = UserService.getInstance();
+    private inventoryService = InventoryService.getInstance();
+    private transactionService = TransactionService.getInstance();
 
     private constructor() {}
 
@@ -78,11 +85,12 @@ export class ExcelService {
             format: 'A4',
             landscape: true,
             printBackground: true,
+            // width: 210
             margin: {
-                top: '20px',
-                right: '20px',
-                bottom: '20px',
-                left: '20px',
+                top: '50px',
+                right: '50px',
+                bottom: '50px',
+                left: '50px',
             },
         });
         await browser.close();
@@ -242,20 +250,20 @@ export class ExcelService {
             const timeAtString = `Ngày ${timeAt.getDate()} tháng ${timeAt.getMonth() + 1} năm ${timeAt.getFullYear()}`;
             path = `uploads/Don_Dat_Hang.pdf`;
             const headerOrderPDF = {
-                company: order.organization.name,
-                address: order.organization.address || '',
-                cotact: `Điện thoại:  ${order.organization.phone_number || ''} – Hotline: ${order.organization.hotline || ''}`,
-                tax_code: `MST: ${order.organization.tax_code || ''}`,
+                company: order.organization?.name || '',
+                address: order.organization?.address || '',
+                contact: `Điện thoại:  ${order.organization?.phone_number || ''}${'  '} – ${'  '} Hotline: ${order.organization?.hotline || ''}`,
+                tax_code: order.organization?.tax_code || '',
                 time_at: timeAtString,
-                partner_name: order.partner.name,
-                commission_name: order.partner.representative_name,
+                partner_name: order.partner?.name || '',
+                commission_name: order.partner?.representative_name,
                 oAddress: order.address || '',
-                commission_account: order.partner.account_number || '',
-                represent: order.partner.representative_name,
-                phone_number: order.partner.representative_phone || '',
-                email: order.partner.representative_email || '',
-                note: order.organization.name || 'Công ty TNHH SX TM Thép Đông Anh',
-                logo: order.organization.logo || '',
+                commission_account: order.partner?.account_number || '',
+                represent: order.partner?.representative_name || '',
+                phone_number: order.partner?.representative_phone || '',
+                email: order.partner?.representative_email || '',
+                note: order.organization?.name || 'Công ty TNHH SX TM Thép Đông Anh',
+                logo: order.organization?.logo || '',
             };
             const sum = {
                 quantity: this.getTotal(dataBody, 'quantity'),
@@ -285,7 +293,7 @@ export class ExcelService {
     }
 
     // bieu mau nhap kho vat tu
-    public async exportExcelImportWarehouse(query: any): Promise<string> {
+    public async exportExcelImportWarehouse(query: any, userId: number): Promise<string> {
         let path = '';
         if (query.fileType === 'excel') {
             const workbook = new ExcelJS.Workbook();
@@ -329,21 +337,10 @@ export class ExcelService {
             await workbook.xlsx.writeFile(path);
         } else if (query.fileType === 'pdf') {
             path = `uploads/Phieu_Nhap_Kho_${query.id}.pdf`;
-            const vat = 10;
-            const sum = {
-                document: this.getTotal(fakeImportWarehouseData, 'document'),
-                real_price:
-                    this.getTotal(fakeImportWarehouseData, 'real') + this.getTotal(fakeImportWarehouseData, 'price'),
-                total_price: this.getTotal(fakeImportWarehouseData, 'total_price'),
-                kg: this.getTotal(fakeImportWarehouseData, 'kg'),
-                money: this.getTotal(fakeImportWarehouseData, 'money'),
-                vat: vat,
-                price_vat: (this.getTotal(fakeImportWarehouseData, 'total_price') * vat) / 100,
-                total:
-                    (this.getTotal(fakeImportWarehouseData, 'total_price') * vat) / 100 +
-                    this.getTotal(fakeImportWarehouseData, 'total_price'),
-            };
-            const contentHtml = importWarehousePDF(fakeImportWarehouseData, sum);
+            const data = await this.inventoryService.findById(Number(query.id));
+            const dataUser = await this.userService.getEmployeeByUser(userId);
+            const final_data = { ...data, user: dataUser };
+            const contentHtml = importWarehousePDF(final_data);
             await this.convertPDF(path, contentHtml);
         }
         return path;
@@ -393,13 +390,15 @@ export class ExcelService {
 
     // bieu mau báo cáo công nợ phải trả
     public async exportExcelPayment(query?: any): Promise<string> {
+        if (!query.partnerId) throw new Error('partner_id.not_found');
         const partner = await this.partnerService.findById(Number(query.partnerId));
         const data = await this.partnerService.getDebt({
             ...query,
-            startAt: new Date(query.startAt).toJSON(),
-            endAt: new Date(query.endAt).toJSON(),
+            startAt: new Date(query.startAt).toISOString(),
+            endAt: new Date(query.endAt).toISOString(),
             partnerId: Number(query.partnerId),
         });
+        console.log('data', JSON.stringify(data));
         const dataBody = data.details.map((item: any, index: any) => {
             return {
                 id: index + 1,
@@ -446,7 +445,7 @@ export class ExcelService {
             const dataSum = {
                 sumPayStart: data.beginning_debt,
                 sumPayUp: data.debt_increase,
-                sumPayDowm: data.debt_reduction,
+                sumPayDown: data.debt_reduction,
                 sumPayEnd: data.ending_debt,
             };
             const content = paymentHeaderDPF(query.startAt, query.endAt, dataBody, dataSum);
@@ -508,6 +507,77 @@ export class ExcelService {
                 right: { style: 'thin' },
             };
             this.addBorder(worksheet, 1, 7, lastRow + 1);
+            path = 'uploads/export_transaction.xlsx';
+            await workbook.xlsx.writeFile(path);
+        } else if (query.fileType === 'pdf') {
+            path = 'uploads/export_transaction.pdf';
+            const sumData = {
+                sumBalance: 650000000,
+                sumArise: 350000000,
+                sumDebt: 200000000,
+            };
+            const data = await this;
+            const contentHtml = bankPDF(type, dataFakeBank);
+            await this.convertPDF(path, contentHtml);
+        }
+
+        return path;
+    }
+
+    //biểu mẫu giao dịch ngân hàng
+    public async exportExcelTransactionBank(query?: any): Promise<string> {
+        const type = query?.bank;
+        let path = '';
+        if (query.fileType === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Data');
+            const startRow = 5;
+            const startColumn = 1;
+            renderExcelHeader(
+                worksheet,
+                importBankHeader,
+                startRow,
+                startColumn,
+                importBankCustomizeHeader,
+                dataFakeBank,
+                [],
+            );
+
+            worksheet.mergeCells('A2:C2');
+            worksheet.getCell('A2').value =
+                type === 'mb'
+                    ? 'Nhật ký giao dịch Ngân hàng MB'
+                    : type === 'bidv'
+                      ? 'Nhật ký giao dịch Ngân hàng BIDV'
+                      : 'Nhật ký giao dịch Qũy tiền mặt';
+            worksheet.getCell('A2').font = { bold: true, size: 14 };
+            worksheet.mergeCells('D2:G2');
+            worksheet.getCell('D2').value = type === 'mb' ? 'MB BANK' : type === 'bidv' ? 'BIDV' : 'Sổ quỹ';
+            worksheet.getCell('D2').font = { bold: true, size: 32 };
+            worksheet.getCell('D2').alignment = { vertical: 'middle', horizontal: 'center' };
+            const lastRow = worksheet.rowCount;
+            worksheet.mergeCells(`A${lastRow + 1}:C${lastRow + 1}`);
+            worksheet.getCell(`A${lastRow + 1}:C${lastRow + 1}`).value = 'Tổng';
+            worksheet.getCell(`A${lastRow + 1}:C${lastRow + 1}`).font = { size: 14, bold: true };
+            worksheet.getCell(`A${lastRow + 1}:C${lastRow + 1}`).alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+            };
+            worksheet.getCell(`E${lastRow + 1}`).value = { formula: `SUM(E${startRow + 2}:E${lastRow})` };
+            worksheet.getCell(`F${lastRow + 1}`).value = { formula: `SUM(F${startRow + 2}:F${lastRow})` };
+            worksheet.getCell(`G${lastRow + 1}`).value = {
+                formula: `G${startRow}  + E${lastRow} - F${lastRow}`,
+            };
+            worksheet.mergeCells(`A${lastRow + 2}:G${lastRow + 2}`);
+            worksheet.getCell(`A${lastRow + 2}`).value = 'Số dư bằng chữ:';
+            worksheet.getCell(`A${lastRow + 2}`).font = { size: 14 };
+            worksheet.getCell(`A${lastRow + 2}`).border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+            this.addBorder(worksheet, 1, 7, lastRow + 1);
             path = 'uploads/export_bank.xlsx';
             await workbook.xlsx.writeFile(path);
         } else if (query.fileType === 'pdf') {
@@ -517,14 +587,15 @@ export class ExcelService {
                 sumArise: 350000000,
                 sumDebt: 200000000,
             };
-            const contentHtml = bankPDF(type, dataFakeBank, sumData);
+            const data = await this.transactionService.getAllTransactions(query);
+            const contentHtml = bankPDF(data, sumData);
             await this.convertPDF(path, contentHtml);
         }
 
         return path;
     }
     //biểu mẫu đối chiếu công nợ
-    public async exportExcelDebtComparison(query: any): Promise<string> {
+    public async exportExcelDebtComparison(query: any, userId: number): Promise<string> {
         let path = '';
         if (query.fileType === 'excel') {
             const workbook = new ExcelJS.Workbook();
@@ -605,7 +676,14 @@ export class ExcelService {
                 // sumCommissionDebt: 50000000,
                 // sumCommissionPayRequest: 70000000,
             };
-            const contentHtml = debtComparisonPDF(dataFakeDebtCompartion, sumData, header);
+            if (!query.partnerId) {
+                throw new Error('partner_id.not_found');
+            }
+            const data = await this.partnerService.getDebt({ partnerId: query.parterId });
+            const dataPartner = await this.partnerService.findById(query.parterId);
+            const dataUser = await this.userService.getEmployeeByUser(userId);
+            const finalData = { ...data, partner: dataPartner, user: dataUser };
+            const contentHtml = debtComparisonPDF(finalData, sumData, header);
             await this.convertPDF(path, contentHtml);
         }
         return path;

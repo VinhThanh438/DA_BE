@@ -14,12 +14,7 @@ router.put('/approve/:id', validateRequest(approve), controller.approve.bind(con
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-router.post(
-    '/',
-    validateRequest(create),
-    SpatialClassificationMiddleware.assignInfoToRequest,
-    controller.create.bind(controller),
-);
+router.post('/', validateRequest(create), controller.create.bind(controller));
 
 router.put('/:id', validateRequest(updateEntity), controller.update.bind(controller));
 

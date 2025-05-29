@@ -15,9 +15,13 @@ export const PaymentSelect: Prisma.PaymentsSelect = {
     files: true,
     status: true,
     rejected_reason: true,
+
     payment_request_id: true,
     bank_id: true,
     partner_id: true,
+    organization_id: true,
+    order_id: true,
+    invoice_id: true,
 
     description: true,
     payment_method: true,

@@ -419,10 +419,10 @@ export abstract class BaseService<T, S, W> {
         return entity;
     }
 
-    async canEdit(id: number, entityName: string, repo: any = this.repo) {
-        const entity = await repo.findOne({ id, status: OrderStatus.PENDING } as any);
+    async canEdit(id: number, entityName: string, isAdmin: boolean, repo: any = this.repo) {
+        const entity = await repo.findOne({ id, ...(!isAdmin && { status: OrderStatus.PENDING }) } as any);
 
-        if (!entity) {
+        if (!entity || isAdmin === false) {
             throw new APIError({
                 message: `common.status.${StatusCode.BAD_REQUEST}`,
                 status: ErrorCode.BAD_REQUEST,

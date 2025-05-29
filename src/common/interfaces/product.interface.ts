@@ -1,7 +1,7 @@
 import { Products, Units } from '.prisma/client';
 import { ProductType } from '@config/app.constant';
 
-export interface ICreateProduct {
+export interface IProduct {
     id?: number;
     name: string;
     code?: string;

@@ -1,14 +1,18 @@
 import { InventoryController } from '@api/controllers/inventory.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { approve, queryById } from '@api/validation/common.validator';
+import { approve, queryById, queryFilter as commonQueryFilter } from '@api/validation/common.validator';
 import { create, queryFilter, update } from '@api/validation/inventory.validator';
 import express from 'express';
 
 const router = express.Router();
 const controller = InventoryController.getInstance();
 
-router.get('/', validateRequest(queryFilter), controller.paginate.bind(controller));
+router.get('/', validateRequest(commonQueryFilter), controller.paginate.bind(controller));
+
+router.get('/report', validateRequest(queryFilter), controller.getInventoryReport.bind(controller));
+router.get('/ledger', validateRequest(queryFilter), controller.getInventoryReportDetail.bind(controller));
+router.get('/import-detail', validateRequest(queryFilter), controller.getInventoryImportDetail.bind(controller));
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
