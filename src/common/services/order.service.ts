@@ -3,12 +3,13 @@ import { Orders, Prisma } from '.prisma/client';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import {
     IApproveRequest,
+    ICommonDetails,
     IIdResponse,
     IPaginationInput,
     IPaginationResponse,
 } from '@common/interfaces/common.interface';
 import { OrderRepo } from '@common/repositories/order.repo';
-import { IOrder } from '@common/interfaces/order.interface';
+import { IOrder, IOrderDetailPurchaseProcessing, IOrderPaginationInput } from '@common/interfaces/order.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
@@ -67,7 +68,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         });
 
         const totalPaid = transactionData
-            .filter((t) => t.type === 'out' && !t.note?.toLowerCase().includes('hoa hồng'))
+            .filter((t) => t.type === 'out')
             .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
         const totalCommissionPaid = transactionData
@@ -97,7 +98,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
 
         // Change the synchronous map to an async map using Promise.all
         const detailsWithPayments = await Promise.all(
-            (order.details ?? []).map(async (detail: any) => {
+            (order.details ?? []).map(async (detail: ICommonDetails) => {
                 const quantity = detail.quantity;
                 const price = detail.price;
                 const vatPercent = detail.vat || 0;
@@ -115,7 +116,10 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 const commission_debt = commission - commission_paid;
 
                 // Await the async method call
-                const progress = await this.getOrderDetailPurchaseProcessing({ ...detail, order_id: order.id });
+                const progress = await this.getOrderDetailPurchaseProcessing({
+                    ...detail,
+                    order_id: order.id,
+                } as IOrderDetailPurchaseProcessing);
 
                 return {
                     ...detail,
@@ -135,11 +139,14 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         };
     }
 
-    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+    public async paginate(query: IOrderPaginationInput): Promise<IPaginationResponse> {
+        if (query.isDone) {
+            query.delivery_progress = { gte: 95 };
+            delete query.isDone;
+        }
+
         const data = await this.repo.paginate(query, true);
-
         data.data = await Promise.all(data.data.map((order: IOrder) => this.attachPaymentInfoToOrder(order)));
-
         return this.enrichTotals(data);
     }
 
@@ -542,7 +549,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
      * @param orderDetailId ID of the order detail to check
      * @returns Import information for the specific product
      */
-    public async getOrderDetailPurchaseProcessing(orderDetail: any) {
+    public async getOrderDetailPurchaseProcessing(orderDetail: IOrderDetailPurchaseProcessing) {
         if (!orderDetail || !orderDetail.product?.id || !orderDetail.order_id) {
             return {};
         }

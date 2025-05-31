@@ -5,10 +5,12 @@ import { RepresentativeSelection } from './representative.select';
 
 export const BankSelection: Prisma.BanksSelect = {
     id: true,
+    code: true,
     bank: true,
     account_number: true,
     branch: true,
     name: true,
+    description: true,
     type: true,
     balance: true,
     responsibility: true,

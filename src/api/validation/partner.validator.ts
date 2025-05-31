@@ -26,7 +26,7 @@ export const queryByConditions: schema = {
 const PartnerBody = {
     id: Joi.number().optional().allow(null, ''),
     code: Joi.string().optional(),
-    name: Joi.string().required().max(255),
+    name: Joi.string().optional().allow(null, ''),
     phone: Joi.string().optional().allow(null, '').max(20),
     note: Joi.string().optional().allow(null, '').max(500),
     tax: Joi.string().optional().allow(null, '').max(50),

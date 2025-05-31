@@ -39,7 +39,6 @@ model Partners {
   quotations          Quotations[]
   orders              Orders[]
   productions         Productions[]
-  finance_records     FinanceRecords[]
   transactions  Transactions[]
   contracts           Contracts[]
   representatives Representatives[]
@@ -48,7 +47,6 @@ model Partners {
 
   inventory_as_supplier Inventories[] @relation("Supplier")
   inventory_as_customer Inventories[] @relation("Customer")
-  inventory_as_delivery Inventories[] @relation("Delivery")
   @@map("partners")
   payment_requests PaymentRequests[] @relation("ApproverEmployee")
 }

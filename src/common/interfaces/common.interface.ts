@@ -32,7 +32,7 @@ export interface IPaginationInput extends IArrayDataInput {
     startAt?: DateString;
     endAt?: DateString;
     keyword?: string;
-    organization_id?: any;
+    organizationId?: any;
 }
 
 export interface ICreateAndUpdateResponse {
@@ -77,7 +77,7 @@ export interface ICommonDetails {
     inventory_id?: number;
     warehouse_id?: number;
     order_detail_id?: number;
-    product?: IProducts
+    product?: IProducts;
 }
 
 export interface IUpdateChildAction {

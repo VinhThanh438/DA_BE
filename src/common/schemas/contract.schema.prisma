@@ -1,7 +1,7 @@
 model Contracts {
   id Int @id @default(autoincrement())
 
-  code           String    @unique // Số hợp đồng
+  code           String    @default(cuid())// Số hợp đồng
   tax            String? // Mã số thuế
   note            String? // Ghi chú
   time_at      DateTime? // Ngày ký

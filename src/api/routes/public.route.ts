@@ -1,6 +1,5 @@
 import { PartnerController } from '@api/controllers/partner.controller';
 import { PublicController } from '@api/controllers/public.controller';
-import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { UploadMiddleware } from '@api/middlewares/upload.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { queryByConditions } from '@api/validation/partner.validator';
@@ -10,12 +9,7 @@ const router = express.Router();
 
 const partnerController = PartnerController.getInstance();
 
-router.post(
-    '/quotation-supplier',
-    validateRequest(create),
-    SpatialClassificationMiddleware.assignInfoToRequest,
-    PublicController.createSupplierQuotation,
-);
+router.post('/quotation-supplier', validateRequest(create), PublicController.createSupplierQuotation);
 
 router.get(
     '/partner/find',

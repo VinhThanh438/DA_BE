@@ -2,7 +2,7 @@
 model PaymentRequests {
   id              Int                     @id @default(autoincrement())
   code            String                  @default(cuid())
-  status          PrsPaymentRequestStatus @default(confirmed)
+  status          PrsPaymentRequestStatus @default(pending)
   type            PrsdPaymentRequestType  @default(order)
   files           Json?                   @default("[]")
   note            String?
@@ -53,6 +53,7 @@ enum PrsPaymentRequestStatus {
   pending
   confirmed
   rejected
+  paymented
 }
 
 enum PrsdPaymentRequestType {
@@ -60,11 +61,16 @@ enum PrsdPaymentRequestType {
   commission
 }
 
+enum PrsPaymentType {
+  income
+  expense
+}
+
 model Payments {
   id              Int                     @id @default(autoincrement())
   code            String                  @default(cuid())
   status          PrsPaymentRequestStatus @default(confirmed)
-  type            PrsFinanceRecordType  @default(income)
+  type            PrsPaymentType  @default(income)
   files           Json?                   @default("[]")
   note            String?
   rejected_reason String?

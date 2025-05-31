@@ -42,7 +42,6 @@ model Organizations {
   inventories            Inventories[]
   productions            Productions[]
   material_budgets       MaterialBudgets[]
-  finance_records        FinanceRecords[]
   transactions     Transactions[]
   transaction_warehouses TransactionWarehouses[]
   quotation_requests       QuotationRequests[]
@@ -64,6 +63,7 @@ model Organizations {
   payments Payments[]
   partner_groups PartnerGroups[]
   positions Positions[]
+  shipping_plans ShippingPlans[]
 }
 
 model Positions {

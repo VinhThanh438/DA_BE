@@ -20,7 +20,7 @@ export const ShippingPlanSelectionAll: Prisma.ShippingPlansSelect = {
     partner: {
         select: PartnerSelection,
     },
-    // order: {
-    //     select: OrderSelection,
-    // },
+    order: {
+        select: OrderSelection,
+    },
 };

@@ -4,6 +4,7 @@ export interface IShippingPlan {
     quantity?: number;
     status?: string;
     note?: string;
+
     partner_id?: number;
     order_id?: number;
 

@@ -11,7 +11,11 @@ const controller = PaymentController.getInstance();
 
 router.get('/', validateRequest(queryFilter), controller.paginate.bind(controller));
 
-router.get('/report', validateRequest(queryFilter), controller.report.bind(controller));
+// Bao cao tong hop ton quy
+router.get('/report', validateRequest(baseQueryFilter), controller.report.bind(controller));
+
+// So quy
+router.get('/ledger', validateRequest(queryFilter), controller.ledger.bind(controller));
 
 router.put('/close', validateRequest(baseQueryFilter), controller.close.bind(controller));
 

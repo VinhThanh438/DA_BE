@@ -11,8 +11,12 @@ const controller = InventoryController.getInstance();
 router.get('/', validateRequest(commonQueryFilter), controller.paginate.bind(controller));
 
 router.get('/report', validateRequest(queryFilter), controller.getInventoryReport.bind(controller));
+
 router.get('/ledger', validateRequest(queryFilter), controller.getInventoryReportDetail.bind(controller));
+
 router.get('/import-detail', validateRequest(queryFilter), controller.getInventoryImportDetail.bind(controller));
+
+router.get('/different', validateRequest(commonQueryFilter), controller.different.bind(controller));
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 

@@ -1,6 +1,6 @@
 import { Prisma } from '.prisma/client';
 import { CommonDetailSelectionAll } from './common-detail.select';
-import { InventorySelection } from './inventory.select';
+import { InventoryForGetImportDetailSelection } from './inventory.select';
 
 export const InventoryDetailSelection: Prisma.InventoryDetailsSelect = {
     id: true,
@@ -25,7 +25,7 @@ export const InventoryDetailSelectionProduct: Prisma.InventoryDetailsSelect = {
     commission: true,
     order_detail_id: true,
     order_detail: {
-        select: CommonDetailSelectionAll
+        select: CommonDetailSelectionAll,
     },
 };
 
@@ -42,7 +42,6 @@ export const InventoryDetailSelectionImportDetail: Prisma.InventoryDetailsSelect
         select: CommonDetailSelectionAll,
     },
     inventory: {
-        select: InventorySelection
-    }
+        select: InventoryForGetImportDetailSelection,
+    },
 };
-

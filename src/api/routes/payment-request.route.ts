@@ -19,7 +19,9 @@ router.post(
     controller.create.bind(controller),
 );
 
-router.put('/:id', validateRequest(approve), controller.update.bind(controller));
+router.put('/approve/:id', validateRequest(approve), controller.approve.bind(controller));
+
+// router.put('/:id', validateRequest(approve), controller.update.bind(controller));
 
 router.delete('/:id', validateRequest(queryById), controller.delete.bind(controller));
 

@@ -4,6 +4,7 @@ import { IPaymentCreatedEvent } from '@common/interfaces/transaction.interface';
 import logger from '@common/logger';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
+import { PaymentRequestStatus } from '@config/app.constant';
 import { EVENT_PAYMENT_CREATED } from '@config/event.constant';
 
 export class PaymentEvent {
@@ -41,6 +42,10 @@ export class PaymentEvent {
             }
             if (transactionRequests.length > 0) {
                 await this.transactionRepo.createMany(transactionRequests);
+                await this.paymentRequestRepo.update(
+                    { id: payment_request_id },
+                    { status: PaymentRequestStatus.PAYMENTED },
+                );
                 logger.info('PaymentEvent.paymentCreatedHandler: Successfully!');
             } else {
                 logger.warn('PaymentEvent.paymentCreatedHandler: No payment request details found.');

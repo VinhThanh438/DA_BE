@@ -89,6 +89,8 @@ export enum PrefixCode {
     ORDER_EXPENSE = 'CPH',
     PURCHASE_REQUEST = 'DN',
     PAYMENT_REQUEST = 'YTT',
+    PAYMENT_INCOME = 'PT',
+    PAYMENT_EXPENSE = 'PC',
 }
 
 export const ModelPrefixMap: Record<string, PrefixCode> = {
@@ -130,6 +132,8 @@ export const ModelPrefixMap: Record<string, PrefixCode> = {
     PURCHASEREQUEST: PrefixCode.PURCHASE_REQUEST,
     OTHER: PrefixCode.OTHER,
     PAYMENT_REQUEST: PrefixCode.PAYMENT_REQUEST,
+    PAYMENT_INCOME: PrefixCode.PAYMENT_INCOME,
+    PAYMENT_EXPENSE: PrefixCode.PAYMENT_EXPENSE,
 };
 
 export const ModelStringMaps: Record<string, any> = {
@@ -163,13 +167,12 @@ export const ModelStringMaps: Record<string, any> = {
     INVENTORY_FINISHED_OUT: prisma.inventories,
     INVENTORY_MATERIAL_OUT: prisma.inventories,
     PRODUCTION: prisma.productions,
-    FINANCE_RECORD: prisma.financeRecords,
-    FINANCE_INCOME: prisma.financeRecords,
-    FINANCE_EXPENSE: prisma.financeRecords,
     PURCHASE_REQUEST: prisma.purchaseRequests,
     CONTRACT: prisma.contracts,
     ORDEREXPENSE: prisma.orderExpenses,
     PAYMENT_REQUEST: prisma.paymentRequests,
+    PAYMENT_INCOME: prisma.payments,
+    PAYMENT_EXPENSE: prisma.payments,
 };
 
 export enum CodeType {
@@ -204,8 +207,8 @@ export enum CodeType {
     INVENTORY_MATERIAL_OUT = 'inventory_material_out',
     PRODUCTION = 'production',
     FINANCE_RECORDS = 'finance_record',
-    FINANCE_INCOME = 'finance_income',
-    FINANCE_EXPENSE = 'finance_expense',
+    PAYMENT_INCOME = 'payment_income',
+    PAYMENT_EXPENSE = 'payment_expense',
     CONTRACT = 'contract',
     ORDER_EXPENSE = 'orderexpense',
     PURCHASE_REQUEST = 'purchase_request',
@@ -343,6 +346,7 @@ export enum PaymentRequestStatus {
     PENDING = 'pending',
     CONFIRMED = 'confirmed',
     REJECTED = 'rejected',
+    PAYMENTED = 'paymented',
 }
 
 export enum PaymentRequestType {

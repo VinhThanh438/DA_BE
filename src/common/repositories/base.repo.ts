@@ -142,6 +142,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         const db = this.getModel(tx);
         const data = await db.findMany({
             where: sanitizedWhere,
+            orderBy: { [this.timeFieldDefault]: 'desc' },
             select: includeRelations ? this.detailSelect : this.defaultSelect,
         });
         return transformDecimal(data);

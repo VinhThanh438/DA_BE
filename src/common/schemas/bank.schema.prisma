@@ -1,10 +1,12 @@
 model Banks {
   id             Int     @id @default(autoincrement())
+  code           String?    @default(cuid())
   bank           String
   responsibility String?
   account_number String?
   name           String?
   branch         String?
+  description    String?
   balance        Decimal? @default(0)
   type           PrsBankType @default(disbursement)
 

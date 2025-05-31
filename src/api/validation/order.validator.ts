@@ -179,6 +179,7 @@ export const queryFilter: schema = {
                 .allow(null, ''),
             status: Joi.string().optional().allow(null, ''),
             partner_id: Joi.number().optional(),
+            isDone: Joi.boolean().optional().allow(null),
         }),
     ),
 };

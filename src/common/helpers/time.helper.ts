@@ -80,10 +80,9 @@ export class TimeHelper {
     /**
      * Parse input to native Date object
      */
-    public static parseToDate(date?: string): Date | undefined {
-        if (!date) return undefined;
+    public static parseToDate(date: string): Date {
         const parsed = this.parse(date);
-        return parsed.isValid() ? parsed.toDate() : undefined;
+        return parsed.toDate();
     }
     public static parseStartOfDayDate(date: string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
         return moment.utc(date).startOf('day').toDate();

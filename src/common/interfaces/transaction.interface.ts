@@ -6,7 +6,8 @@ export interface ITransaction {
     type?: TransactionType;
     order_type?: TransactionOrderType;
     amount?: number;
-    note?: string;
+    description?: string;
+    is_closed?: boolean;
 
     partner_id?: number;
     employee_id?: number;

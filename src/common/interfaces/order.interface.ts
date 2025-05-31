@@ -3,7 +3,7 @@ import { IOrderExpense } from './order-expense.interface';
 import { IProduction } from './production.interface';
 import { IContract } from './contract.interface';
 import { IInvoice } from './invoice.interface';
-import { ICommonDetails } from './common.interface';
+import { ICommonDetails, IPaginationInput } from './common.interface';
 import { IInventory } from './inventory.interface';
 import { IShippingPlan } from './shipping-plan.interface';
 
@@ -44,4 +44,12 @@ export interface IOrder {
 
     status?: OrderStatus;
     rejected_reason?: string;
+}
+
+export interface IOrderPaginationInput extends IPaginationInput {
+    isDone?: boolean;
+}
+
+export interface IOrderDetailPurchaseProcessing extends ICommonDetails {
+    order_id?: number;
 }

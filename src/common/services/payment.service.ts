@@ -1,7 +1,12 @@
 import { BaseService } from './base.service';
 import { Payments, Prisma } from '.prisma/client';
-import { IApproveRequest, IIdResponse } from '@common/interfaces/common.interface';
-import { IPayment } from '@common/interfaces/payment.interface';
+import { IApproveRequest, IIdResponse, IPaginationInput } from '@common/interfaces/common.interface';
+import {
+    IFundBalanceReport,
+    IPayment,
+    IPaymentLedger,
+    IPaymentLedgerDetail,
+} from '@common/interfaces/payment.interface';
 import { PaymentRepo } from '@common/repositories/payment.repo';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { handleFiles } from '@common/helpers/handle-files';
@@ -18,6 +23,8 @@ import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
+import { transformDecimal } from '@common/helpers/transform.util';
+import { TimeHelper } from '@common/helpers/time.helper';
 
 export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect, Prisma.PaymentsWhereInput> {
     private static instance: PaymentService;
@@ -95,6 +102,7 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                         request.type && (request.type as unknown) === PaymentType.INCOME
                             ? TransactionType.IN
                             : TransactionType.OUT,
+                    description: request.note,
                     invoice: request.invoice_id ? { connect: { id: request.invoice_id } } : undefined,
                     order: request.order_id ? { connect: { id: request.order_id } } : undefined,
                     partner: request.partner_id ? { connect: { id: request.partner_id } } : undefined,
@@ -196,5 +204,141 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
         return { id: deletedId };
     }
 
-    public async report(request: any) {}
+    public async report(request: IPaginationInput): Promise<IFundBalanceReport[]> {
+        const { startAt, endAt, organization_id } = request;
+
+        const banks = await this.bankRepo.findMany({ organization_id });
+
+        const result = await Promise.all(
+            banks.map(async (bank) => {
+                // Period
+                const periodTransactions = await this.transactionRepo.findMany({
+                    time_at: { gte: startAt, lte: endAt },
+                    bank_id: bank.id,
+                });
+
+                let periodIncrease = 0;
+                let periodReduction = 0;
+                let beginning = 0;
+                let currentBalance = Number(bank.balance);
+
+                for (const tx of periodTransactions) {
+                    const amount = Number(tx.amount);
+                    if (tx.type === TransactionType.IN) periodIncrease += amount;
+                    else if (tx.type === TransactionType.OUT) periodReduction += amount;
+                }
+
+                if (endAt && TimeHelper.getCurrentDate() > TimeHelper.parseToDate(endAt)) {
+                    let endingIncrease = 0;
+                    let endingReduction = 0;
+                    const endingTransactions = await this.transactionRepo.findMany({
+                        time_at: { gte: TimeHelper.parseToDate(endAt), lte: TimeHelper.getCurrentDate() },
+                        bank_id: bank.id,
+                    });
+                    for (const tx of endingTransactions) {
+                        const amount = Number(tx.amount);
+                        if (tx.type === TransactionType.IN) endingIncrease += amount;
+                        else if (tx.type === TransactionType.OUT) endingReduction += amount;
+                    }
+                    currentBalance -= endingIncrease - endingReduction;
+                }
+
+                beginning = currentBalance - (periodIncrease - periodReduction);
+
+                const ending = beginning + periodIncrease - periodReduction;
+
+                return {
+                    bank,
+                    beginning,
+                    increase: periodIncrease,
+                    reduction: periodReduction,
+                    ending,
+                } as IFundBalanceReport;
+            }),
+        );
+
+        return transformDecimal(result);
+    }
+
+    public async ledger(request: IPaginationInput): Promise<IPaymentLedger> {
+        const { startAt, endAt, organization_id, bankId, ...query } = request;
+
+        const bank = await this.bankRepo.findOne({ organization_id, id: bankId });
+        if (!bank) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`bank.${ErrorKey.NOT_FOUND}`],
+            });
+        }
+
+        // beginning
+        const currentBalance = Number(bank.balance);
+        const transactions = await this.transactionRepo.findMany({
+            bank_id: bankId,
+        });
+
+        let totalIncrease = 0;
+        let totalReduction = 0;
+
+        for (const tx of transactions) {
+            const amount = Number(tx.amount);
+            if (tx.type === TransactionType.IN) {
+                totalIncrease += amount;
+            } else if (tx.type === TransactionType.OUT) {
+                totalReduction += amount;
+            }
+        }
+
+        let beginning = currentBalance - (totalIncrease - totalReduction);
+        let ending = 0;
+        let beginningIncrease = 0;
+        let reductionIncrease = 0;
+
+        const beginningConditions = { time_at: { lte: startAt }, bank_id: bankId };
+        const beginningTransactions = await this.transactionRepo.findMany(beginningConditions);
+        for (const tx of beginningTransactions) {
+            const amount = Number(tx.amount);
+            if (tx.type === TransactionType.IN) beginningIncrease += amount;
+            else if (tx.type === TransactionType.OUT) reductionIncrease += amount;
+        }
+        beginning += beginningIncrease - reductionIncrease;
+
+        // period
+        let periodIncrease = 0;
+        let periodReduction = 0;
+        ending = beginning;
+        const periodConditions = { time_at: { lte: endAt, gte: startAt }, bank_id: bankId };
+        const periodTransactions = await this.transactionRepo.findMany({ ...periodConditions });
+        let transactionDataList: IPaymentLedgerDetail[] = [];
+        for (const tx of periodTransactions as ITransaction[]) {
+            const amount = Number(tx.amount);
+            if (tx.type === TransactionType.IN) {
+                periodIncrease += amount;
+                ending += amount;
+            } else if (tx.type === TransactionType.OUT) {
+                periodReduction += amount;
+                ending -= amount;
+            }
+
+            const transactionData = {
+                time_at: tx.time_at,
+                type: tx.type,
+                note: tx.description || '',
+                is_closed: tx.is_closed,
+                increase: tx.type === TransactionType.IN ? amount : 0,
+                reduction: tx.type === TransactionType.OUT ? amount : 0,
+                ending,
+            } as IPaymentLedgerDetail;
+            transactionDataList.push(transactionData);
+        }
+        ending = beginning + periodIncrease - periodReduction;
+        return {
+            beginning,
+            increase: periodIncrease,
+            reduction: periodReduction,
+            ending,
+            details: transactionDataList,
+        };
+    }
 }

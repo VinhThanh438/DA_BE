@@ -1,0 +1,37 @@
+import { BaseService } from './base.service';
+import { ShippingPlans, Prisma } from '.prisma/client';
+import { IIdResponse } from '@common/interfaces/common.interface';
+import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';
+import { OrderRepo } from '@common/repositories/order.repo';
+import { PartnerRepo } from '@common/repositories/partner.repo';
+import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
+
+export class ShippingPlanService extends BaseService<
+    ShippingPlans,
+    Prisma.ShippingPlansSelect,
+    Prisma.ShippingPlansWhereInput
+> {
+    private static instance: ShippingPlanService;
+    private partnerRepo: PartnerRepo = new PartnerRepo();
+    private orderRepo: OrderRepo = new OrderRepo();
+
+    private constructor() {
+        super(new ShippingPlanRepo());
+    }
+
+    public static getInstance(): ShippingPlanService {
+        if (!this.instance) {
+            this.instance = new ShippingPlanService();
+        }
+        return this.instance;
+    }
+
+    public async createShippingPlan(request: Partial<IShippingPlan>): Promise<IIdResponse> {
+        await this.validateForeignKeys(request, {
+            partner_id: this.partnerRepo,
+            order_id: this.orderRepo,
+        });
+        const createdId = await this.repo.create(request);
+        return { id: createdId };
+    }
+}

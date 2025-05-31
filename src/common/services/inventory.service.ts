@@ -2,7 +2,6 @@ import { BaseService } from './base.service';
 import { Inventories, Prisma } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
-import eventbus from '@common/eventbus';
 import { calculateConvertQty } from '@common/helpers/calculate-convert-qty';
 import {
     IApproveRequest,
@@ -19,27 +18,18 @@ import { InventoryRepo } from '@common/repositories/inventory.repo';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
-import { ProductRepo } from '@common/repositories/product.repo';
 import { TransactionWarehouseRepo } from '@common/repositories/transaction-warehouse.repo';
-import { UnitRepo } from '@common/repositories/unit.repo';
 import { WarehouseRepo } from '@common/repositories/warehouse.repo';
-import {
-    CommonApproveStatus,
-    DEFAULT_EXCLUDED_FIELDS,
-    InventoryType,
-    InventoryTypeDirectionMap,
-} from '@config/app.constant';
-import { EVENT_INVENTORY_CREATED, EVENT_ORDER_IMPORT_QUANTITY } from '@config/event.constant';
+import { CommonApproveStatus, InventoryType, InventoryTypeDirectionMap } from '@config/app.constant';
 import { CommonDetailService } from './common-detail.service';
 import { handleFiles } from '@common/helpers/handle-files';
 import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import {
-    InventoryDetailSelection,
-    InventoryDetailSelectionAll,
     InventoryDetailSelectionImportDetail,
     InventoryDetailSelectionProduct,
 } from '@common/repositories/prisma/inventory-detail.select';
-import { CommonDetailSelection } from '@common/repositories/prisma/common-detail.select';
+import { transformDecimal } from '@common/helpers/transform.util';
+import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
 
 export class InventoryService extends BaseService<Inventories, Prisma.InventoriesSelect, Prisma.InventoriesWhereInput> {
     private static instance: InventoryService;
@@ -50,6 +40,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
     private orderRepo: OrderRepo = new OrderRepo();
     private warehouseRepo: WarehouseRepo = new WarehouseRepo();
     private orderDetailRepo: CommonDetailRepo = new CommonDetailRepo();
+    private shippingPlanRepo: ShippingPlanRepo = new ShippingPlanRepo();
     private transactionWarehouseRepo: TransactionWarehouseRepo = new TransactionWarehouseRepo();
     private commonDetailService: CommonDetailService = CommonDetailService.getInstance();
 
@@ -74,7 +65,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
             {
                 customer_id: this.partnerRepo,
                 supplier_id: this.partnerRepo,
-                delivery_id: this.partnerRepo,
+                shipping_plan_id: this.shippingPlanRepo,
                 employee_id: this.employeeRepo,
                 organization_id: this.organizationRepo,
                 order_id: this.orderRepo,
@@ -173,8 +164,6 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
     public async updateInventory(id: number, request: Partial<IInventory>, isAdmin: boolean): Promise<IIdResponse> {
         const { delete: deleteIds, update, add, details, files_add, files_delete, ...body } = request;
         const inventoryData = await this.canEdit(id, 'inventory', isAdmin);
-        console.log('inventoryData: ', inventoryData);
-        console.log('isAdmin: ', isAdmin);
 
         try {
             const inventoryExist = await this.findById(id);
@@ -184,7 +173,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
             await this.validateForeignKeys(request, {
                 customer_id: this.partnerRepo,
                 supplier_id: this.partnerRepo,
-                delivery_id: this.partnerRepo,
+                shipping_plan_id: this.shippingPlanRepo,
                 employee_id: this.employeeRepo,
                 organization_id: this.organizationRepo,
                 order_id: this.orderRepo,
@@ -227,7 +216,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                             const valueConverted =
                                 calculateConvertQty({
                                     ...originalItem.order_detail,
-                                    quantity: createdDetail.real_quantity,
+                                    quantity: createdDetail.quantity,
                                 }) || 0;
                             transactionChanges.toCreate.push({
                                 inventory_detail_id: createdDetail.id,
@@ -288,7 +277,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                                 const valueConverted =
                                     calculateConvertQty({
                                         ...detailData.order_detail,
-                                        quantity: detailData.real_quantity || 0,
+                                        quantity: detailData.quantity || 0,
                                     }) || 0;
                                 const diff = valueConverted - (existingTransaction.convert_quantity || 0);
                                 console.log('diff: ', diff);
@@ -351,7 +340,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                                         quantity:
                                             calculateConvertQty({
                                                 ...detail.order_detail,
-                                                quantity: detail.real_quantity || 0,
+                                                quantity: detail.quantity || 0,
                                             }) || 0,
                                     },
                                     tx,
@@ -417,7 +406,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                     if (!item.order_detail_id) continue;
                     const valueConverted = calculateConvertQty({
                         ...item.order_detail,
-                        quantity: item.real_quantity || 0,
+                        quantity: item.quantity || 0,
                     });
 
                     warehouseTransactionData.push({
@@ -495,7 +484,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                             { id: detail.order_detail_id },
                             {
                                 type: 'decrease',
-                                quantity: detail.real_quantity || 0,
+                                quantity: detail.quantity || 0,
                             },
                             tx,
                         );
@@ -802,6 +791,6 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
             };
         });
 
-        return result;
+        return transformDecimal(result);
     }
 }

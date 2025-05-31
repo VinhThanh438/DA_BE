@@ -20,7 +20,7 @@ export interface IInventory extends IUpdateChildAction {
     customer_id?: number;
     employee_id?: number;
     supplier_id?: number;
-    delivery_id?: number;
+    shipping_plan_id?: number;
     organization_id?: number;
     order_id?: number;
     warehouse_id?: number;

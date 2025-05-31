@@ -46,6 +46,18 @@ export class PaymentController extends BaseController<Payments> {
         }
     }
 
+    public async ledger(req: Request, res: Response, next: NextFunction) {
+        try {
+            const query = req.query as IPaginationInput;
+            query.organization_id = query.organizationId;
+            const result = await this.service.ledger(query);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.ledger: `, error);
+            next(error);
+        }
+    }
+
     public async close(req: Request, res: Response, next: NextFunction) {
         try {
             const query = req.query as IPaginationInput;

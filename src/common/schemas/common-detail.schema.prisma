@@ -1,3 +1,4 @@
+// Phan schema detail chung cho quotation (Bao gia), contract (Hop dong), order (Don hang)
 model CommonDetails {
   id       Int      @id @default(autoincrement())
   quantity Int?     @default(0)

@@ -1,5 +1,5 @@
 import { BaseService } from './base.service';
-import { Invoices, Prisma } from '.prisma/client';
+import { $Enums, Invoices, Prisma } from '.prisma/client';
 import {
     ICommonDetails,
     IIdResponse,
@@ -9,7 +9,7 @@ import {
 } from '@common/interfaces/common.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
-import { IInvoice } from '@common/interfaces/invoice.interface';
+import { IInvoice, IInvoiceDetail } from '@common/interfaces/invoice.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
@@ -20,7 +20,7 @@ import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
-import { IOrder } from '@common/interfaces/order.interface';
+import { IOrder, IOrderDetailPurchaseProcessing } from '@common/interfaces/order.interface';
 import { InvoiceDetailRepo } from '@common/repositories/invoice-detail.repo';
 import { OrderService } from './order.service';
 
@@ -140,6 +140,18 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
         };
     }
 
+    public async findById(id: number): Promise<any> {
+        let result = await this.repo.findOne({ id }, true);
+        if (!result) {
+            throw new APIError({
+                message: `common.status.${StatusCode.BAD_REQUEST}`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`invoice.${ErrorKey.NOT_FOUND}`],
+            });
+        }
+        return result;
+    }
+
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
         const data = await this.repo.paginate(query, true);
 
@@ -157,8 +169,24 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
                     invoice_id: item.id,
                 });
                 const totalPayment = transactionData.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+                const newDetails = await Promise.all(
+                    item.details.map(async (detail: IInvoiceDetail) => {
+                        const progress = await this.orderService.getOrderDetailPurchaseProcessing({
+                            ...detail,
+                            order_id: item.order?.id,
+                            product: detail.order_detail?.product,
+                        } as IOrderDetailPurchaseProcessing);
+
+                        return {
+                            ...detail,
+                            progress,
+                        };
+                    }),
+                );
+
                 return {
                     ...item,
+                    details: newDetails,
                     total_quantity: totalQuantity,
                     total_amount: totalAmount,
                     total_payment: totalPayment,

@@ -9,12 +9,15 @@ model ShippingPlans {
 
   partner_id      Int       // ID của đơn vị vận chuyển
   order_id        Int       // ID của đơn hàng
+  organization_id        Int?
 
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
 
   partner         Partners  @relation(fields: [partner_id], references: [id], onDelete: Restrict)
   order           Orders    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  organization    Organizations?    @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   @@map("shipping_plans")
+  inventories Inventories[]
 }

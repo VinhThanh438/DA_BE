@@ -13,7 +13,7 @@ export const create: schema = {
             employee_id: Joi.number().optional().allow(null, ''),
             order_id: Joi.number().optional().allow(null, ''),
             customer_id: Joi.number().optional().allow(null, ''),
-            delivery_id: Joi.number().optional().allow(null, ''),
+            shipping_plan_id: Joi.number().optional().allow(null, ''),
             supplier_id: Joi.number().optional().allow(null, ''),
             warehouse_id: Joi.number().required(),
 
@@ -38,7 +38,7 @@ export const create: schema = {
                         quantity: Joi.number().min(0).optional(),
                         note: Joi.string().allow(null, '').max(500).optional(),
                         key: Joi.string().allow(null, ''),
-                        order_detail: Joi.object().optional()
+                        order_detail: Joi.object().optional(),
                     }),
                 )
                 .optional()
@@ -59,7 +59,7 @@ export const update: schema = {
             employee_id: Joi.number().optional().allow(null, ''),
             order_id: Joi.number().optional().allow(null, ''),
             customer_id: Joi.number().optional().allow(null, ''),
-            delivery_id: Joi.number().optional().allow(null, ''),
+            shipping_plan_id: Joi.number().optional().allow(null, ''),
             supplier_id: Joi.number().optional().allow(null, ''),
             warehouse_id: Joi.number().optional(),
 
@@ -85,7 +85,7 @@ export const update: schema = {
                         real_quantity: Joi.number().min(0).required(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
-                        order_detail: Joi.object().optional()
+                        order_detail: Joi.object().optional(),
                     }),
                 )
                 .optional()
@@ -98,7 +98,7 @@ export const update: schema = {
                         real_quantity: Joi.number().min(0).required(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
-                        order_detail: Joi.object().optional()
+                        order_detail: Joi.object().optional(),
                     }),
                 )
                 .optional()

@@ -1,3 +1,4 @@
+import { BankType } from '@config/app.constant';
 import { IArrayDataInput } from './common.interface';
 
 export interface IBank extends IArrayDataInput {
@@ -5,9 +6,11 @@ export interface IBank extends IArrayDataInput {
     bank: string;
     account_number?: string;
     name: string;
+    code?: string;
     balance?: number;
     partner_id: number | null;
     organization_id: number | null;
-    type?: string;
+    type?: BankType;
+    description?: string;
     branch?: string;
 }

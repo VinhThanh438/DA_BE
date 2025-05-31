@@ -2,7 +2,12 @@ import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { BaseService } from './base.service';
 import { PaymentRequests, Prisma } from '.prisma/client';
-import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import {
+    IApproveRequest,
+    IIdResponse,
+    IPaginationInput,
+    IPaginationResponse,
+} from '@common/interfaces/common.interface';
 import { IPaymentRequest } from '@common/interfaces/payment-request.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
@@ -130,5 +135,13 @@ export class PaymentRequestService extends BaseService<
             };
         });
         return result;
+    }
+
+    public async approve(id: number, body: IApproveRequest): Promise<IIdResponse> {
+        await this.validateStatusApprove(id);
+
+        await this.repo.update({ id }, body);
+
+        return { id };
     }
 }

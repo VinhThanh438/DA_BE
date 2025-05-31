@@ -12,6 +12,8 @@ export const create = {
             bank: Joi.string().required(),
             account_number: Joi.string().optional().allow(null, ''),
             name: Joi.string().required(),
+            description: Joi.string().optional().allow(null, ''),
+            code: Joi.string().optional().allow(null, ''),
             balance: Joi.number().optional().allow(null),
             type: Joi.string()
                 .valid(...values(BankType))
@@ -29,6 +31,8 @@ export const update = {
             bank: Joi.string().optional(),
             account_number: Joi.string().optional().allow(null, ''),
             name: Joi.string().optional(),
+            description: Joi.string().optional().allow(null, ''),
+            code: Joi.string().optional().allow(null, ''),
             balance: Joi.number().optional().allow(null),
             type: Joi.string()
                 .valid(...values(BankType))

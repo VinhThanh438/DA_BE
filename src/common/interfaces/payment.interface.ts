@@ -5,6 +5,7 @@ import { IInvoice } from './invoice.interface';
 import { IPartner } from './partner.interface';
 import { IBank } from './bank.interface';
 import { ICreateOrganization } from './company.interface';
+import { IReport } from './report.interface';
 
 export interface IPayment {
     id?: number;
@@ -39,4 +40,18 @@ export interface IPayment {
     counterparty?: string;
     payment_type?: PaymentType;
     attached_documents?: string;
+}
+
+export interface IFundBalanceReport extends IReport {
+    bank?: IBank;
+}
+
+export interface IPaymentLedgerDetail extends IReport {
+    time_at?: Date;
+    content?: string;
+}
+
+export interface IPaymentLedger extends IReport {
+    bank?: IBank;
+    details: IPaymentLedgerDetail[];
 }

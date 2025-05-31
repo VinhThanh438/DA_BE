@@ -8,4 +8,5 @@ export class TransactionRepo extends BaseRepo<Transactions, Prisma.TransactionsS
     protected defaultSelect = TransactionSelect;
     protected detailSelect = TransactionSelectAll;
     protected modelKey = 'transactions' as const;
+    protected timeFieldDefault: string = 'time_at';
 }
