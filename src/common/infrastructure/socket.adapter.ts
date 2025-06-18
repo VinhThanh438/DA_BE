@@ -8,23 +8,24 @@ export class SocketAdapter {
     private static httpServer: HttpServer;
 
     /**
-     * Get the Socket.io instance.
+     * Get the Socket.io instance using existing HTTP server.
+     * @param httpServer Optional HTTP server to use (if sharing with Express)
      */
-    public static async getSocketInstance(): Promise<Server> {
+    public static async getSocketInstance(httpServer?: HttpServer): Promise<Server> {
         if (!this.io) {
-            this.io = new Server(this.getHttpServer(), {
+            const serverToUse = httpServer || this.getHttpServer();
+            this.io = new Server(serverToUse, {
                 cors: {
                     origin: '*',
                     methods: ['GET', 'POST'],
                 },
             });
-            logger.info('Socket.io instance created.');
         }
         return this.io;
     }
 
     /**
-     * Get the HTTP server instance.
+     * Get the HTTP server instance (only used when not sharing).
      */
     public static getHttpServer(): HttpServer {
         if (!this.httpServer) {
@@ -39,13 +40,11 @@ export class SocketAdapter {
      * @param token The token to validate.
      */
     public static validateToken(token: string): boolean {
-        // Thay thế bằng logic xác thực token của bạn
         if (!token) {
             logger.warn('Token validation failed: Token is missing.');
             return false;
         }
 
-        // Ví dụ: token hợp lệ là "valid-token"
         const isValid = token === 'valid-token';
         if (!isValid) {
             logger.warn('Token validation failed: Invalid token.');

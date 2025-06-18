@@ -1,5 +1,5 @@
 import { Gender } from '@config/app.constant';
-import { ICreateOrganization } from './company.interface';
+import { IOrganization } from './company.interface';
 
 export interface IEmployee {
     code?: string;
@@ -51,7 +51,7 @@ export interface IEmployee {
     emergency_contacts?: IEmergencyContact[];
     employee_contracts?: IEmployeeContract[];
     insurances?: IInsurance[];
-    organization?: ICreateOrganization;
+    organization?: IOrganization;
 }
 
 export interface IEducation {

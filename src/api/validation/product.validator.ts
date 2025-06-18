@@ -13,6 +13,7 @@ export const createProduct: schema = {
             code: Joi.string().trim().required().max(100),
             vat: Joi.number().optional().allow('', null).min(0).max(100),
             packing_standard: Joi.string().allow('', null).optional().max(255),
+            price: Joi.number().optional().min(0).allow('', null),
             note: Joi.string().allow('', null).max(1000),
             image: Joi.string().allow('', null).max(250),
             unit_id: Joi.number().integer().min(1).required(),
@@ -42,6 +43,7 @@ export const updateProduct: schema = {
             code: Joi.string().trim().optional().max(100),
             vat: Joi.number().optional().allow('', null).min(0).max(100),
             packing_standard: Joi.string().allow('', null).optional().max(255),
+            price: Joi.number().optional().allow('', null).min(0),
             note: Joi.string().allow('', null).optional().max(1000),
             image: Joi.string().allow('', null).max(250),
             type: Joi.string()

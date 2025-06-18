@@ -1,8 +1,10 @@
-import { wrapSchema } from '@common/helpers/wrap-schema.helper';
+import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
 import { values } from 'lodash';
 import { InvoiceStatus } from '@config/app.constant';
 import { IInvoice } from '@common/interfaces/invoice.interface';
+import { ObjectSchema } from 'joi/lib';
+import { queryFilter as baseQueryFilter } from './common.validator';
 
 const InvoiceDetail = {
     id: Joi.number().optional().min(1),
@@ -90,5 +92,40 @@ export const approve: schema = {
                 otherwise: Joi.object({}),
             },
         ),
+    ),
+};
+
+export const queryFilter: schema = {
+    query: wrapSchema(
+        extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
+            supplierIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+            employeeIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, '')
+        }),
     ),
 };

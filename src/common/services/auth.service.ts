@@ -79,6 +79,7 @@ export class AuthService {
 
         const transFormUserData: IPayload = {
             id: user.id as number,
+            eId: user.employee_id as number,
         };
 
         const result = {

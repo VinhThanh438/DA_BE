@@ -1,15 +1,21 @@
-import { formatNumberWithDots } from '@common/helpers/format-number-with-dots';
+import { capitalizeWords, convertMoneyText, formatNumberWithDots } from '@common/helpers/format-number-with-dots';
 import { TimeHelper } from '@common/helpers/time.helper';
-import { TransactionType } from '@config/app.constant';
+import { TransactionOrderType, TransactionType } from '@config/app.constant';
 
 export const bankPDF = (data: any, sum: any) => {
     const transactions: any[] = data.transactions || [];
     let sumIncome = 0;
     let sumExpense = 0;
-    let sumDebt = 0;
     let currentDebt = 0;
-    return `<!doctype html>
-<html lang="en">
+
+    const contentMap: any = {
+        [TransactionOrderType.ORDER]: 'Thanh toán đơn hàng',
+        [TransactionOrderType.COMMISSION]: 'Thanh toán hoa hồng',
+        [TransactionOrderType.INTEREST]: 'Thanh toán lãi khoản vay',
+        [TransactionOrderType.LOAN]: 'Thanh toán dư nợ khoản vay',
+    }
+
+    return `<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,6 +31,11 @@ export const bankPDF = (data: any, sum: any) => {
             width: 100%;
             border-collapse: collapse;
         }
+        body{
+               font-family: "Times New Roman";
+      
+        }
+        
         th,
         td {
             border: 1px solid black;
@@ -37,22 +48,23 @@ export const bankPDF = (data: any, sum: any) => {
         }
     </style>
     <body>
-        <h2>${transactions[0]?.organization?.name || ''}</h2>
+        <p >${transactions[0]?.bank?.name || ''}</p>
+        <p style="font-size: 14px">STK: ${transactions[0]?.bank?.account_number || ''}</p>
         <div style="display: flex; width: 100vw; align-items: center">
-            <div style="flex: 1">Nhật ký giao dịch Ngân hàng ${transactions[0]?.bank?.bank || ''}</div>
-            <h1 style="flex: 1; text-align: center">${transactions[0]?.bank?.bank || ''}</h1>
+            <div style="flex: 1; font-size: 12px;">Nhật ký giao dịch Ngân hàng ${transactions[0]?.bank?.bank || ''}</div>
+            <h1 style="flex: 1;font-size: 18px; text-align: center">${transactions[0]?.bank?.bank || ''}</h1>
         </div>
-        <div>Đơn vị: VNĐ</div>
+        <div style=" font-size: 12px;">Đơn vị: VNĐ</div>
         </br>
-        <table>
+        <table style="font-size: 12px;">
             <tr>
                 <th rowspan="2">STT</th>
                 <th rowspan="2">Ngày</th>
                 <th rowspan="2">Nội dung</th>
                 <th rowspan="2">Mã khách hàng</th>
                 <th colspan="2">Số dư đầu kỳ</th>
-                <th>${data?.beginning ? formatNumberWithDots(data?.beginning) : ''}</th>
-                <th colspan="2">Số</th>
+                <th style="color: red">${data?.beginning ? formatNumberWithDots(data?.beginning) : ''}</th>
+                <th style="color: red"   colspan="2">Số</th>
             </tr>
             <tr>
                 <th>Phát sinh có</th>
@@ -62,42 +74,43 @@ export const bankPDF = (data: any, sum: any) => {
                 <th>Hóa đơn</th>
             </tr>
                 ${transactions.map((item, index) => {
-                    let parseAmount = parseInt(item?.amount || 0);
-                    if (item?.type === TransactionType.IN) {
-                        sumIncome += parseAmount;
-                        currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) + parseAmount;
-                    } else if (item?.type === TransactionType.OUT) {
-                        sumExpense += parseAmount;
-                        currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) - parseAmount;
-                    }
-                    // sumDebt += currentDebt;
-                    return `<tr>
+        let parseAmount = parseInt(item?.amount || 0);
+        if (item?.type === TransactionType.IN) {
+            sumIncome += parseAmount;
+            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) + parseAmount;
+        } else if (item?.type === TransactionType.OUT) {
+            sumExpense += parseAmount;
+            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) - parseAmount;
+        }
+        // sumDebt += currentDebt;
+        return `<tr>
                     <td>${index + 1}</td>
                     <td>${item?.time_at ? TimeHelper.format(item.time_at, 'DD/MM/YYYY') : ''}</td>
-                    <td style="text-align: left">${item?.note || ''}</td>
-                    <td>${item?.partner?.code || ''}</td>
+                    <td style="text-align: left">${contentMap[item?.order_type]}</td>
+                    <td style="color: red">${item?.partner?.code || ''}</td>
                     <td>${item?.type === TransactionType.IN && parseAmount > 0 ? formatNumberWithDots(parseAmount) : ''}</td>
                     <td>${item?.type === TransactionType.OUT && parseAmount > 0 ? formatNumberWithDots(parseAmount) : ''}</td>
                     <td>${formatNumberWithDots(currentDebt)}</td>
                     <td>${item?.order?.code || ''}</td>
                     <td>${item?.invoice?.code || ''}</td>
                     </tr>`;
-                }).join('')}
+    }).join('')}
             <tr>
                 <td colspan="4">Tổng</td>
-                <td>${formatNumberWithDots(sumIncome)}</td>
-                <td>${formatNumberWithDots(sumExpense)}</td>
-                <td>${formatNumberWithDots(currentDebt)}</td>
+                <td style=" font-weight: 700">
+                    ${sumIncome ? formatNumberWithDots(sumIncome) : ''}
+                  </td>
+                <td style=" font-weight: 700">${sumExpense ? formatNumberWithDots(sumExpense) : ''}</td>
+                <td style=" font-weight: 700">${currentDebt ? formatNumberWithDots(currentDebt) : ''}</td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
-                <td colspan="7" style="text-align: left">Số dư bằng chữ:</td>
+                <td colspan="7" style="text-align: left">Số dư bằng chữ: ${currentDebt ? capitalizeWords(convertMoneyText(currentDebt)) : ''}</td>
                 <td></td>
                 <td></td>
             </tr>
         </table>
     </body>
-</html>
-`;
+</html>`;
 };

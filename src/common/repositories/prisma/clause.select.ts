@@ -1,5 +1,5 @@
 import { Prisma } from '.prisma/client';
-import { OrganizationSelection } from './organization.select';
+import { OrganizationSelection } from './base.select';
 
 export const ClauseSelection: Prisma.ClausesSelect = {
     id: true,

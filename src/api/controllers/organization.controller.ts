@@ -3,7 +3,7 @@ import { OrganizationService } from '@common/services/organization.service';
 import { Organizations } from '.prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
-import { ICreateOrganization } from '@common/interfaces/company.interface';
+import { IOrganization } from '@common/interfaces/company.interface';
 import { IPaginationInput } from '@common/interfaces/common.interface';
 import { OrganizationTypeIndex } from '@config/app.constant';
 
@@ -35,7 +35,7 @@ export class OrganizationController extends BaseController<Organizations> {
 
     public async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as ICreateOrganization;
+            const body = req.body as IOrganization;
             const result = await this.service.createOrganization(body);
             res.sendJson(result);
         } catch (error) {
@@ -47,7 +47,7 @@ export class OrganizationController extends BaseController<Organizations> {
     public async update(req: Request, res: Response, next: NextFunction) {
         try {
             const id = Number(req.params.id);
-            const body = req.body as ICreateOrganization;
+            const body = req.body as IOrganization;
             const result = await this.service.updateOrganization(id, body);
             res.sendJson(result);
         } catch (error) {

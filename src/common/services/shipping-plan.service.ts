@@ -34,4 +34,20 @@ export class ShippingPlanService extends BaseService<
         const createdId = await this.repo.create(request);
         return { id: createdId };
     }
+
+    public async updateShippingPlan(id: number, request: Partial<IShippingPlan>, isAdmin: boolean): Promise<IIdResponse> {
+        await this.canEdit(id, 'shipping-plan', isAdmin);
+        await this.validateForeignKeys(request, {
+            partner_id: this.partnerRepo,
+            order_id: this.orderRepo,
+        });
+        await this.repo.update({ id }, request);
+        return { id };
+    }
+
+    public async deleteShippingPlan(id: number, isAdmin: boolean): Promise<IIdResponse> {
+        await this.canEdit(id, 'shipping-plan', isAdmin);
+        await this.repo.delete({ id });
+        return { id };
+    }
 }

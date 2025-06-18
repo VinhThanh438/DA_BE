@@ -259,6 +259,7 @@ export class QuotationService extends BaseService<Quotations, Prisma.QuotationsS
                 where.NOT = { purchase_request_id: null };
             } else if (isMain === false) {
                 where.purchase_request_id = null;
+                delete where.organization_id;
             }
         }
 

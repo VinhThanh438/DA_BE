@@ -13,7 +13,7 @@ import { IOrder, IOrderDetailPurchaseProcessing, IOrderPaginationInput } from '@
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
-import { DEFAULT_EXCLUDED_FIELDS, OrderStatus, ShippingPlanStatus } from '@config/app.constant';
+import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { ContractService } from './contract.service';
@@ -62,7 +62,50 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         return this.instance;
     }
 
-    private async attachPaymentInfoToOrder(order: IOrder): Promise<IOrder> {
+    public async enrichOrderTotals(responseData: IPaginationResponse): Promise<IPaginationResponse> {
+        const enrichedData = await Promise.all(
+            responseData.data.map(async (order: any) => {
+                let total_money = 0;
+                let total_vat = 0;
+                let total_commission = 0;
+
+                for (const detail of order.details) {
+                    const orderDetail = await this.orderDetailRepo.findOne({ id: detail.order_detail_id });
+                    if (!orderDetail) continue;
+
+                    const quantity = Number(orderDetail.imported_quantity || 0);
+                    const price = Number(orderDetail.price || 0);
+                    const vat = Number(orderDetail.vat || 0);
+                    const commission = Number(orderDetail.commission || 0);
+
+                    const totalMoney = quantity * price;
+                    const totalVat = (totalMoney * vat) / 100;
+                    const totalCommission = (totalMoney * commission) / 100;
+
+                    total_money += totalMoney;
+                    total_vat += totalVat;
+                    total_commission += totalCommission;
+                }
+
+                const total_amount = total_money + total_vat;
+
+                return {
+                    ...order,
+                    total_money,
+                    total_vat,
+                    total_amount,
+                    total_commission,
+                };
+            }),
+        );
+
+        return {
+            ...responseData,
+            data: enrichedData,
+        };
+    }
+
+    public async attachPaymentInfoToOrder(order: IOrder): Promise<IOrder> {
         const transactionData = await this.transactionRepo.findMany({
             order_id: order.id,
         });
@@ -139,11 +182,18 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         };
     }
 
-    public async paginate(query: IOrderPaginationInput): Promise<IPaginationResponse> {
-        if (query.isDone) {
-            query.delivery_progress = { gte: 95 };
-            delete query.isDone;
+    public checkIsDone(progress: number, tolerance: number) {
+        if (progress >= 100 - tolerance) {
+            return true;
         }
+        return false;
+    }
+
+    public async paginate(query: IOrderPaginationInput): Promise<IPaginationResponse> {
+        // if (query.isDone) {
+        //     query.delivery_progress = { gte: 95 };
+        // }
+        // delete query.isDone;
 
         const data = await this.repo.paginate(query, true);
         data.data = await Promise.all(data.data.map((order: IOrder) => this.attachPaymentInfoToOrder(order)));
@@ -310,13 +360,13 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             //     },
             // );
             // const completionPercentage = initQty > 0 ? ((importQty?._sum?.real_quantity || 0) / initQty) * 100 : 0;
-            if ((orderExists.delivery_progress || 0) >= 95) {
-                throw new APIError({
-                    message: `common.status.${StatusCode.BAD_REQUEST}`,
-                    status: ErrorCode.BAD_REQUEST,
-                    errors: [`quantity.${ErrorKey.FULFILLED}`],
-                });
-            }
+            // if ((orderExists.delivery_progress || 0) >= 95) {
+            //     throw new APIError({
+            //         message: `common.status.${StatusCode.BAD_REQUEST}`,
+            //         status: ErrorCode.BAD_REQUEST,
+            //         errors: [`quantity.${ErrorKey.FULFILLED}`],
+            //     });
+            // }
 
             // start update
             await this.validateForeignKeys(request, {
@@ -332,7 +382,10 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             await this.db.$transaction(async (tx) => {
                 await this.repo.update(
                     { id },
-                    { ...orderData, ...(filesUpdate !== null && { files: filesUpdate }) } as Partial<Orders>,
+                    {
+                        ...orderData,
+                        ...(filesUpdate !== null && { files: filesUpdate }),
+                    } as Partial<Orders>,
                     tx,
                 );
 
@@ -436,7 +489,21 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     }
 
     public async approveShippingPlan(id: number, body: IApproveRequest): Promise<IIdResponse> {
-        await this.validateStatusApprove(id, this.shippingPlanRepo);
+        const shippingPlanData = await this.validateStatusApprove(id, this.shippingPlanRepo);
+        if (body.files && body.files.length > 0) {
+            const orderData = await this.repo.findOne({ id: (shippingPlanData as any)?.order_id });
+            if (!orderData) {
+                throw new APIError({
+                    message: 'common.not-found',
+                    status: ErrorCode.BAD_REQUEST,
+                    errors: [`order_id.${ErrorKey.NOT_FOUND}`],
+                });
+            }
+
+            let filesUpdate = handleFiles(body.files, [], orderData.files || []);
+            await this.repo.update({ id: orderData.id }, { files: filesUpdate });
+        }
+
         await this.shippingPlanRepo.update({ id }, body);
 
         return { id };
@@ -565,6 +632,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 code: true,
                 time_at: true,
                 order_id: true,
+                shipping_plan_id: true,
                 details: {
                     where: {
                         order_detail_id: orderDetail.id,
@@ -579,7 +647,9 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         // },
                         transaction_warehouses: {
                             select: {
-                                convert_quantity: true,
+                                // convert_quantity: true,
+                                // real_quantity: true,
+                                quantity: true,
                             },
                         },
                     },
@@ -611,7 +681,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         const transactionWarehouses = detail?.transaction_warehouses;
                         const convertQuantity =
                             Array.isArray(transactionWarehouses) && transactionWarehouses.length > 0
-                                ? transactionWarehouses[0]?.convert_quantity || 0
+                                ? transactionWarehouses[0]?.quantity || 0
                                 : 0;
                         return sum + convertQuantity;
                     }, 0) || 0;
@@ -648,8 +718,15 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     }
 
     public async approve(id: number, body: IApproveRequest): Promise<IIdResponse> {
-        await this.validateStatusApprove(id);
-        await this.repo.update({ id }, body);
+        const orderData = await this.validateStatusApprove(id);
+
+        const { files, ...restData } = body;
+        let dataToUpdate: any = { ...restData };
+        if (files && files.length > 0) {
+            let filesUpdate = handleFiles(files, [], orderData.files || []);
+            dataToUpdate.files = filesUpdate;
+        }
+        await this.repo.update({ id }, dataToUpdate);
 
         return { id };
     }

@@ -7,10 +7,9 @@ import {
     IApproveRequest,
     IIdResponse,
     IPaginationInput,
-    IUpdateChildAction,
+    IPaginationResponse,
 } from '@common/interfaces/common.interface';
-import { IInventory, InventoryDetail } from '@common/interfaces/inventory.interface';
-import { ITransactionWarehouse } from '@common/interfaces/transaction-warehouse.interface';
+import { IInventory, IInventoryDifferent, InventoryDetail } from '@common/interfaces/inventory.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { InventoryDetailRepo } from '@common/repositories/inventory-detail.repo';
@@ -25,11 +24,22 @@ import { CommonDetailService } from './common-detail.service';
 import { handleFiles } from '@common/helpers/handle-files';
 import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import {
+    InventoryDetailSelection,
+    InventoryDetailSelectionAll,
     InventoryDetailSelectionImportDetail,
     InventoryDetailSelectionProduct,
 } from '@common/repositories/prisma/inventory-detail.select';
 import { transformDecimal } from '@common/helpers/transform.util';
 import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
+import { buildArrayFilters } from '@common/helpers/build-array-filters';
+import eventbus from '@common/eventbus';
+import { EVENT_CREATE_GATELOG } from '@config/event.constant';
+import { IGateLog } from '@common/interfaces/gate-log.interface';
+import { OrderService } from './order.service';
+import { ProductRepo } from '@common/repositories/product.repo';
+import { IProduct } from '@common/interfaces/product.interface';
+import { CommonService } from './common.service';
+import logger from '@common/logger';
 
 export class InventoryService extends BaseService<Inventories, Prisma.InventoriesSelect, Prisma.InventoriesWhereInput> {
     private static instance: InventoryService;
@@ -42,7 +52,9 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
     private orderDetailRepo: CommonDetailRepo = new CommonDetailRepo();
     private shippingPlanRepo: ShippingPlanRepo = new ShippingPlanRepo();
     private transactionWarehouseRepo: TransactionWarehouseRepo = new TransactionWarehouseRepo();
+    private productRepo: ProductRepo = new ProductRepo();
     private commonDetailService: CommonDetailService = CommonDetailService.getInstance();
+    // private orderService: OrderService = OrderService.getInstance();
 
     private constructor() {
         super(new InventoryRepo());
@@ -53,6 +65,59 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
             this.instance = new InventoryService();
         }
         return this.instance;
+    }
+
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        const { productIds, warehouseIds, supplierIds, deliveryIds, ...restQuery } = query;
+        // supplier = partner in order
+        // delivery = partner in shipping plan
+
+        const detailAndConditions: Prisma.InventoryDetailsWhereInput[] = [];
+        if (productIds?.length) {
+            detailAndConditions.push({
+                order_detail: {
+                    product_id: { in: productIds },
+                },
+            });
+        }
+
+        const detailCondition: Prisma.InventoryDetailsWhereInput =
+            detailAndConditions.length > 0 ? { AND: detailAndConditions } : {};
+
+        const where: Prisma.InventoriesWhereInput = {
+            ...(detailAndConditions.length > 0 && {
+                details: {
+                    some: { AND: detailAndConditions },
+                },
+            }),
+            ...(deliveryIds &&
+                deliveryIds.length > 0 && {
+                shipping_plan: {
+                    partner_id: { in: deliveryIds },
+                },
+            }),
+            ...(supplierIds &&
+                supplierIds.length > 0 && {
+                order: {
+                    partner_id: { in: supplierIds },
+                },
+            }),
+            ...(warehouseIds &&
+                warehouseIds.length > 0 && {
+                warehouse_id: { in: warehouseIds },
+            }),
+        };
+
+        const selectCondition: Prisma.InventoriesSelect = {
+            details: {
+                where: detailCondition,
+                select: InventoryDetailSelectionAll,
+            },
+        };
+
+        const result = await this.repo.paginate(restQuery, true, where, selectCondition);
+
+        return result;
     }
 
     public async createInventory(request: Partial<IInventory>, tx?: Prisma.TransactionClient): Promise<IIdResponse> {
@@ -68,29 +133,45 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                 shipping_plan_id: this.shippingPlanRepo,
                 employee_id: this.employeeRepo,
                 organization_id: this.organizationRepo,
-                order_id: this.orderRepo,
+                // order_id: this.orderRepo,
                 warehouse_id: this.warehouseRepo,
             },
             tx,
         );
 
-        let dataImportInOrder: Record<number, number> = {};
+        // let dataImportInOrder: Record<number, number> = {};
         const runTransaction = async (transaction: Prisma.TransactionClient) => {
-            const { details, ...inventoryData } = request;
+            const { details, order_id, shipping_plan_id, warehouse_id, ...inventoryData } = request;
+            // check dung sai
+            const existingOrder = await this.orderRepo.findOne({ id: order_id }, false, transaction)
+            const tolerance = existingOrder?.tolerance || 0;
 
-            inventoryId = await this.repo.create(inventoryData as Partial<Inventories>, transaction);
+            if (details && details.length > 0) {
+                await this.checkProductAndOrderTolerances(order_id || 0, details, tolerance, transaction);
+            }
+
+            let content = '';
+
+            if (details && details.length > 0) {
+                content = await CommonService.getContent(details);
+            }
+
+            inventoryId = await this.repo.create(
+                {
+                    ...inventoryData,
+                    content,
+                    order: order_id ? { connect: { id: order_id } } : undefined,
+                    shipping_plan: shipping_plan_id ? { connect: { id: shipping_plan_id } } : undefined,
+                    warehouse: warehouse_id ? { connect: { id: warehouse_id } } : undefined,
+                } as Partial<Inventories>,
+                transaction,
+            );
 
             if (details && details.length > 0) {
                 await this.validateForeignKeys(details, { order_detail_id: this.orderDetailRepo }, transaction);
 
                 const dataDetails = details.map((item) => {
                     const { key, order_detail, ...rest } = item;
-
-                    if (!dataImportInOrder[item.order_detail_id]) {
-                        dataImportInOrder[item.order_detail_id] = rest.real_quantity || 0;
-                    } else {
-                        dataImportInOrder[item.order_detail_id] += rest.real_quantity || 0;
-                    }
 
                     return {
                         ...rest,
@@ -157,6 +238,12 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                 // eventbus.emit(EVENT_INVENTORY_CREATED, result);
             });
         }
+
+        eventbus.emit(EVENT_CREATE_GATELOG, {
+            // inventory_id: inventoryId,
+            inventory: inventoryId ? { connect: { id: inventoryId } } : undefined,
+            organization_id: request.organization_id,
+        } as IGateLog)
 
         return { id: inventoryId };
     }
@@ -279,8 +366,8 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                                         ...detailData.order_detail,
                                         quantity: detailData.quantity || 0,
                                     }) || 0;
-                                const diff = valueConverted - (existingTransaction.convert_quantity || 0);
-                                console.log('diff: ', diff);
+                                // const diff = valueConverted - (existingTransaction.convert_quantity || 0);
+                                const diff = (detailData.quantity || 0) - (existingTransaction.quantity || 0);
                                 transactionChanges.toUpdate.push({
                                     id: existingTransaction.id,
                                     real_quantity: detailData.real_quantity,
@@ -299,7 +386,8 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                                 );
                                 if (
                                     detailData?.order_detail?.id &&
-                                    valueConverted !== existingTransaction.convert_quantity
+                                    // valueConverted !== existingTransaction.convert_quantity
+                                    detailData.quantity !== existingTransaction.quantity
                                 ) {
                                     await this.commonDetailService.updateImportQuantity(
                                         { id: detailData.order_detail.id },
@@ -337,11 +425,12 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                                     { id: detail.order_detail_id },
                                     {
                                         type: 'decrease',
-                                        quantity:
-                                            calculateConvertQty({
-                                                ...detail.order_detail,
-                                                quantity: detail.quantity || 0,
-                                            }) || 0,
+                                        // quantity:
+                                        //     calculateConvertQty({
+                                        //         ...detail.order_detail,
+                                        //         quantity: detail.quantity || 0,
+                                        //     }) || 0,
+                                        quantity: detail.quantity || 0,
                                     },
                                     tx,
                                 );
@@ -371,7 +460,9 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                     },
                 );
                 const percent = initQty > 0 ? ((importQty?._sum?.convert_quantity || 0) / initQty) * 100 : 0;
-                await this.orderRepo.update({ id: inventoryExist?.order_id }, { delivery_progress: percent });
+                const orderData = await this.orderRepo.findOne({ id: inventoryData.order_id }, false);
+                const isDone = percent >= 100 - (orderData?.tolerance || 0)
+                await this.orderRepo.update({ id: inventoryExist?.order_id }, { delivery_progress: percent, isDone });
             }
 
             // clean up file
@@ -388,6 +479,85 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
         }
     }
 
+    private async handleApprove(id: number, inventoryData: Partial<Inventories>, tx: Prisma.TransactionClient) {
+        //
+        let totalInitQty = 0;
+        let totalImportQty = 0;
+        const warehouseTransactionData: any[] = [];
+        const inventoryDetails = await tx.inventoryDetails.findMany({
+            where: { inventory_id: id },
+            select: InventoryDetailSelectionProduct,
+        });
+        for (const item of inventoryDetails) {
+            if (!item.order_detail_id) continue;
+            const valueConverted = calculateConvertQty({
+                ...item.order_detail,
+                quantity: item.quantity || 0,
+            });
+
+            const productData = (item.order_detail as any)?.product as IProduct
+
+            warehouseTransactionData.push({
+                real_quantity: item.real_quantity || 0,
+                convert_quantity: valueConverted || 0,
+                quantity: item.quantity || 0,
+                inventory: { connect: { id: id } },
+                inventory_detail: { connect: { id: item.id } },
+                warehouse: { connect: { id: inventoryData.warehouse_id! } },
+                order: { connect: { id: inventoryData.order_id } },
+                product: { connect: { id: productData?.parent_id ? productData.parent_id : productData.id } },
+                ...(productData?.parent_id && { child: { connect: { id: productData.id } } }),
+                type: InventoryTypeDirectionMap[inventoryData.type as InventoryType],
+                time_at: inventoryData.time_at,
+            });
+
+            // update import quantity in order details
+            const qtyInfo = await this.commonDetailService.updateImportQuantity(
+                { id: item.order_detail_id },
+                // { type: 'increase', quantity: valueConverted },
+                { type: 'increase', quantity: item.quantity || 0 },
+                tx,
+            );
+            totalImportQty += qtyInfo?.newQty || 0;
+            totalInitQty += qtyInfo?.qty || 0;
+        }
+
+        // insert data to transaction warehouse
+        await this.transactionWarehouseRepo.createMany(warehouseTransactionData, tx);
+
+        // update is done in order
+        if (inventoryData.order_id) {
+            const orderDetails = await this.orderDetailRepo.findMany(
+                { order_id: inventoryData.order_id },
+                true,
+                tx,
+            );
+            let initQty: number = 0;
+            if (!orderDetails || orderDetails.length === 0) initQty = 0;
+            initQty = orderDetails.reduce((total, detail) => {
+                const convertedQuantity = calculateConvertQty(detail);
+                return total + convertedQuantity;
+            }, 0);
+            const importQty = await this.transactionWarehouseRepo.aggregate(
+                { order_id: inventoryData.order_id, type: 'in' },
+                {
+                    _sum: {
+                        convert_quantity: true,
+                    },
+                },
+                tx,
+            );
+            console.log('initQty: ', initQty);
+            console.log('importQty: ', importQty?._sum?.convert_quantity);
+            const percent = initQty > 0 ? ((importQty?._sum?.convert_quantity || 0) / initQty) * 100 : 0;
+            const orderData = await this.orderRepo.findOne({ id: inventoryData.order_id }, false, tx);
+            const isDone = percent >= 100 - (orderData?.tolerance || 0)
+            console.log('percent: ', percent);
+            console.log('isDone: ', isDone);
+            await this.orderRepo.update({ id: inventoryData.order_id }, { delivery_progress: percent, isDone }, tx);
+        }
+    }
+
     public async approve(id: number, body: IApproveRequest): Promise<IIdResponse> {
         const inventoryData = await this.validateStatusApprove(id);
 
@@ -395,74 +565,12 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
             await this.db.$transaction(async (tx) => {
                 await this.repo.update({ id }, body, tx);
                 //
-                let totalInitQty = 0;
-                let totalImportQty = 0;
-                const warehouseTransactionData: any[] = [];
-                const inventoryDetails = await tx.inventoryDetails.findMany({
-                    where: { inventory_id: id },
-                    select: InventoryDetailSelectionProduct,
-                });
-                for (const item of inventoryDetails) {
-                    if (!item.order_detail_id) continue;
-                    const valueConverted = calculateConvertQty({
-                        ...item.order_detail,
-                        quantity: item.quantity || 0,
-                    });
+                await this.handleApprove(id, inventoryData, tx);
 
-                    warehouseTransactionData.push({
-                        real_quantity: item.real_quantity || 0,
-                        convert_quantity: valueConverted || 0,
-                        quantity: item.quantity || 0,
-                        inventory: { connect: { id: id } },
-                        inventory_detail: { connect: { id: item.id } },
-                        warehouse: { connect: { id: inventoryData.warehouse_id! } },
-                        order: { connect: { id: inventoryData.order_id } },
-                        product: { connect: { id: (item.order_detail as any)?.product?.id } },
-                        type: InventoryTypeDirectionMap[inventoryData.type as InventoryType],
-                        time_at: inventoryData.time_at,
-                    });
-
-                    // update import quantity in order details
-                    const qtyInfo = await this.commonDetailService.updateImportQuantity(
-                        { id: item.order_detail_id },
-                        { type: 'increase', quantity: valueConverted },
-                        tx,
-                    );
-                    totalImportQty += qtyInfo?.newQty || 0;
-                    totalInitQty += qtyInfo?.qty || 0;
-                }
-
-                // insert data to transaction warehouse
-                await this.transactionWarehouseRepo.createMany(warehouseTransactionData, tx);
-
-                // update is done in order
-                if (inventoryData.order_id) {
-                    const orderDetails = await this.orderDetailRepo.findMany(
-                        { order_id: inventoryData.order_id },
-                        true,
-                        tx,
-                    );
-                    let initQty: number = 0;
-                    if (!orderDetails || orderDetails.length === 0) initQty = 0;
-                    initQty = orderDetails.reduce((total, detail) => {
-                        const convertedQuantity = calculateConvertQty(detail);
-                        return total + convertedQuantity;
-                    }, 0);
-                    const importQty = await this.transactionWarehouseRepo.aggregate(
-                        { order_id: inventoryData.order_id, type: 'in' },
-                        {
-                            _sum: {
-                                convert_quantity: true,
-                            },
-                        },
-                        tx,
-                    );
-                    console.log('initQty: ', initQty);
-                    console.log('importQty: ', importQty?._sum?.convert_quantity);
-                    const percent = initQty > 0 ? ((importQty?._sum?.convert_quantity || 0) / initQty) * 100 : 0;
-                    console.log('percent: ', percent);
-                    await this.orderRepo.update({ id: inventoryData.order_id }, { delivery_progress: percent }, tx);
-                }
+                // eventbus.emit(EVENT_CREATE_GATELOG, {
+                //     inventory_id: id,
+                //     organization_id: inventoryData.organization_id,
+                // } as IGateLog)
             });
 
             return { id };
@@ -759,6 +867,7 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
                             ...(endAt && { lte: endAt }),
                         },
                     }),
+                    status: CommonApproveStatus.CONFIRMED,
                 },
             },
             select: InventoryDetailSelectionImportDetail,
@@ -792,5 +901,384 @@ export class InventoryService extends BaseService<Inventories, Prisma.Inventorie
         });
 
         return transformDecimal(result);
+    }
+
+    public getDifferentInventory(data: any[]): IInventoryDifferent[] {
+        return data
+            .map((item): IInventoryDifferent | undefined => {
+                let total_different_quantity = 0;
+                let total_different_money = 0;
+
+                const { details, ...rest } = item;
+
+                const newDetails =
+                    details?.map((detail: InventoryDetail) => {
+                        if (!detail) return detail;
+
+                        const { quantity = 0, real_quantity = 0, order_detail, ...restDetail } = detail;
+
+                        const price = order_detail?.price ?? 0;
+                        const diffQty = real_quantity - quantity;
+                        const diffMoney = real_quantity * price - quantity * price;
+
+                        total_different_quantity += diffQty;
+                        total_different_money += diffMoney;
+
+                        return {
+                            ...restDetail,
+                            quantity,
+                            real_quantity,
+                            order_detail,
+                            different_quantity: diffQty,
+                            different_money: diffMoney,
+                        };
+                    }) ?? [];
+
+                if (total_different_quantity !== 0 && total_different_money != 0) {
+                    return {
+                        ...rest,
+                        details: newDetails,
+                        total_different_quantity,
+                        total_different_money,
+                    };
+                }
+
+                return undefined;
+            })
+            .filter((item): item is IInventoryDifferent => item !== undefined);
+    }
+
+    public async different(query: IPaginationInput): Promise<IPaginationResponse> {
+        // const listId = await this.inventoryDetailRepo.findMany({} as Prisma.InventoryDetailsWhereInput);
+        const { supplierIds, ...restQuery } = query;
+        const where: Prisma.InventoriesWhereInput = {
+            ...restQuery,
+            ...(supplierIds?.length > 0 && {
+                order: {
+                    partner_id: { in: supplierIds },
+                },
+            }),
+        };
+        let result = await this.repo.paginate(where, true);
+        result.data = this.getDifferentInventory(result.data);
+
+        const summary = await this.calculateDifferenceSummary(where);
+
+        return {
+            ...result,
+            summary,
+        };
+    }
+
+    private async calculateDifferenceSummary(query: IPaginationInput): Promise<{
+        total_different_quantity: number;
+        total_different_money: number;
+    }> {
+        const whereClause = this.buildWhereConditions(query);
+
+        const sqlQuery = `
+        SELECT 
+            COALESCE(SUM(
+                CASE 
+                    WHEN (id.real_quantity - id.quantity) != 0 
+                         AND ((id.real_quantity * COALESCE(od.price, 0)) - (id.quantity * COALESCE(od.price, 0))) != 0
+                    THEN (id.real_quantity - id.quantity)
+                    ELSE 0
+                END
+            ), 0) as total_different_quantity,
+            COALESCE(SUM(
+                CASE 
+                    WHEN (id.real_quantity - id.quantity) != 0 
+                         AND ((id.real_quantity * COALESCE(od.price, 0)) - (id.quantity * COALESCE(od.price, 0))) != 0
+                    THEN ((id.real_quantity * COALESCE(od.price, 0)) - (id.quantity * COALESCE(od.price, 0)))
+                    ELSE 0
+                END
+            ), 0) as total_different_money
+        FROM inventories i
+        INNER JOIN inventory_details id ON i.id = id.inventory_id
+        LEFT JOIN common_details od ON id.order_detail_id = od.id
+        LEFT JOIN orders o ON i.order_id = o.id
+        ${whereClause ? `WHERE ${whereClause}` : ''}
+    `;
+
+        const result = await this.db.$queryRawUnsafe<
+            Array<{
+                total_different_quantity: string;
+                total_different_money: string;
+            }>
+        >(sqlQuery);
+
+        return {
+            total_different_quantity: Number(result[0]?.total_different_quantity || 0),
+            total_different_money: Number(result[0]?.total_different_money || 0),
+        };
+    }
+
+    private buildWhereConditions(query: any): string {
+        const conditions: string[] = [];
+
+        if (query.keyword && query.keyword.trim() !== '') {
+            const keyword = query.keyword.trim().replace(/'/g, "''");
+            conditions.push(`(i.code ILIKE '%${keyword}%' OR o.code ILIKE '%${keyword}%')`);
+        }
+
+        if (query.startAt) conditions.push(`i.time_at >= '${query.startAt}'`);
+        if (query.endAt) conditions.push(` i.time_at <= '${query.endAt}'`);
+
+        if (query.supplierIds?.length > 0) conditions.push(` o.partner_id IN (${query.supplierIds.join(',')})`);
+
+        return conditions.join(' AND ');
+    }
+
+    async updateRealQuantity(id: number, body: IInventory): Promise<IIdResponse> {
+        const inventoryData = await this.findById(id);
+        if (!inventoryData) return { id }
+
+        await this.db.$transaction(async (tx) => {
+            const { files, details } = body;
+            // 1. update data
+            // 1.1 merge files
+            if (files && files.length > 0) {
+                let filesUpdate = handleFiles(files, [], inventoryData?.files || []);
+                await this.repo.update({ id }, { files: filesUpdate, status: CommonApproveStatus.CONFIRMED }, tx);
+            }
+
+            // 1.2 update real_quantity, note trong details
+            if (details?.length > 0) {
+                await this.validateForeignKeys(
+                    details,
+                    {
+                        id: this.inventoryDetailRepo,
+                    },
+                    tx,
+                );
+                const data = details.map((item) => {
+                    const { key, ...rest } = item;
+                    return rest;
+                });
+                await this.inventoryDetailRepo.updateMany(data, tx);
+                // 1.2.1 update real_quantity trong transaction warehouse
+                // const transactionWhs: any[] = [];
+                // for (const item of details) {
+                //     const existingTrans = await this.transactionWarehouseRepo.findOne(
+                //         {
+                //             inventory_detail_id: item.id,
+                //         },
+                //         false,
+                //         tx,
+                //     );
+                //     if (!existingTrans) {
+                //         throw new APIError({
+                //             message: `common.status.${StatusCode.REQUEST_NOT_FOUND}`,
+                //             status: ErrorCode.NOT_FOUND,
+                //             errors: [`id.${ErrorKey.NOT_FOUND}`],
+                //         });
+                //     }
+                //     transactionWhs.push({ id: existingTrans?.id, real_quantity: item.real_quantity || 0 });
+                // }
+                // if (transactionWhs.length > 0) {
+                //     await this.transactionWarehouseRepo.updateMany(transactionWhs, tx)
+                // }
+            }
+
+            // 1.3 approve
+            await this.handleApprove(id, inventoryData, tx);
+        })
+
+        return { id }
+    }
+
+    // async calculateDeliveryProgress(orderId: number | undefined, tx?: Prisma.TransactionClient, tempQty: number = 0) {
+    //     const orderDetails = await this.orderDetailRepo.findMany(
+    //         { order_id: orderId },
+    //         true,
+    //         tx,
+    //     );
+    //     let initQty: number = 0;
+    //     if (!orderDetails || orderDetails.length === 0) initQty = 0;
+    //     initQty = orderDetails.reduce((total, detail) => {
+    //         const convertedQuantity = calculateConvertQty(detail);
+    //         return total + convertedQuantity;
+    //     }, 0);
+    //     const importQty = await this.transactionWarehouseRepo.aggregate(
+    //         { order_id: orderId, type: 'in' },
+    //         {
+    //             _sum: {
+    //                 convert_quantity: true,
+    //             },
+    //         },
+    //         tx,
+    //     );
+    //     const percent = initQty > 0 ? (((importQty?._sum?.convert_quantity || 0) + tempQty) / initQty) * 100 : 0;
+    //     return percent;
+    // }
+
+    private async checkProductAndOrderTolerances(
+        orderId: number,
+        inventoryDetails: any[],
+        tolerance: number,
+        tx?: Prisma.TransactionClient
+    ): Promise<void> {
+        logger.info(`[Tolerance Check] Starting validation for order ${orderId} with tolerance ${tolerance}%`);
+
+        const orderDetails = await this.orderDetailRepo.findMany({ order_id: orderId }, true, tx);
+        logger.info(`[Tolerance Check] Found ${orderDetails.length} order details`);
+
+        let totalValueConverted = 0;
+
+        for (const inventoryDetail of inventoryDetails) {
+            const orderDetail = orderDetails.find(od => od.id === inventoryDetail.order_detail_id);
+            if (!orderDetail) {
+                logger.warn(`[Tolerance Check] Order detail not found for inventory detail: ${inventoryDetail.order_detail_id}`);
+                continue;
+            }
+
+            // Calculate new import quantity for this product
+            const newImportQty = calculateConvertQty({
+                ...orderDetail,
+                quantity: inventoryDetail.quantity || 0,
+            });
+            totalValueConverted += newImportQty;
+
+            logger.info(`[Tolerance Check] Product ${orderDetail.product_id}: New import qty = ${newImportQty}`);
+
+            // Get current imported for this specific product
+            const confirmedImported = await this.transactionWarehouseRepo.aggregate(
+                { order_id: orderId, type: 'in', product_id: orderDetail.product_id },
+                { _sum: { convert_quantity: true } },
+                tx,
+            );
+
+            // Get pending inventory quantities (not yet confirmed/approved)
+            const pendingInventories = await this.inventoryDetailRepo.findMany({
+                order_detail_id: inventoryDetail.order_detail_id,
+                inventory: {
+                    status: CommonApproveStatus.PENDING,
+                }
+            }, false, tx);
+
+            // Calculate pending quantity
+            const pendingQty = pendingInventories.reduce((sum, item) => {
+                const convertedQty = calculateConvertQty({
+                    ...orderDetail,
+                    quantity: item.quantity || 0,
+                });
+                return sum + convertedQty;
+            }, 0);
+
+            // Check individual product tolerance
+            const orderQuantity = calculateConvertQty(orderDetail);
+            const confirmedQty = confirmedImported?._sum?.convert_quantity || 0;
+            const totalPendingAndNew = pendingQty + newImportQty;
+            // const totalImported = confirmedQty + newImportQty;
+            const totalAllQuantities = confirmedQty + totalPendingAndNew;
+            const productProgress = orderQuantity > 0 ? (totalAllQuantities / orderQuantity) * 100 : 0;
+
+            logger.info(`[Tolerance Check] Product ${orderDetail.product_id}:`, {
+                orderQuantity,
+                confirmedQty,
+                newImportQty,
+                totalAllQuantities,
+                productProgress: `${productProgress.toFixed(2)}%`,
+                toleranceLimit: `${100 + tolerance}%`,
+                isExceeded: productProgress > 100 + tolerance
+            });
+
+            if (productProgress > 100 + tolerance) {
+                logger.error(`[Tolerance Check] Product ${orderDetail.product_id} exceeds tolerance: ${productProgress.toFixed(2)}% > ${100 + tolerance}%`);
+                throw new APIError({
+                    message: `Product exceeds tolerance: ${productProgress.toFixed(2)}% > ${100 + tolerance}%`,
+                    status: ErrorCode.BAD_REQUEST,
+                    errors: [`quantity.${inventoryDetail?.key}.exceeded`],
+                });
+            }
+        }
+
+        logger.info(`[Tolerance Check] Total value converted: ${totalValueConverted}`);
+
+        // Check overall order tolerance
+        // Check overall order tolerance including pending inventories
+        const totalPendingForOrder = await this.calculateTotalPendingQuantity(orderId, tx);
+        const orderProgress = await this.calculateDeliveryProgressWithPending(orderId, tx, totalValueConverted, totalPendingForOrder);
+
+        logger.info(` Order validation:`, {
+            totalConverted: totalValueConverted,
+            totalPending: totalPendingForOrder,
+            orderProgress: `${orderProgress.toFixed(2)}%`,
+            toleranceLimit: `${100 + tolerance}%`,
+            isExceeded: orderProgress > 100 + tolerance
+        });
+
+        if (orderProgress > 100 + tolerance) {
+            logger.error(`[Tolerance Check] Order ${orderId} exceeds tolerance: ${orderProgress.toFixed(2)}% > ${100 + tolerance}%`);
+            throw new APIError({
+                message: `Order exceeds tolerance: ${orderProgress.toFixed(2)}% > ${100 + tolerance}%`,
+                status: ErrorCode.BAD_REQUEST,
+                errors: [`quantity.exceeded`],
+            });
+        }
+
+        logger.info(`[Tolerance Check] ✅ Order ${orderId} passed all tolerance checks`);
+    }
+
+    private async calculateTotalPendingQuantity(orderId: number, tx?: Prisma.TransactionClient): Promise<number> {
+        // Get all pending inventory details for this order
+        const pendingInventories = await this.inventoryDetailRepo.findMany({
+            inventory: {
+                order_id: orderId,
+                status: CommonApproveStatus.PENDING
+            }
+        }, true, tx);
+
+        let totalPending = 0;
+        for (const item of pendingInventories) {
+            if ((item as any)?.order_detail) {
+                const convertedQty = calculateConvertQty({
+                    ...(item as any)?.order_detail,
+                    quantity: item.quantity || 0,
+                });
+                totalPending += convertedQty;
+            }
+        }
+
+        return totalPending;
+    }
+
+    private async calculateDeliveryProgressWithPending(
+        orderId: number,
+        tx?: Prisma.TransactionClient,
+        newQty: number = 0,
+        pendingQty: number = 0
+    ): Promise<number> {
+        const orderDetails = await this.orderDetailRepo.findMany(
+            { order_id: orderId },
+            true,
+            tx,
+        );
+
+        let initQty: number = 0;
+        if (orderDetails && orderDetails.length > 0) {
+            initQty = orderDetails.reduce((total, detail) => {
+                const convertedQuantity = calculateConvertQty(detail);
+                return total + convertedQuantity;
+            }, 0);
+        }
+
+        // Get confirmed imported quantity
+        const confirmedImported = await this.transactionWarehouseRepo.aggregate(
+            { order_id: orderId, type: 'in' },
+            {
+                _sum: {
+                    convert_quantity: true,
+                },
+            },
+            tx,
+        );
+
+        const confirmedQty = confirmedImported?._sum?.convert_quantity || 0;
+        const totalWithPendingAndNew = confirmedQty + pendingQty + newQty;
+
+        const percent = initQty > 0 ? (totalWithPendingAndNew / initQty) * 100 : 0;
+        return percent;
     }
 }

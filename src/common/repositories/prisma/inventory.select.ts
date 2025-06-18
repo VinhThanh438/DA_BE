@@ -1,11 +1,11 @@
 import { Prisma } from '.prisma/client';
-import { EmployeeSelection } from './employee.select';
-import { OrganizationSelection } from './organization.select';
+import { EmployeeSelection, EmployeeSelectionAll } from './employee.select';
 import { PartnerSelection } from './partner.select';
 import { InventoryDetailSelectionAll } from './inventory-detail.select';
 import { WarehouseSelectionAll } from './warehouse.select';
-import { OrderSelection } from './order.select';
-import { ShippingPlanSelectionAll } from './shipping-plan.select';
+import { OrderSelectionPartner } from './order.select';
+import { ShippingPlanSelectionAll, ShippingPlanSelectionWithPartner } from './shipping-plan.select';
+import { OrganizationSelection } from './base.select';
 
 export const InventorySelection: Prisma.InventoriesSelect = {
     id: true,
@@ -22,6 +22,7 @@ export const InventorySelection: Prisma.InventoriesSelect = {
     representative_name: true,
     order_id: true,
     warehouse_id: true,
+    organization_id: true,
 };
 
 export const InventorySelectionAll: Prisma.InventoriesSelect = {
@@ -45,7 +46,29 @@ export const InventorySelectionAll: Prisma.InventoriesSelect = {
         select: WarehouseSelectionAll,
     },
     order: {
-        select: OrderSelection,
+        // select: OrderSelectionPartner,
+        select: {
+            id: true,
+            code: true,
+            time_at: true,
+            type: true,
+            address: true,
+            phone: true,
+            status: true,
+            payment_method: true,
+            rejected_reason: true,
+            files: true,
+            note: true,
+            partner_id: true,
+            employee_id: true,
+            organization: {
+                select: OrganizationSelection,
+            },
+            delivery_progress: true,
+            partner: {
+                select: PartnerSelection,
+            },
+        },
     },
     details: {
         select: InventoryDetailSelectionAll,
@@ -63,5 +86,46 @@ export const InventoryForGetImportDetailSelection: Prisma.InventoriesSelect = {
     ...InventorySelection,
     warehouse: {
         select: WarehouseSelectionAll,
+    },
+};
+
+export const InventorSelectionWithShipping: Prisma.InventoriesSelect = {
+    ...InventorySelection,
+    shipping_plan: {
+        select: ShippingPlanSelectionWithPartner,
+    },
+};
+
+export const InventorSelectionWithGateLog: Prisma.InventoriesSelect = {
+    ...InventorySelection,
+    shipping_plan: {
+        select: ShippingPlanSelectionWithPartner,
+    },
+    warehouse: {
+        select: WarehouseSelectionAll,
+    },
+    order: {
+        select: {
+            id: true,
+            code: true,
+            time_at: true,
+            type: true,
+            address: true,
+            phone: true,
+            status: true,
+            payment_method: true,
+            rejected_reason: true,
+            files: true,
+            note: true,
+            partner_id: true,
+            employee_id: true,
+            delivery_progress: true,
+            employee: {
+                select: EmployeeSelection,
+            },
+            partner: {
+                select: PartnerSelection,
+            },
+        },
     },
 };

@@ -1,7 +1,8 @@
+import { DEFAULT_TIME_ZONE } from '@config/app.constant';
 import moment, { Moment } from 'moment-timezone';
 
 export class TimeHelper {
-    private static timezone: string = 'Asia/Ho_Chi_Minh';
+    private static timezone: string = DEFAULT_TIME_ZONE;
 
     /**
      * Get current timezone
@@ -84,10 +85,41 @@ export class TimeHelper {
         const parsed = this.parse(date);
         return parsed.toDate();
     }
+
     public static parseStartOfDayDate(date: string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
         return moment.utc(date).startOf('day').toDate();
     }
+
     public static parseEndOfDayDate(date: string, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): Date {
         return moment.utc(date).endOf('day').toDate();
+    }
+
+    /**
+     * Get day of month from ISO datetime string (e.g., '2025-06-05T12:00:00Z' → 5)
+     */
+    public static getDayOfMonth(date: Date | string): number {
+        return moment.tz(date, this.timezone).date();
+    }
+
+    /**
+     * Get number of days from input date to target day
+     */
+    public static getDistanceToNearestPastDay(date: Date | string, targetDay: Date | string): number {
+        const input = moment.tz(date, this.timezone).startOf('day');
+        const targetMoment = moment.tz(targetDay, this.timezone);
+
+        const targetDayOfMonth = targetMoment.date();
+        let candidate = input.clone().date(targetDayOfMonth);
+
+        if (candidate.isAfter(input)) {
+            candidate = input.clone().subtract(1, 'month').date(targetDayOfMonth);
+        }
+
+        while (!candidate.isValid()) {
+            candidate = candidate.clone().subtract(1, 'day');
+        }
+
+        const diff = input.diff(candidate, 'days');
+        return diff >= 0 ? diff : 0;
     }
 }

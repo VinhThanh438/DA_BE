@@ -15,14 +15,40 @@ export class SocketServer {
     private httpServer?: HttpServer;
 
     /**
-     * Setup the Socket.io server and HTTP server.
+     * Setup the Socket.io server using shared HTTP server.
+     * @param httpServer The HTTP server to attach Socket.IO to
+     */
+    public async setup(httpServer: HttpServer): Promise<Server> {
+        this.httpServer = httpServer;
+        this.server = await SocketAdapter.getSocketInstance(httpServer);
+
+        if (this.server) {
+            this.handleConnection(this.server);
+            // this.handleSecureConnection(this.server);
+            const address = httpServer.address();
+            const port = typeof address === 'object' && address !== null ? address.port : address;
+            logger.info(`Socket server started on port ${port} (${NODE_ENV})`);
+        }
+
+        if (!this.server) {
+            throw new APIError({
+                errorCode: 1,
+                status: StatusCode.SERVER_ERROR,
+                message: 'socket.error.not-init',
+            });
+        }
+        return this.server;
+    }
+
+    /**
+     * Setup the Socket.io server with separate port (legacy method).
      * @param port The port to listen on.
      */
-    public async setup(port: number): Promise<Server> {
+    public async setupWithPort(port: number): Promise<Server> {
         this.server = await SocketAdapter.getSocketInstance();
         if (this.server) {
             this.handleConnection(this.server);
-            this.handleSecureConnection(this.server);
+            // this.handleSecureConnection(this.server);
         }
 
         this.httpServer = this.listen(SocketAdapter.getHttpServer(), port);

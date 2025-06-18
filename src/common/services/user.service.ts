@@ -14,7 +14,7 @@ import bcrypt from 'bcryptjs';
 import { RoleRepo } from '@common/repositories/role.repo';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { EmployeeSelection } from '@common/repositories/prisma/employee.select';
-import { OrganizationSelection } from '@common/repositories/prisma/organization.select';
+import { OrganizationSelection } from '@common/repositories/prisma/base.select';
 
 export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
     private static instance: UserService;

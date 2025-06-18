@@ -1,0 +1,71 @@
+model Loans {
+    id                        Int           @id @default(autoincrement())
+    account_number            String        @default(uuid()) // Số khoản vay( số tài khoản, số khế ước )
+    disbursement_date         DateTime? // Ngày giải ngân ( Ngày vay )
+    interest_calculation_date DateTime? // Ngày tính lãi 
+    payment_day               Int? // Ngày thanh toán lãi hàng tháng (<= 28)
+    term                      Int? // Kỳ hạn
+    amount                    Decimal       @default(0) // Số tiền vay
+    interest_rate             Float         @default(0) // Lãi suất (%)
+    current_debt              Decimal       @default(0) // Dư nợ hiện tại
+    // bank                      String? // Tên ngân hàng
+    files                     Json?         @default("[]")
+    note                      String? // Ghi chú
+    status                    PrsLoanStatus @default(confirmed)
+    rejected_reason           String?
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    // Relations
+    organization_id Int?
+    invoice_id      Int?
+    order_id        Int?
+    partner_id      Int?
+    bank_id         Int?
+
+    // Relations
+    organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+    invoice      Invoices?      @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+    order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
+    partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+    bank         Banks?         @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+
+    // Child relations
+    interest_logs           InterestLogs[]
+    transactions            Transactions[]
+    payment_request_details PaymentRequestDetails[]
+
+    @@map("loans")
+}
+
+enum PrsLoanStatus {
+    pending
+    confirmed
+    rejected
+}
+
+model InterestLogs {
+    id                   Int      @id @default(autoincrement())
+    debt_before_payment  Decimal  @default(0)
+    time_at              DateTime @default(now()) // Ngày thanh tóan
+    amount               Decimal  @default(0) // Số tiền thanh toán
+    interest_amount      Decimal  @default(0) // Số tiền lãi
+    real_interest_amount Decimal  @default(0) // Số tiền lãi thực tế
+    interest_days        Int // Số ngày tính lãi
+    interest_rate        Float    @default(0)
+    is_paymented         Boolean  @default(false)
+
+    loan_id         Int
+    organization_id Int?
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    loan                    Loans                   @relation(fields: [loan_id], references: [id], onDelete: Cascade)
+    organization            Organizations?          @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+    payment_request_details PaymentRequestDetails[]
+    payments                Payments[]
+
+    @@map("interest_logs")
+}

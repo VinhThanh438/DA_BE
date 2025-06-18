@@ -9,7 +9,7 @@ import {
 } from '@common/interfaces/common.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
-import { IInvoice, IInvoiceDetail } from '@common/interfaces/invoice.interface';
+import { IEventInvoiceCreated, IInvoice, IInvoiceDetail, IInvoiceTotal } from '@common/interfaces/invoice.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
@@ -23,6 +23,9 @@ import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { IOrder, IOrderDetailPurchaseProcessing } from '@common/interfaces/order.interface';
 import { InvoiceDetailRepo } from '@common/repositories/invoice-detail.repo';
 import { OrderService } from './order.service';
+import { CommonService } from './common.service';
+import eventbus from '@common/eventbus';
+import { EVENT_INVOICE_CREATED } from '@config/event.constant';
 
 export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect, Prisma.InvoicesWhereInput> {
     private static instance: InvoiceService;
@@ -48,7 +51,7 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
         return this.instance;
     }
 
-    public async attachPaymentInfoToOrder(invoice: IInvoice): Promise<IInvoice> {
+    public async attachPaymentInfoToOrder(invoice: IInvoice): Promise<IInvoiceTotal> {
         const transactionData = await this.transactionRepo.findMany({
             invoice_id: invoice.id,
         });
@@ -97,40 +100,47 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
         } as any;
     }
 
+    public async handleInvoiceTotal(invoice: IInvoice): Promise<any> {
+        let total_money = 0;
+        let total_vat = 0;
+        let total_commission = 0;
+
+        // Check if details exists and is iterable
+        if (invoice.details && Array.isArray(invoice.details)) {
+            for (const detail of invoice.details) {
+                const orderDetail = await this.orderDetailRepo.findOne({ id: detail.order_detail_id });
+                if (!orderDetail) continue;
+
+                const quantity = Number(orderDetail.imported_quantity || 0);
+                const price = Number(orderDetail.price || 0);
+                const vat = Number(orderDetail.vat || 0);
+                const commission = Number(orderDetail.commission || 0);
+
+                const totalMoney = quantity * price;
+                const totalVat = (totalMoney * vat) / 100;
+                const totalCommission = (totalMoney * commission) / 100;
+
+                total_money += totalMoney;
+                total_vat += totalVat;
+                total_commission += totalCommission;
+            }
+        }
+
+        const total_amount = total_money + total_vat;
+
+        return {
+            ...invoice,
+            total_money,
+            total_vat,
+            total_amount,
+            total_commission,
+        };
+    }
+
     public async enrichInvoiceTotals(responseData: IPaginationResponse): Promise<IPaginationResponse> {
         const enrichedData = await Promise.all(
             responseData.data.map(async (invoice: any) => {
-                let total_money = 0;
-                let total_vat = 0;
-                let total_commission = 0;
-
-                for (const detail of invoice.details) {
-                    const orderDetail = await this.orderDetailRepo.findOne({ id: detail.order_detail_id });
-                    if (!orderDetail) continue;
-
-                    const quantity = Number(orderDetail.imported_quantity || 0);
-                    const price = Number(orderDetail.price || 0);
-                    const vat = Number(orderDetail.vat || 0);
-                    const commission = Number(orderDetail.commission || 0);
-
-                    const totalMoney = quantity * price;
-                    const totalVat = (totalMoney * vat) / 100;
-                    const totalCommission = (totalMoney * commission) / 100;
-
-                    total_money += totalMoney;
-                    total_vat += totalVat;
-                    total_commission += totalCommission;
-                }
-
-                const total_amount = total_money + total_vat;
-
-                return {
-                    ...invoice,
-                    total_money,
-                    total_vat,
-                    total_amount,
-                    total_commission,
-                };
+                return this.handleInvoiceTotal(invoice);
             }),
         );
 
@@ -149,19 +159,35 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
                 errors: [`invoice.${ErrorKey.NOT_FOUND}`],
             });
         }
-        return result;
+        const detailsWithProgress = await Promise.all(
+            (result as any)?.details?.map(async (x: any) => {
+                const progress = await this.orderService.getOrderDetailPurchaseProcessing({
+                    ...x.order_detail,
+                    order_id: (result as any)?.order?.id,
+                } as IOrderDetailPurchaseProcessing);
+
+                return {
+                    ...x,
+                    order_detail: {
+                        ...x.order_detail,
+                        progress,
+                    },
+                };
+            }) || [],
+        );
+
+        return {
+            ...result,
+            details: detailsWithProgress,
+        };
     }
 
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
-        const data = await this.repo.paginate(query, true);
+        const result = await this.repo.paginate(query, true);
 
-        data.data = await Promise.all(data.data.map((invoice: IInvoice) => this.attachPaymentInfoToOrder(invoice)));
-
-        const totalData = await this.enrichInvoiceTotals(data);
-
-        totalData.data = await Promise.all(
-            totalData.data.map(async (item: any) => {
-                const totalAmount = item.total_vat;
+        result.data = await Promise.all(
+            result.data.map(async (item: any) => {
+                const totalAmount = item.total_amount | 0;
                 const totalQuantity = item.order
                     ? await this.orderService.calculateTotalConvertedQuantity(item.order.id)
                     : 0;
@@ -195,7 +221,7 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
             }),
         );
 
-        return totalData;
+        return result;
     }
 
     public async createInvoice(request: Partial<IInvoice>, tx?: Prisma.TransactionClient): Promise<IIdResponse> {
@@ -219,6 +245,10 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
             invoiceData.order = order_id ? ({ connect: { id: order_id } } as any) : undefined;
             invoiceData.partner = partner_id ? ({ connect: { id: partner_id } } as any) : undefined;
             invoiceData.employee = employee_id ? ({ connect: { id: employee_id } } as any) : undefined;
+
+            if (details && details.length > 0) {
+                invoiceData.content = await CommonService.getContent(details);
+            }
 
             invoiceId = await this.repo.create(invoiceData as Partial<Invoices>, transaction);
 
@@ -258,6 +288,8 @@ export class InvoiceService extends BaseService<Invoices, Prisma.InvoicesSelect,
                 await runTransaction(transaction);
             });
         }
+
+        eventbus.emit(EVENT_INVOICE_CREATED, { orderId: request.order_id, invoiceId } as IEventInvoiceCreated);
 
         return { id: invoiceId };
     }

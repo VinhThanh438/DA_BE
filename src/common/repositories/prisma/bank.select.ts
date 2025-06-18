@@ -1,7 +1,7 @@
 import { Prisma } from '.prisma/client';
 import { EmployeeSelection } from './employee.select';
-import { OrganizationSelection } from './organization.select';
 import { RepresentativeSelection } from './representative.select';
+import { OrganizationSelection } from './base.select';
 
 export const BankSelection: Prisma.BanksSelect = {
     id: true,
@@ -13,6 +13,7 @@ export const BankSelection: Prisma.BanksSelect = {
     description: true,
     type: true,
     balance: true,
+    available_balance: true,
     responsibility: true,
 };
 export const BankSelectionAll: Prisma.BanksSelect = {

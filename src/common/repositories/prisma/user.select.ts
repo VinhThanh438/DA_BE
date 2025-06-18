@@ -1,7 +1,8 @@
 import { Prisma } from '.prisma/client';
 import { EmployeeSelection } from './employee.select';
-import { OrganizationSelection, OrganizationSelectionWithAllSubs } from './organization.select';
+import { OrganizationSelectionWithAllSubs } from './organization.select';
 import { RoleSelection } from './role.select';
+import { OrganizationSelection } from './base.select';
 
 export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
     id: true,
@@ -9,6 +10,7 @@ export const UserSelectionWithoutPassword: Prisma.UsersSelect = {
     device_uid: true,
     username: true,
     email: true,
+    employee_id: true,
 };
 
 export const UserSelection: Prisma.UsersSelect = {

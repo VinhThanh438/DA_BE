@@ -7,6 +7,9 @@ enum PrsTransactionType {
 enum PrsTransactionOrderType {
   commission
   order
+  loan
+  interest
+  transfer
 }
 
 model Transactions {
@@ -17,16 +20,19 @@ model Transactions {
   amount     Decimal?
   note       String?
 
-  partner_id        Int? // Doi tac
-  employee_id       Int? // nhan vien giao dich
-  organization_id   Int?
-  order_id          Int? // Don hang
-  invoice_id          Int? // Hoa don
-  bank_id           Int? // Tai khoan giao dich
-  representative_id Int? // Nguoi dai dien
-  payment_id        Int? // Nguoi dai dien
+  partner_id                Int? // Doi tac
+  employee_id               Int? // nhan vien giao dich
+  organization_id           Int?
+  order_id                  Int? // Don hang
+  invoice_id                Int? // Hoa don
+  bank_id                   Int? // Tai khoan giao dich
+  representative_id         Int? // Nguoi dai dien
+  payment_id                Int? @unique
+  loan_id                   Int? // Khoan vay
+  payment_request_detail_id Int?
+  deposit_id                Int? // Khoan gui 
 
-  is_closed  Boolean? @default(false)
+  is_closed Boolean? @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -39,6 +45,8 @@ model Transactions {
   representative Representatives? @relation(fields: [representative_id], references: [id], onDelete: SetNull)
   payment        Payments?        @relation(fields: [payment_id], references: [id], onDelete: Cascade)
   invoice        Invoices?        @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  loan           Loans?           @relation(fields: [loan_id], references: [id], onDelete: Cascade)
+  deposit        Deposits?        @relation(fields: [deposit_id], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }

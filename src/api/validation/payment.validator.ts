@@ -29,13 +29,16 @@ export const create: schema = {
                 .required(),
             note: Joi.string().allow(null, '').max(1000).optional(),
             time_at: Joi.string().isoDate().optional().allow(null),
-            payment_date: Joi.string().isoDate().optional().allow(null),
+            payment_date: Joi.string().isoDate().required(),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            category: Joi.string().allow(null, '').optional(),
 
-            payment_request_id: Joi.number().positive().required(),
+            payment_request_detail_id: Joi.number().positive().optional(),
             order_id: Joi.number().optional(),
             invoice_id: Joi.number().optional(),
-            partner_id: Joi.number().required(),
+            partner_id: Joi.number().optional(),
+            interest_log_id: Joi.number().optional(),
+            loan_id: Joi.number().optional(),
 
             bank_id: Joi.number().optional(),
             amount: Joi.number().optional(),
@@ -66,7 +69,6 @@ export const update: schema = {
             files_add: Joi.array().items(Joi.string()).optional().default([]),
             files_delete: Joi.array().items(Joi.string()).optional().default([]),
 
-            payment_request_id: Joi.number().positive().optional(),
             order_id: Joi.number().optional(),
             invoice_id: Joi.number().optional(),
             partner_id: Joi.number().optional(),
@@ -84,3 +86,10 @@ export const update: schema = {
     ),
 };
 
+export const close: schema = {
+    query: wrapSchema(
+        extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
+            bankId: Joi.number().required(),
+        }),
+    ),
+};

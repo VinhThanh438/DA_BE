@@ -1,9 +1,14 @@
-import { APIError } from "@common/error/api.error";
-import { StatusCode } from "@common/errors";
-import { generateUniqueCode } from "@common/helpers/generate-unique-code.helper";
-import { ModelPrefixMap, ModelStringMaps, PrefixCode } from "@config/app.constant";
+import { APIError } from '@common/error/api.error';
+import { StatusCode } from '@common/errors';
+import { generateUniqueCode } from '@common/helpers/generate-unique-code.helper';
+import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
+import { ProductRepo } from '@common/repositories/product.repo';
+import { ModelPrefixMap, ModelStringMaps, PrefixCode } from '@config/app.constant';
 
 export class CommonService {
+    private static commonDetailRepo: CommonDetailRepo = new CommonDetailRepo();
+    private static productRepo: ProductRepo = new ProductRepo();
+
     private static resolvePrefixCode(name: string): PrefixCode {
         const entityName = name.toUpperCase();
         const prefix = ModelPrefixMap[entityName];
@@ -57,5 +62,19 @@ export class CommonService {
         };
 
         return generateCodeWithCheck(lastRecord?.code || null);
+    }
+
+    public static async getContent(detailsData: any[]): Promise<string> {
+        const data = await Promise.all(
+            detailsData.map(async (item) => {
+                const id = item.order_detail_id || item.id;
+                const orderDetail = await this.commonDetailRepo.findOne({ id }, true);
+                const product = await this.productRepo.findOne({ id: orderDetail?.product_id as number });
+
+                return product?.name;
+            }),
+        );
+
+        return data.join(', ');
     }
 }

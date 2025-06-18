@@ -42,39 +42,43 @@ model Organizations {
   inventories            Inventories[]
   productions            Productions[]
   material_budgets       MaterialBudgets[]
-  transactions     Transactions[]
+  transactions           Transactions[]
   transaction_warehouses TransactionWarehouses[]
-  quotation_requests       QuotationRequests[]
+  quotation_requests     QuotationRequests[]
   order_expenses         OrderExpenses[]
+  contracts              Contracts[]
+  purchase_requests      PurchaseRequests[]
+  clauses                Clauses[]
+  users                  Users[]
+  user_roles             UserRoles[]
+  banks                  Banks[]
+  employees              Employees[]             @relation("EmployeeOrganization")
+  payment_requests       PaymentRequests[]
+  products               Products[]
+  units                  Units[]
+  product_groups         ProductGroups[]
+  warehouses             Warehouses[]
+  payments               Payments[]
+  partner_groups         PartnerGroups[]
+  positions              Positions[]
+  shipping_plans         ShippingPlans[]
+  loans                  Loans[]
+  interest_logs          InterestLogs[]
+  Deposits               Deposits[]
+  gate_logs              GateLogs[]
 
   @@map("organizations")
-  contracts Contracts[]
-  purchase_requests PurchaseRequests[]
-  clauses Clauses[]
-  users Users[]
-  user_roles UserRoles[]
-  banks Banks[]
-  employees Employees[] @relation("EmployeeOrganization")
-  payment_requests PaymentRequests[]
-  products Products[]
-  units Units[]
-  product_groups ProductGroups[]
-  warehouses Warehouses[]
-  payments Payments[]
-  partner_groups PartnerGroups[]
-  positions Positions[]
-  shipping_plans ShippingPlans[]
 }
 
 model Positions {
-  id          Int     @id @default(autoincrement())
-  name        String
-  level       String?
-  description String?
+  id              Int     @id @default(autoincrement())
+  name            String
+  level           String?
+  description     String?
   organization_id Int?
 
   job_positions JobPositions[]
-  organization Organizations? @relation(fields: [organization_id], references: [id])
+  organization  Organizations? @relation(fields: [organization_id], references: [id])
 
   @@map("positions")
 }
@@ -91,7 +95,7 @@ model JobPositions {
   updated_at DateTime @updatedAt
 
   organization Organizations? @relation(fields: [organization_id], references: [id])
-  position     Positions?    @relation(fields: [position_id], references: [id], onDelete: SetNull)
+  position     Positions?     @relation(fields: [position_id], references: [id], onDelete: SetNull)
   employees    Employees[]
 
   @@map("job_positions")

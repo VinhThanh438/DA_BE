@@ -5,80 +5,83 @@ enum PrsPartnerType {
 }
 
 model Partners {
-  id      Int         @id @default(autoincrement())
-  code    String      @default(cuid())
-  name    String    
+  id      Int            @id @default(autoincrement())
+  code    String         @default(cuid())
+  name    String
   phone   String?
   note    String?
   email   String?
   tax     String?
-  type    PrsPartnerType @default(customer) 
+  type    PrsPartnerType @default(customer)
   address String?
 
   organization_id  Int?
   partner_group_id Int?
-  clause_id        Int? 
-  employee_id    Int?
+  clause_id        Int?
+  employee_id      Int?
 
-  representative_name String?
+  representative_name     String?
   representative_position String?
-  representative_phone String?
-  representative_email String?
+  representative_phone    String?
+  representative_email    String?
 
   is_default Boolean @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  partner_group     PartnerGroups?      @relation(fields: [partner_group_id], references: [id], onDelete: SetNull)
-  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  clause            Clauses?            @relation(fields: [clause_id], references: [id], onDelete: SetNull)
-  employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  partner_group PartnerGroups? @relation(fields: [partner_group_id], references: [id], onDelete: SetNull)
+  organization  Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  clause        Clauses?       @relation(fields: [clause_id], references: [id], onDelete: SetNull)
+  employee      Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
 
-  invoices            Invoices[]
-  quotations          Quotations[]
-  orders              Orders[]
-  productions         Productions[]
-  transactions  Transactions[]
-  contracts           Contracts[]
+  invoices        Invoices[]
+  quotations      Quotations[]
+  orders          Orders[]
+  productions     Productions[]
+  transactions    Transactions[]
+  contracts       Contracts[]
   representatives Representatives[]
-  shippings        ShippingPlans[]
+  shippings       ShippingPlans[]
   payments        Payments[]
+  loans           Loans[]
+  banks           Banks[]
 
-  inventory_as_supplier Inventories[] @relation("Supplier")
-  inventory_as_customer Inventories[] @relation("Customer")
+  inventory_as_supplier Inventories[]     @relation("Supplier")
+  inventory_as_customer Inventories[]     @relation("Customer")
+  payment_requests      PaymentRequests[] @relation("ApproverEmployee")
+
   @@map("partners")
-  payment_requests PaymentRequests[] @relation("ApproverEmployee")
 }
 
-
 model PartnerGroups {
-  id       Int         @id @default(autoincrement())
-  name     String
-  type     PrsPartnerType @default(customer) // loai doi tac
+  id   Int            @id @default(autoincrement())
+  name String
+  type PrsPartnerType @default(customer) // loai doi tac
 
-  organization_id  Int?
+  organization_id Int?
 
-  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  partners Partners[]
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  partners     Partners[]
+
   @@map("partner_groups")
 }
 
 // Dieu khoan
 model Clauses {
-  id       Int        @id @default(autoincrement())
-  name     String     @unique
-  content  String?
+  id      Int     @id @default(autoincrement())
+  name    String  @unique
+  content String?
 
   max_dept_amount Decimal? // so tien no toi da
   max_dept_day    Int? // so ngay no toi da
 
-  organization_id  Int?
+  organization_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization      Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   partners Partners[]
 
@@ -87,22 +90,23 @@ model Clauses {
 
 // Nguoi dai dien
 model Representatives {
-  id       Int        @id @default(autoincrement())
-  name     String
-  phone    String?
-  salutation  String?
-  title  String?
-  email  String?
+  id         Int     @id @default(autoincrement())
+  name       String
+  phone      String?
+  salutation String?
+  title      String?
+  email      String?
 
   partner_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  partner     Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  partner         Partners?         @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  banks           Banks[]
+  orders          Orders[]
+  transactions    Transactions[]
+  paymentRequests PaymentRequests[] @relation("RepresentativeEmployee")
 
   @@map("representatives")
-  banks Banks[]
-  orders Orders[]
-  transactions Transactions[]
 }

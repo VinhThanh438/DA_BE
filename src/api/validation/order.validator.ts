@@ -19,8 +19,15 @@ export const create: schema = {
             phone: Joi.string().allow(null, '').max(50).optional(),
             payment_method: Joi.string().allow(null, '').max(255).optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
+            tolerance: Joi.number().required(),
             time_at: Joi.date().iso().optional(),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+            product_quality: Joi.string().allow(null, '').max(500).optional(),
+            delivery_location: Joi.string().allow(null, '').max(500).optional(),
+            delivery_method: Joi.string().allow(null, '').max(255).optional(),
+            delivery_time: Joi.string().allow(null, '').max(255).optional(),
+            payment_note: Joi.string().allow(null, '').max(500).optional(),
+            additional_note: Joi.string().allow(null, '').max(500).optional(),
 
             employee_id: Joi.number().optional(),
             partner_id: Joi.number().optional(),
@@ -76,6 +83,7 @@ export const update: schema = {
             phone: Joi.string().allow(null, '').max(50).optional(),
             payment_method: Joi.string().allow(null, '').max(255).optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
+            tolerance: Joi.number().optional(),
             time_at: Joi.date().iso().optional(),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
 
@@ -180,6 +188,34 @@ export const queryFilter: schema = {
             status: Joi.string().optional().allow(null, ''),
             partner_id: Joi.number().optional(),
             isDone: Joi.boolean().optional().allow(null),
+            supplierIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+            employeeIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
         }),
     ),
 };

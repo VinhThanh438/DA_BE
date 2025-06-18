@@ -1,8 +1,8 @@
 import { Prisma } from '.prisma/client';
 import { EmployeeShortSelection } from './employee.select';
-import { OrderSelection } from './order.select';
 import { ProductionSelection } from './production.select';
 import { PurchaseRequestDetailSelectionAll } from './purchase-request-details.select';
+import { OrderSelection } from './base.select';
 
 export const PurchaseRequestSelection: Prisma.PurchaseRequestsSelect = {
     id: true,

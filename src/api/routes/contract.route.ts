@@ -1,8 +1,8 @@
 import { ContractController } from '@api/controllers/contract.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { queryById, queryFilter } from '@api/validation/common.validator';
-import { create, update, updateEntity } from '@api/validation/contract.validator';
+import { queryById } from '@api/validation/common.validator';
+import { create, update, updateEntity, queryFilter } from '@api/validation/contract.validator';
 import express from 'express';
 
 const router = express.Router();
@@ -19,9 +19,7 @@ router.post(
     controller.create.bind(controller),
 );
 
-router.put('/update/:id', validateRequest(update), controller.update.bind(controller));
-
-router.put('/:id', validateRequest(updateEntity), controller.updateChildEntity.bind(controller));
+router.put('/:id', validateRequest(updateEntity), controller.update.bind(controller));
 
 router.delete('/:id', validateRequest(queryById), controller.delete.bind(controller));
 

@@ -46,7 +46,7 @@ export class PartnerController extends BaseController {
     public async getCommissionDebt(req: Request, res: Response, next: NextFunction) {
         try {
             const query = req.query as IPartnerDebtQueryFilter;
-            const result = await this.service.getCommissionDebt(query);
+            const result = await this.service.getDebt(query, true);
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.getCommissionDebt: `, error);

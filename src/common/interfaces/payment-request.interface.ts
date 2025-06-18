@@ -1,4 +1,4 @@
-import { PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
+import { PaymentRequestDetailStatus, PaymentRequestStatus, PaymentRequestType } from '@config/app.constant';
 import { IEmployee } from './employee.interface';
 import { IOrder } from './order.interface';
 import { IInvoice } from './invoice.interface';
@@ -20,6 +20,8 @@ export interface IPaymentRequest {
     employee_id?: number;
     approver_id?: number;
     partner_id?: number;
+    bank_id?: number;
+    representative_id?: number;
 
     employee?: IEmployee;
     approver?: IEmployee;
@@ -31,9 +33,12 @@ export interface IPaymentRequestDetail {
     id?: number;
     amount: number;
     note?: string;
+    status?: PaymentRequestDetailStatus;
 
     order_id?: number;
     invoice_id?: number;
+    interest_log_id?: number;
+    loan_id?: number;
 
     order?: IOrder;
     invoice?: IInvoice;

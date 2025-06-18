@@ -14,10 +14,9 @@ import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import { PaymentType, TransactionType } from '@config/app.constant';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
-import { PartnerRepo } from '@common/repositories/partner.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import eventbus from '@common/eventbus';
-import { EVENT_PAYMENT_CREATED, EVENT_PAYMENT_DELETED } from '@config/event.constant';
+import { EVENT_LOAN_PAID, EVENT_PAYMENT_CREATED, EVENT_PAYMENT_DELETED } from '@config/event.constant';
 import { IPaymentCreatedEvent, IPaymentDeletedEvent, ITransaction } from '@common/interfaces/transaction.interface';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
@@ -25,13 +24,14 @@ import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { transformDecimal } from '@common/helpers/transform.util';
 import { TimeHelper } from '@common/helpers/time.helper';
+import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-details.repo';
 
 export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect, Prisma.PaymentsWhereInput> {
     private static instance: PaymentService;
     private paymentRequestRepo: PaymentRequestRepo = new PaymentRequestRepo();
+    private paymentRequestDetailRepo: PaymentRequestDetailRepo = new PaymentRequestDetailRepo();
     private orderRepo: OrderRepo = new OrderRepo();
     private invoiceRepo: InvoiceRepo = new InvoiceRepo();
-    private partnerRepo: PartnerRepo = new PartnerRepo();
     private bankRepo: BankRepo = new BankRepo();
     private transactionRepo: TransactionRepo = new TransactionRepo();
     private organizationRepo: OrganizationRepo = new OrganizationRepo();
@@ -50,24 +50,26 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
     public async createPayment(request: Partial<IPayment>): Promise<IIdResponse> {
         try {
             await this.validateForeignKeys(request, {
-                payment_request_id: this.paymentRequestRepo,
+                payment_request_detail_id: this.paymentRequestDetailRepo,
                 order_id: this.orderRepo,
                 invoice_id: this.invoiceRepo,
-                partner_id: this.partnerRepo,
                 bank_id: this.bankRepo,
                 organization_id: this.organizationRepo,
             });
 
             const {
                 id,
-                payment_request_id,
+                payment_request_detail_id,
                 order_id,
                 invoice_id,
-                partner_id,
                 bank_id,
                 organization_id,
+                category,
+                interest_log_id,
+                loan_id,
                 ...paymentData
             } = request;
+
             let bank = null;
             if (bank_id) {
                 bank = await this.bankRepo.findOne({ id: bank_id });
@@ -75,27 +77,54 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                     throw new APIError({
                         message: `common.status.${StatusCode.BAD_REQUEST}`,
                         status: ErrorCode.BAD_REQUEST,
-                        errors: [`balance.${ErrorKey.INVALID}`],
+                        errors: [`bank_id.${ErrorKey.INVALID}`],
                     });
                 }
             }
-            paymentData.payment_request = payment_request_id
-                ? ({ connect: { id: payment_request_id } } as any)
+
+            const paymentRequestDetail = await this.paymentRequestDetailRepo.findOne({ id: payment_request_detail_id });
+            if (payment_request_detail_id && !paymentRequestDetail) {
+                throw new APIError({
+                    message: `common.status.${StatusCode.BAD_REQUEST}`,
+                    status: ErrorCode.BAD_REQUEST,
+                    errors: [`payment_request_detail.${ErrorKey.NOT_FOUND}`],
+                });
+            }
+
+            const paymentRequest = await this.paymentRequestRepo.findOne({
+                id: paymentRequestDetail?.payment_request_id as number,
+            });
+
+            if (!paymentRequest) {
+                throw new APIError({
+                    message: `common.status.${StatusCode.BAD_REQUEST}`,
+                    status: ErrorCode.BAD_REQUEST,
+                    errors: [`payment_request.${ErrorKey.INVALID}`],
+                });
+            }
+
+            const partnerId = paymentRequest ? paymentRequest.partner_id : undefined;
+
+            paymentData.payment_request_detail = payment_request_detail_id
+                ? ({ connect: { id: payment_request_detail_id } } as any)
                 : undefined;
             paymentData.order = order_id ? ({ connect: { id: order_id } } as any) : undefined;
             paymentData.invoice = invoice_id ? ({ connect: { id: invoice_id } } as any) : undefined;
-            paymentData.partner = partner_id ? ({ connect: { id: partner_id } } as any) : undefined;
+            paymentData.partner = partnerId ? ({ connect: { id: partnerId } } as any) : undefined;
             paymentData.bank = bank_id ? ({ connect: { id: bank_id } } as any) : undefined;
             paymentData.organization = organization_id ? ({ connect: { id: organization_id } } as any) : undefined;
+            paymentData.interest_log = interest_log_id ? ({ connect: { id: interest_log_id } } as any) : undefined;
 
             const resultId = await this.repo.create(paymentData);
 
             if (resultId) {
-                const transaction = {
+                const eventData = {
+                    order_type: category || undefined,
                     note: request.description,
                     new_bank_balance: Number(bank?.balance) - Number(request.amount),
                     amount: request.amount,
                     bank_id: request.bank_id,
+                    interest_log_id: interest_log_id,
                     bank: request.bank_id ? { connect: { id: request.bank_id } } : undefined,
                     payment: { connect: { id: resultId } },
                     type:
@@ -104,12 +133,21 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                             : TransactionType.OUT,
                     description: request.note,
                     invoice: request.invoice_id ? { connect: { id: request.invoice_id } } : undefined,
+                    invoice_id: request.invoice_id,
                     order: request.order_id ? { connect: { id: request.order_id } } : undefined,
-                    partner: request.partner_id ? { connect: { id: request.partner_id } } : undefined,
+                    partner: partnerId ? { connect: { id: partnerId } } : undefined,
                     organization: request.organization_id ? { connect: { id: request.organization_id } } : undefined,
-                    payment_request_id: request.payment_request_id,
+                    time_at: paymentData.payment_date,
+                    payment_request_detail_id: request.payment_request_detail_id,
                 };
-                eventbus.emit(EVENT_PAYMENT_CREATED, transaction as IPaymentCreatedEvent);
+                eventbus.emit(EVENT_PAYMENT_CREATED, eventData as IPaymentCreatedEvent);
+                if (loan_id) {
+                    eventbus.emit(EVENT_LOAN_PAID, {
+                        ...paymentData,
+                        loan_id: Number(loan_id),
+                        amount: Number(request.amount),
+                    } as IPaymentCreatedEvent);
+                }
             }
             return { id: resultId };
         } catch (error) {
@@ -180,8 +218,8 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
     }
 
     public async close(request: any): Promise<void> {
-        const { startAt, endAt, ...rest } = request;
-        const conditions = { time_at: { lte: endAt, gte: startAt }, is_closed: false };
+        const { bankId, ...rest } = request;
+        const conditions = { bank_id: parseInt(bankId), is_closed: false };
         await this.transactionRepo.updateManyByCondition(conditions, {
             is_closed: true,
         });

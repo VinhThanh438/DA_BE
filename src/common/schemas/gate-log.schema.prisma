@@ -1,0 +1,32 @@
+model GateLogs {
+    id      Int             @id @default(autoincrement())
+    time_at DateTime        @default(now())
+    status  PrsOrderStatus? @default(pending)
+
+    entry_time            DateTime? // thời gian vào
+    entry_plate_image     String?
+    entry_container_image String?
+    entry_note            String?
+
+    exit_time            DateTime? // thời gian ra
+    exit_plate_image     String?
+    exit_container_image String?
+    exit_note            String?
+    idx                  Int       @default(autoincrement())
+
+    files           Json?   @default("[]")
+    rejected_reason String?
+
+    employee_id     Int?
+    organization_id Int?
+    inventory_id    Int? @unique
+
+    inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
+    employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+    organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@map("gate_logs")
+}

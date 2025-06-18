@@ -13,6 +13,8 @@ export const queryFilter: schema = {
                 .optional()
                 .valid(...values(PaymentRequestType)),
             status: Joi.string().optional().allow(null, ''),
+            partnerId: Joi.number().optional().allow(null, ''),
+            types: Joi.any(),
         }),
     ),
 };
@@ -36,18 +38,22 @@ export const create: schema = {
             employee_id: Joi.number().optional().allow(null),
             approver_id: Joi.number().optional().allow(null),
             partner_id: Joi.number().optional().allow(null),
+            bank_id: Joi.number().optional().allow(null),
+            representative_id: Joi.number().optional().allow(null),
 
             details: Joi.array()
                 .items(
                     Joi.object<IPaymentRequestDetail>({
-                        order_id: Joi.number().required(),
+                        order_id: Joi.number().optional().allow(null),
                         invoice_id: Joi.number().optional().allow(null),
+                        loan_id: Joi.number().optional().allow(null),
+                        interest_log_id: Joi.number().optional().allow(null),
                         amount: Joi.number().min(0).optional(),
                         note: Joi.string().allow(null, '').max(500),
                         key: Joi.string().allow(null, ''),
                     }),
                 )
-                .required()
+                .optional()
                 .default([]),
         }),
     ),

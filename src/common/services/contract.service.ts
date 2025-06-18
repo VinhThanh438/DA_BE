@@ -18,11 +18,13 @@ import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { UnitRepo } from '@common/repositories/unit.repo';
 import { transformDecimal } from '@common/helpers/transform.util';
+import { OrderRepo } from '@common/repositories/order.repo';
 
 export class ContractService extends BaseService<Contracts, Prisma.ContractsSelect, Prisma.ContractsWhereInput> {
     private static instance: ContractService;
     private contractDetailRepo: CommonDetailRepo = new CommonDetailRepo();
     private partnerRepo: PartnerRepo = new PartnerRepo();
+    private orderRepo: OrderRepo = new OrderRepo();
     private employeeRepo: EmployeeRepo = new EmployeeRepo();
     private organizationRepo: OrganizationRepo = new OrganizationRepo();
     private productRepo: ProductRepo = new ProductRepo();
@@ -49,6 +51,7 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
             {
                 partner_id: this.partnerRepo,
                 employee_id: this.employeeRepo,
+                order_id: this.orderRepo,
                 organization_id: this.organizationRepo,
             },
             tx,
@@ -102,61 +105,6 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
         return { id: contractId };
     }
 
-    public async updateContract(id: number, request: Partial<IContract>): Promise<IIdResponse> {
-        await this.findById(id);
-
-        await this.isExist({ code: request.code, id }, true);
-
-        await this.validateForeignKeys(request, {
-            partner_id: this.partnerRepo,
-            employee_id: this.employeeRepo,
-            organization_id: this.organizationRepo,
-        });
-
-        await this.db.$transaction(async (tx) => {
-            const { details, ...quotationData } = request;
-
-            await this.repo.update({ id }, quotationData as Partial<Contracts>, tx);
-
-            if (details) {
-                await this.contractDetailRepo.deleteMany({ contract_id: id }, tx);
-
-                if (details.length > 0) {
-                    await this.validateForeignKeys(
-                        details,
-                        {
-                            product_id: this.productRepo,
-                            unit_id: this.unitRepo,
-                        },
-                        tx,
-                    );
-
-                    const mappedDetails = details.map((item) => {
-                        const { product_id, unit_id, ...rest } = item;
-                        return {
-                            ...rest,
-                            contract: id ? { connect: { id } } : undefined,
-                            product: product_id ? { connect: { id: product_id } } : undefined,
-                            unit: unit_id ? { connect: { id: unit_id } } : undefined,
-                        };
-                    });
-
-                    const filteredData = this.filterData(mappedDetails, DEFAULT_EXCLUDED_FIELDS, ['details']);
-
-                    await this.contractDetailRepo.createMany(filteredData, tx);
-                }
-            } else {
-                throw new APIError({
-                    message: `common.status.${StatusCode.BAD_REQUEST}`,
-                    status: ErrorCode.BAD_REQUEST,
-                    errors: [`details.${ErrorKey.INVALID}`],
-                });
-            }
-        });
-
-        return { id };
-    }
-
     public async updateContractEntity(id: number, request: Partial<IContract>): Promise<IIdResponse> {
         await this.findById(id);
 
@@ -165,6 +113,7 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
         await this.validateForeignKeys(request, {
             partner_id: this.partnerRepo,
             employee_id: this.employeeRepo,
+            order_id: this.orderRepo,
             organization_id: this.organizationRepo,
         });
 

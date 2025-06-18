@@ -35,6 +35,11 @@ export class ExpressServer {
         return this.server;
     }
 
+    // Add getter for HTTP server to share with Socket.IO
+    public getHttpServer(): Server | undefined {
+        return this.httpServer;
+    }
+
     public listen(server: Express, port: number): Server {
         logger.info(`Starting server on port ${port} (${NODE_ENV})`);
         return server.listen(port);

@@ -2,7 +2,7 @@ import { PaymentController } from '@api/controllers/payment.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { approve, queryById } from '@api/validation/common.validator';
-import { create, queryFilter, update } from '@api/validation/payment.validator';
+import { close, create, queryFilter, update } from '@api/validation/payment.validator';
 import { queryFilter as baseQueryFilter } from '@api/validation/common.validator';
 import express from 'express';
 
@@ -17,7 +17,7 @@ router.get('/report', validateRequest(baseQueryFilter), controller.report.bind(c
 // So quy
 router.get('/ledger', validateRequest(queryFilter), controller.ledger.bind(controller));
 
-router.put('/close', validateRequest(baseQueryFilter), controller.close.bind(controller));
+router.put('/close', validateRequest(close), controller.close.bind(controller));
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 

@@ -1,63 +1,66 @@
 enum PrsInventoryType {
-  normal_in // nhap kho hang mua
-  finished_in // nhap kho thanh pham
-  material_in // nhap kho nguyen vat lieu
-  normal_out // xuat kho hang ban
-  material_out // xuat kho nguyen vat lieu
-  finished_out //xuat kho thanh pham
+  inventory_normal_in // nhap kho hang mua
+  inventory_finished_in // nhap kho thanh pham
+  inventory_material_in // nhap kho nguyen vat lieu
+  inventory_normal_out // xuat kho hang ban
+  inventory_material_out // xuat kho nguyen vat lieu
+  inventory_finished_out //xuat kho thanh pham
 }
 
 model Inventories {
-  id            Int           @id @default(autoincrement())
-  time_at       DateTime      @default(now())
-  code          String        @default(cuid())
-  type          PrsInventoryType @default(normal_in)
-  status     PrsOrderStatus?  @default(pending)
-  note          String?
-  vehicle          String?
-  plate          String?
-  delivery_cost          Decimal?
+  id                  Int              @id @default(autoincrement())
+  time_at             DateTime         @default(now())
+  code                String           @default(cuid())
+  type                PrsInventoryType @default(inventory_normal_in)
+  status              PrsOrderStatus?  @default(pending)
+  note                String?
+  vehicle             String?
+  plate               String?
+  delivery_cost       Decimal?
   representative_name String?
-  identity_code String?
-  files         Json?         @default("[]")
+  identity_code       String?
+  files               Json?            @default("[]")
+  content       String? // Nội dung chi tiết
 
-  employee_id     Int? 
-  supplier_id      Int? 
-  customer_id       Int?
-  shipping_plan_id     Int?
-  organization_id Int? 
-  order_id        Int?
-  warehouse_id    Int?
+  employee_id      Int?
+  supplier_id      Int?
+  customer_id      Int?
+  shipping_plan_id Int?
+  organization_id  Int?
+  order_id         Int?
+  warehouse_id     Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization          Organizations?          @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  employee              Employees?              @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  order   Orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  supplier Partners? @relation("Supplier", fields: [supplier_id], references: [id], onDelete: SetNull)
-  customer Partners? @relation("Customer", fields: [customer_id], references: [id], onDelete: SetNull)
+  organization  Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  employee      Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  order         Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  supplier      Partners?      @relation("Supplier", fields: [supplier_id], references: [id], onDelete: SetNull)
+  customer      Partners?      @relation("Customer", fields: [customer_id], references: [id], onDelete: SetNull)
   shipping_plan ShippingPlans? @relation(fields: [shipping_plan_id], references: [id], onDelete: SetNull)
-  warehouse Warehouses? @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
+  warehouse     Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
 
-  details InventoryDetails[]
+  gate_log               GateLogs?
+  details                InventoryDetails[]
   transaction_warehouses TransactionWarehouses[]
+
   @@map("inventories")
 }
 
 model InventoryDetails {
-  id       Int      @id @default(autoincrement())
-  real_quantity Int? @default(0)
-  quantity Int? @default(0)
-  price    Decimal? @default(0)
-  discount Float?   @default(0)
-  commission Float? @default(0)
-  vat      Float? // %vat
-  note     String?
+  id            Int      @id @default(autoincrement())
+  real_quantity Int?     @default(0)
+  quantity      Int?     @default(0)
+  price         Decimal? @default(0)
+  discount      Float?   @default(0)
+  commission    Float?   @default(0)
+  vat           Float? // %vat
+  note          String?
 
   // product_id Int?
   // unit_id Int?
-  inventory_id Int?
+  inventory_id    Int?
   order_detail_id Int?
 
   created_at DateTime @default(now())
@@ -65,10 +68,11 @@ model InventoryDetails {
 
   // unit   Units?   @relation(fields: [unit_id], references: [id], onDelete: SetNull)
   // product   Products?   @relation(fields: [product_id], references: [id], onDelete: SetNull)
-  inventory Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: SetNull)
-  order_detail CommonDetails?   @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
-  @@map("inventory_details")
+  inventory              Inventories?            @relation(fields: [inventory_id], references: [id], onDelete: SetNull)
+  order_detail           CommonDetails?          @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
   transaction_warehouses TransactionWarehouses[]
+
+  @@map("inventory_details")
 }
 
 enum PrsTransactionWarehouseType {
@@ -77,27 +81,29 @@ enum PrsTransactionWarehouseType {
 }
 
 model TransactionWarehouses {
-  id       Int                      @id @default(autoincrement())
-  time_at  DateTime                 @default(now())
-  quantity Int @default(0)
-  real_quantity Int? @default(0)
-  convert_quantity Int? @default(0)
-  type     PrsTransactionWarehouseType
-  note     String?
+  id               Int                         @id @default(autoincrement())
+  time_at          DateTime                    @default(now())
+  quantity         Int                         @default(0)
+  real_quantity    Int?                        @default(0)
+  convert_quantity Int?                        @default(0)
+  type             PrsTransactionWarehouseType
+  note             String?
 
-  organization_id Int?
-  warehouse_id    Int?
-  inventory_id    Int?
+  organization_id     Int?
+  warehouse_id        Int?
+  inventory_id        Int?
   inventory_detail_id Int?
-  order_id Int?
-  product_id      Int?
+  order_id            Int?
+  product_id          Int? // parent product
+  child_id            Int? // child product
 
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  warehouse    Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
-  inventory    Inventories?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
-  inventory_detail    InventoryDetails?   @relation(fields: [inventory_detail_id], references: [id], onDelete: Cascade)
-  order    Orders?   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product    Products?   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  organization     Organizations?    @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  warehouse        Warehouses?       @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
+  inventory        Inventories?      @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
+  inventory_detail InventoryDetails? @relation(fields: [inventory_detail_id], references: [id], onDelete: Cascade)
+  order            Orders?           @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product          Products?         @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  child            Products?         @relation("ChildProductTrans", fields: [child_id], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

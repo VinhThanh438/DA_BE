@@ -1,3 +1,4 @@
+import { IBankTransfer } from '@common/interfaces/bank.interface';
 import { BaseController } from './base.controller';
 import { Banks } from '.prisma/client';
 import logger from '@common/logger';
@@ -31,6 +32,17 @@ export class BankController extends BaseController<Banks> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.getAll: `, error);
+            next(error);
+        }
+    }
+
+    public async transfer(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body: IBankTransfer = req.body;
+            const result = await this.service.transfer(body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.transfer: `, error);
             next(error);
         }
     }

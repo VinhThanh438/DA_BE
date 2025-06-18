@@ -32,13 +32,19 @@ express.response.sendJson = function (data?: object | any[]) {
         (data as { data: any[]; pagination: object }).data &&
         (data as { data: any[]; pagination: object }).pagination
     ) {
-        return this.json({
+        const response: any = {
             errorCode: 0,
             statusCode: StatusCode.SUCCESS,
             message: (data as { message?: string })?.message || 'OK',
-            data: (data as { data: any[]; pagination: object }).data,
-            pagination: (data as { data: any[]; pagination: object }).pagination,
-        });
+            data: (data as { data: any[] }).data,
+            pagination: (data as { pagination: object }).pagination,
+        };
+
+        if ((data as any).summary) {
+            response.summary = (data as any).summary;
+        }
+
+        return this.json(response);
     }
 
     return this.json({

@@ -1,4 +1,4 @@
-import { OrderStatus, OrderType } from '@config/app.constant';
+import { OrderStatus, OrderType, PrsOrderType } from '@config/app.constant';
 import { IOrderExpense } from './order-expense.interface';
 import { IProduction } from './production.interface';
 import { IContract } from './contract.interface';
@@ -10,7 +10,7 @@ import { IShippingPlan } from './shipping-plan.interface';
 export interface IOrder {
     id?: number;
     code?: string;
-    type: OrderType;
+    type: OrderType | PrsOrderType; // Support both for compatibility
     address?: string;
     payment_method?: string;
     phone?: string;
@@ -19,6 +19,13 @@ export interface IOrder {
     files?: string[];
     files_add?: string[];
     files_delete?: string[];
+
+    product_quality?: string;
+    delivery_location?: string;
+    delivery_method?: string;
+    delivery_time?: string | undefined; // Fix: Use lowercase 'string' not 'String'
+    payment_note?: string;
+    additional_note?: string;
 
     employee_id?: number;
     partner_id?: number;
@@ -32,7 +39,7 @@ export interface IOrder {
     productions?: IProduction[];
     contracts?: IContract[];
     invoices?: IInvoice[];
-    inventories: IInventory[];
+    inventories?: IInventory[];
     shipping_plans?: IShippingPlan[];
     shipping_plans_add?: IShippingPlan[];
     shipping_plans_update?: IShippingPlan[];
@@ -44,6 +51,8 @@ export interface IOrder {
 
     status?: OrderStatus;
     rejected_reason?: string;
+    tolerance?: number;
+    isDone?: boolean;
 }
 
 export interface IOrderPaginationInput extends IPaginationInput {

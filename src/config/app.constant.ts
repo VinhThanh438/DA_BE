@@ -3,6 +3,8 @@ import { IRoleModule } from '@common/interfaces/role.interface';
 import { StringValue } from 'ms';
 const prisma = new PrismaClient();
 
+export const DEFAULT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
 export enum PublicPath {
     PUBLIC_FILES = '/uploads',
 }
@@ -273,6 +275,12 @@ export enum OrderType {
     COMMERCIAL = 'commercial',
 }
 
+export enum PrsOrderType {
+    purchase = 'purchase',
+    production = 'production',
+    commercial = 'commercial',
+}
+
 export enum OrderStatus {
     PENDING = 'pending',
     CONFIRMED = 'confirmed',
@@ -306,12 +314,12 @@ export enum TransactionWarehouseType {
 }
 
 export const InventoryType = {
-    FINISHED_IN: PrsInventoryType.finished_in,
-    FINISHED_OUT: PrsInventoryType.finished_out,
-    NORMAL_IN: PrsInventoryType.normal_in,
-    NORMAL_OUT: PrsInventoryType.normal_out,
-    MATERIAL_IN: PrsInventoryType.material_in,
-    MATERIAL_OUT: PrsInventoryType.material_out,
+    FINISHED_IN: PrsInventoryType.inventory_finished_in,
+    FINISHED_OUT: PrsInventoryType.inventory_finished_out,
+    NORMAL_IN: PrsInventoryType.inventory_normal_in,
+    NORMAL_OUT: PrsInventoryType.inventory_normal_out,
+    MATERIAL_IN: PrsInventoryType.inventory_material_in,
+    MATERIAL_OUT: PrsInventoryType.inventory_material_out,
 } as const;
 
 export const InventoryTypeDirectionMap: Record<
@@ -352,6 +360,8 @@ export enum PaymentRequestStatus {
 export enum PaymentRequestType {
     ORDER = 'order',
     COMMISSION = 'commission',
+    INTEREST = 'interest',
+    LOAN = 'loan',
 }
 
 export enum DeptType {
@@ -362,6 +372,9 @@ export enum DeptType {
 export enum TransactionOrderType {
     ORDER = 'order',
     COMMISSION = 'commission',
+    LOAN = 'loan',
+    INTEREST = 'interest',
+    TRANSFER = 'transfer',
 }
 
 export enum TransactionType {
@@ -392,9 +405,33 @@ export enum CommonApproveStatus {
 }
 
 export enum BankType {
-    LOAN = 'loan',
-    DISBURSEMENT = 'disbursement',
+    BANK = 'bank',
+    FUND = 'fund',
+    DEPOSIT = 'deposit',
 }
 
 export const logoLeft = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo.png';
 export const logoRight = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo2.png';
+
+export enum PaymentRequestDetailStatus {
+    PENDING = 'pending',
+    PAYMENTED = 'paymented',
+}
+
+export enum PaymentMethod {
+    TRANSFER = 'transfer',
+    CASH = 'cash',
+    CREDIT_CARD = 'credit_card',
+}
+
+export enum LoanStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
+}
+
+export enum InvoiceType {
+    SUPPLIER = 'supplier',
+    CUSTOMER = 'customer',
+    DELIVERY = 'delivery',
+}

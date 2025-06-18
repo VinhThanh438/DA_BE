@@ -4,6 +4,7 @@ import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import {
     PaymentRequestDetailSelection,
     PaymentRequestDetailSelectionAll,
+    PaymentRequestDetailWithFather,
 } from './prisma/payment-request-details.select';
 
 export class PaymentRequestDetailRepo extends BaseRepo<

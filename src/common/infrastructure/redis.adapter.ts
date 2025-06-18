@@ -1,7 +1,7 @@
 import logger from '@common/logger';
 import { REDIS_URI } from '@common/environment';
 import { QueueOptions } from 'bull';
-import ioredis, { Redis } from 'ioredis';
+import ioredis, { Redis, RedisOptions } from 'ioredis';
 
 export class RedisAdapter {
     private static client: Redis;
@@ -9,10 +9,10 @@ export class RedisAdapter {
     private static allClients: Redis[] = [];
 
     static async getClient(): Promise<Redis> {
-        if (!RedisAdapter.client) {
-            await RedisAdapter.connect();
+        if (!this.client) {
+            await this.connect();
         }
-        return RedisAdapter.client;
+        return this.client;
     }
 
     static async connect(overrideClient = true, options = {}): Promise<Redis> {
@@ -29,9 +29,11 @@ export class RedisAdapter {
             ...options,
         });
 
-        tmp.on('ready', () => {
-            logger.info('Connect to redis successfully!');
-        });
+        if (!this.client || !this.allClients.includes(this.client)) {
+            tmp.on('ready', () => {
+                logger.info('Connect to redis successfully!');
+            });
+        }
         tmp.on('end', () => {
             logger.info('Connect to redis ended!');
         });
@@ -48,22 +50,22 @@ export class RedisAdapter {
         }
 
         if (overrideClient) {
-            RedisAdapter.client = tmp;
+            this.client = tmp;
         }
-        RedisAdapter.allClients.push(tmp);
+        this.allClients.push(tmp);
         return tmp;
     }
 
     static async disconnect(): Promise<void> {
         logger.info('Closing redis connection...');
         try {
-            await Promise.all(RedisAdapter.allClients.map((client) => client.quit()));
+            await Promise.all(this.allClients.map((client) => client.quit()));
         } catch (error) {
             logger.error('Closing redis connection error!', error);
         }
     }
 
-    static createClient(options = {}): Redis {
+    static createClient(options: RedisOptions = {}): Redis {
         const tmp = new ioredis(REDIS_URI, {
             maxRetriesPerRequest: 10,
             retryStrategy: (times) => {
@@ -76,29 +78,36 @@ export class RedisAdapter {
             ...options,
         });
 
-        tmp.on('ready', () => {
-            logger.info('(Create client) Connect to redis successfully!');
-        });
+        if (!this.client && !this.allClients.includes(this.client)) {
+            tmp.on('ready', () => {
+                logger.info('(Client) Connect to redis successfully!');
+            });
+        }
         tmp.on('end', () => {
-            logger.info('(Create client) Connect to redis ended!');
+            logger.info('(Client) Connect to redis ended!');
         });
-
         tmp.on('error', (error) => {
-            logger.error('(Create client)Connect to redis error!', error);
+            logger.error('(Client) Connect to redis error!', error);
             process.exit(1);
         });
 
-        RedisAdapter.allClients.push(tmp);
+        this.allClients.push(tmp);
 
         return tmp;
     }
 
     static async getQueueOptions(): Promise<QueueOptions> {
-        if (!RedisAdapter.subscriber) {
-            RedisAdapter.subscriber = await RedisAdapter.connect(false, {
-                maxRetriesPerRequest: null,
-                enableReadyCheck: false,
-            });
+        const clientOptions: RedisOptions = {
+            maxRetriesPerRequest: null,
+            enableReadyCheck: false,
+        };
+
+        if (!this.client) {
+            this.client = await this.connect(true);
+        }
+
+        if (!this.subscriber) {
+            this.subscriber = await this.connect(false, clientOptions);
         }
         return {
             prefix: `Jobs:`,
@@ -109,14 +118,11 @@ export class RedisAdapter {
             createClient: (type) => {
                 switch (type) {
                     case 'client':
-                        return RedisAdapter.client;
+                        return this.client;
                     case 'subscriber':
-                        return RedisAdapter.subscriber;
+                        return this.subscriber;
                     default:
-                        return RedisAdapter.createClient({
-                            maxRetriesPerRequest: null,
-                            enableReadyCheck: false,
-                        });
+                        return this.createClient(clientOptions);
                 }
             },
         };
@@ -137,19 +143,19 @@ export class RedisAdapter {
     }
 
     static async get(key: string, shouldDeserialize = false): Promise<unknown> {
-        const value = await (await RedisAdapter.getClient()).get(key);
-        return shouldDeserialize ? RedisAdapter.deserialize(value) : value;
+        const value = await (await this.getClient()).get(key);
+        return shouldDeserialize ? this.deserialize(value) : value;
     }
 
     static async set(key: string, value: unknown, ttl = 0, shouldSerialize = false): Promise<unknown> {
-        const stringValue: string = shouldSerialize ? RedisAdapter.serialize(value) : (value as string);
+        const stringValue: string = shouldSerialize ? this.serialize(value) : (value as string);
         if (ttl > 0) {
-            return (await RedisAdapter.getClient()).set(key, stringValue, 'EX', ttl);
+            return (await this.getClient()).set(key, stringValue, 'EX', ttl);
         }
-        return (await RedisAdapter.getClient()).set(key, stringValue);
+        return (await this.getClient()).set(key, stringValue);
     }
 
     static async delete(key: string): Promise<unknown> {
-        return (await RedisAdapter.getClient()).del(key);
+        return (await this.getClient()).del(key);
     }
 }

@@ -10,41 +10,50 @@ model PaymentRequests {
   time_at         DateTime                @default(now())
   payment_date    DateTime                @default(now())
 
-  employee_id Int?
-  approver_id Int?
-  partner_id Int?
-  organization_id Int?
+  employee_id       Int?
+  approver_id       Int?
+  partner_id        Int?
+  organization_id   Int?
+  bank_id           Int?
+  representative_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee Employees?              @relation("RequesterEmployee", fields: [employee_id], references: [id], onDelete: SetNull)
-  approver Employees?               @relation("ApproverEmployee", fields: [approver_id], references: [id], onDelete: SetNull)
-  partner Partners?               @relation("ApproverEmployee", fields: [partner_id], references: [id], onDelete: SetNull)
-  organization Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  employee       Employees?       @relation("RequesterEmployee", fields: [employee_id], references: [id], onDelete: SetNull)
+  approver       Employees?       @relation("ApproverEmployee", fields: [approver_id], references: [id], onDelete: SetNull)
+  partner        Partners?        @relation("ApproverEmployee", fields: [partner_id], references: [id], onDelete: SetNull)
+  organization   Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  bank           Banks?           @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  representative Representatives? @relation("RepresentativeEmployee", fields: [representative_id], references: [id], onDelete: SetNull)
 
-  payments Payments[]
-  details  PaymentRequestDetails[]
-  // financeRecords FinanceRecords[]
+  details PaymentRequestDetails[]
 
   @@map("payment_requests")
 }
 
 model PaymentRequestDetails {
-  id     Int     @id @default(autoincrement())
+  id     Int                            @id @default(autoincrement())
+  code   String?                        @default(cuid())
   note   String?
   amount Float?
+  status PrsPaymentRequestDetailStatus?
 
   payment_request_id Int?
-  order_id    Int?
-  invoice_id    Int?
+  order_id           Int?
+  invoice_id         Int?
+  interest_log_id    Int?
+  loan_id            Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   payment_request PaymentRequests? @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
-  order    Orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  invoice    Invoices?   @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  order           Orders?          @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  invoice         Invoices?        @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  interest_log    InterestLogs?    @relation(fields: [interest_log_id], references: [id], onDelete: SetNull)
+  loan            Loans?           @relation(fields: [loan_id], references: [id], onDelete: SetNull)
+  payments        Payments[]
 
   @@map("payment_request_details")
 }
@@ -56,9 +65,16 @@ enum PrsPaymentRequestStatus {
   paymented
 }
 
+enum PrsPaymentRequestDetailStatus {
+  pending
+  paymented
+}
+
 enum PrsdPaymentRequestType {
   order
   commission
+  interest
+  loan
 }
 
 enum PrsPaymentType {
@@ -67,38 +83,41 @@ enum PrsPaymentType {
 }
 
 model Payments {
-  id              Int                     @id @default(autoincrement())
-  code            String                  @default(cuid())
-  status          PrsPaymentRequestStatus @default(confirmed)
-  type            PrsPaymentType  @default(income)
-  files           Json?                   @default("[]")
-  note            String?
-  rejected_reason String?
-  time_at         DateTime                @default(now())
-  payment_date    DateTime                @default(now())
+  id                 Int                     @id @default(autoincrement())
+  code               String                  @default(cuid())
+  status             PrsPaymentRequestStatus @default(confirmed)
+  type               PrsPaymentType          @default(income)
+  files              Json?                   @default("[]")
+  note               String?
+  rejected_reason    String?
+  time_at            DateTime                @default(now())
+  payment_date       DateTime                @default(now())
   description        String? // dien giai
   payment_method     String? // hinh thuc thanh toan
-  amount             Decimal?
-  counterparty            String?   // Nguoi nhan tien/nguoi nop tien
+  amount             Decimal? // so tien thanh toan
+  counterparty       String? // Nguoi nhan tien/nguoi nop tien
   attached_documents String? // ching tu kem theo
 
-  payment_request_id Int?
-  organization_id Int?
-  order_id Int?
-  invoice_id Int?
-  bank_id Int?
-  partner_id Int?
+  payment_request_detail_id Int?
+  organization_id           Int?
+  order_id                  Int?
+  invoice_id                Int?
+  bank_id                   Int?
+  partner_id                Int?
+  interest_log_id           Int?
 
-  payment_request PaymentRequests? @relation(fields: [payment_request_id], references: [id], onDelete: SetNull)
-  order Orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  invoice Invoices? @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
-  bank Banks? @relation(fields: [bank_id], references: [id], onDelete: SetNull)
-  partner Partners? @relation(fields: [partner_id], references: [id], onDelete: SetNull)
-  organization Organizations?      @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  payment_request_detail PaymentRequestDetails? @relation(fields: [payment_request_detail_id], references: [id], onDelete: SetNull)
+  order                  Orders?                @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  invoice                Invoices?              @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  bank                   Banks?                 @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  partner                Partners?              @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  interest_log           InterestLogs?          @relation(fields: [interest_log_id], references: [id], onDelete: SetNull)
+  organization           Organizations?         @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   transactions Transactions[]
+
   @@map("payments")
 }

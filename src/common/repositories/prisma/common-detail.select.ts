@@ -11,6 +11,8 @@ export const CommonDetailSelection: Prisma.CommonDetailsSelect = {
     note: true,
     commission: true,
     imported_quantity: true,
+    product_id: true,
+    unit_id: true,
 };
 
 export const CommonDetailSelectionAll: Prisma.CommonDetailsSelect = {

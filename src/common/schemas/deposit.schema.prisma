@@ -1,0 +1,46 @@
+model Deposits {
+    id                     Int           @id @default(autoincrement())
+    account_number         String? // Số khoản vay( số tài khoản, số khế ước )
+    time_at                DateTime      @default(now()) // Ngày thanh toán
+    deposit_date           DateTime // Ngày gửi
+    withdraw_date          DateTime? // Ngày rút
+    term                   Int? // Kỳ hạn (tính theo tháng)
+    amount                 Decimal       @default(0) // Số tiền gửi
+    unit                   String?       @default("VND") // Số tiền gửi theo đơn vị
+    interest_rate          Float? // Lãi suất (%)
+    compound_interest      Decimal? // Lãi kép dự tính
+    real_withdraw_date     DateTime? // Ngày rút thực tế
+    real_compound_interest Decimal? // Lãi kép nhận được (thực nhận)
+    interest_amount        Decimal? // Số tiền lãi nhận được
+    update_count           Int           @default(0) // Số lần cập nhật lãi suất
+    files                  String[]      @default([]) // Tập tin đính kèm (có thể là hình ảnh, pdf, docx, ...)
+    note                   String? // Ghi chú
+    status                 DepositStatus @default(pending)
+    rejected_reason        String?
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    // Relations
+    bank_id         Int //  Tài khoản tiền gửi
+    organization_id Int?
+    employee_id     Int? // Người tạo giao dịch
+    created_by      Int? // Người tạo giao dịch (có thể là nhân viên hoặc quản lý)
+    updated_by      Int? // Người cập nhật giao dịch (có thể là nhân viên hoặc quản lý)
+
+    // Relations
+    organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+    bank         Banks          @relation(fields: [bank_id], references: [id], onDelete: Restrict)
+    employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: Restrict)
+
+    // Child relations
+    transactions Transactions[]
+
+    @@map("deposits")
+}
+
+enum DepositStatus {
+    pending
+    confirmed
+    rejected
+}

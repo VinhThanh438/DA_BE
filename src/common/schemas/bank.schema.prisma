@@ -1,35 +1,44 @@
 model Banks {
-  id             Int     @id @default(autoincrement())
-  code           String?    @default(cuid())
-  bank           String
-  responsibility String?
-  account_number String?
-  name           String?
-  branch         String?
-  description    String?
-  balance        Decimal? @default(0)
-  type           PrsBankType @default(disbursement)
+  id                Int         @id @default(autoincrement())
+  code              String?     @default(cuid())
+  bank              String
+  responsibility    String?
+  account_number    String?
+  name              String?
+  branch            String?
+  description       String?
+  balance           Decimal?    @default(0)
+  beginning_balance Decimal?    @default(0)
+  available_balance Decimal?    @default(0)
+  type              PrsBankType @default(bank)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee_id    Int?
-  representative_id    Int?
-  organization_id Int?
+  employee_id       Int?
+  representative_id Int?
+  organization_id   Int?
+  partner_id        Int?
 
-  employee          Employees?          @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  representative    Representatives?    @relation(fields: [representative_id], references: [id], onDelete: Cascade)
-  organization     Organizations?     @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  employee       Employees?       @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  representative Representatives? @relation(fields: [representative_id], references: [id], onDelete: Cascade)
+  organization   Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  partner        Partners?        @relation(fields: [partner_id], references: [id], onDelete: SetNull)
 
-  invoices           Invoices[]
+  invoices     Invoices[]
   transactions Transactions[]
-  orders Orders[]
-  payments Payments[]
+  orders       Orders[]
+  payments     Payments[]
+
+  loans           Loans[]
+  deposits        Deposits[]
+  paymentRequests PaymentRequests[]
 
   @@map("banks")
 }
 
 enum PrsBankType {
-  loan
-  disbursement
+  bank
+  fund
+  deposit
 }

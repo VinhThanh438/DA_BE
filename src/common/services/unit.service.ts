@@ -16,14 +16,14 @@ export class UnitService {
     }
 
     async create(body: ICreateUnit) {
-        const isExist = await this.unitRepo.isExist({ name: body.name });
-        if (isExist) {
-            throw new APIError({
-                message: 'common.existed',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`name.${ErrorKey.EXISTED}`],
-            });
-        }
+        // const isExist = await this.unitRepo.isExist({ name: body.name });
+        // if (isExist) {
+        //     throw new APIError({
+        //         message: 'common.existed',
+        //         status: StatusCode.BAD_REQUEST,
+        //         errors: [`name.${ErrorKey.EXISTED}`],
+        //     });
+        // }
         const output = await this.unitRepo.create(body);
         return { id: output };
     }
@@ -47,14 +47,14 @@ export class UnitService {
     }
 
     async update(id: number, body: IUpdateUnit) {
-        const isExist = await this.unitRepo.isExist({ id });
-        if (!isExist) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
+        // const isExist = await this.unitRepo.isExist({ id });
+        // if (!isExist) {
+        //     throw new APIError({
+        //         message: 'common.not_found',
+        //         status: StatusCode.BAD_REQUEST,
+        //         errors: [`id.${ErrorKey.NOT_FOUND}`],
+        //     });
+        // }
         const output = await this.unitRepo.update({ id: id }, body);
         return { id: output };
     }

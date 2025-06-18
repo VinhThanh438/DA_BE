@@ -34,7 +34,7 @@ export const create: schema = {
                 .items(
                     Joi.object<InventoryDetail>({
                         order_detail_id: Joi.number().required(),
-                        real_quantity: Joi.number().min(0).required(),
+                        real_quantity: Joi.number().min(0).optional(),
                         quantity: Joi.number().min(0).optional(),
                         note: Joi.string().allow(null, '').max(500).optional(),
                         key: Joi.string().allow(null, ''),
@@ -115,6 +115,59 @@ export const queryFilter: schema = {
                 .valid(...values(InventoryType))
                 .optional()
                 .allow(null, ''),
+            supplierIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+            deliveryIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+        }),
+    ),
+};
+
+export const updateRealQuantity: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
+    body: wrapSchema(
+        Joi.object<IInventory>({
+            files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+
+            details: Joi.array()
+            .items(
+                Joi.object<InventoryDetail>({
+                    id: Joi.number().min(0).required(),
+                    real_quantity: Joi.number().min(0).required(),
+                    note: Joi.string().allow(null, '').max(500).optional(),
+                    key: Joi.string().allow(null, ''),
+                }),
+            )
+            .optional()
+            .default([]),
         }),
     ),
 };

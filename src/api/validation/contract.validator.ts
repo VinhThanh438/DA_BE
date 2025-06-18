@@ -1,9 +1,11 @@
-import { wrapSchema } from '@common/helpers/wrap-schema.helper';
+import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
 import { values } from 'lodash';
 import { ContractStatus, ContractType } from '@config/app.constant';
 import { IContract } from '@common/interfaces/contract.interface';
 import { detailsSchema } from './common.validator';
+import { ObjectSchema } from 'joi/lib';
+import { queryFilter as baseQueryFilter } from './common.validator';
 
 export const create: schema = {
     body: wrapSchema(
@@ -17,6 +19,7 @@ export const create: schema = {
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),
+            order_id: Joi.number().optional(),
             organization_id: Joi.number().optional(),
 
             status: Joi.string()
@@ -51,6 +54,7 @@ export const update: schema = {
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),
+            order_id: Joi.number().optional(),
             organization_id: Joi.number().optional(),
 
             status: Joi.string()
@@ -82,6 +86,7 @@ export const updateEntity: schema = {
 
             partner_id: Joi.number().required(),
             employee_id: Joi.number().optional(),
+            order_id: Joi.number().optional(),
             organization_id: Joi.number().optional(),
 
             status: Joi.string()
@@ -96,6 +101,27 @@ export const updateEntity: schema = {
             update: Joi.array().items(Joi.object(detailsSchema)).optional().default([]),
 
             delete: Joi.array().items(Joi.number()).optional().default([]),
+        }),
+    ),
+};
+
+export const queryFilter: schema = {
+    query: wrapSchema(
+        extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
+            supplierIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
         }),
     ),
 };

@@ -44,13 +44,23 @@ export class UploadMiddleware {
             const upload = multer({
                 storage,
                 limits: {
-                    fileSize: 100 * 1024 * 1024, // 100MB
+                    fileSize: 20 * 1024 * 1024, // 20MB
                 },
             }).any();
 
             upload(req, res, async (err) => {
                 if (err) {
                     logger.error('UploadMiddleware error:', err);
+
+                    if (err.code === 'LIMIT_FILE_SIZE') {
+                        return next(
+                            new APIError({
+                                message: 'common.too-large',
+                                status: StatusCode.BAD_REQUEST,
+                            }),
+                        );
+                    }
+
                     return next(
                         new APIError({
                             message: 'common.upload.error',

@@ -16,6 +16,7 @@ export interface IInventory extends IUpdateChildAction {
     delivery_cost?: number;
     identity_code?: string;
     representative_name?: string;
+    content?: string;
 
     customer_id?: number;
     employee_id?: number;
@@ -45,4 +46,9 @@ export interface InventoryDetail {
     order_detail?: ICommonDetails; // This can be replaced with a more specific type if needed
     // unit?: any
     // product?: any;
+}
+
+export interface IInventoryDifferent extends IInventory {
+    total_different_quantity?: number;
+    total_different_money?: number;
 }

@@ -1,11 +1,9 @@
 import { Prisma } from '.prisma/client';
 import { BankSelectionAll } from './bank.select';
 import { EmployeeSelection } from './employee.select';
-import { OrderSelection } from './order.select';
-import { OrganizationSelection } from './organization.select';
 import { PartnerSelection } from './partner.select';
 import { RepresentativeSelection } from './representative.select';
-import { InvoiceSelection } from './invoice.select';
+import { OrganizationSelection, OrderSelection, InvoiceSelection } from './base.select';
 
 export const TransactionSelect: Prisma.TransactionsSelect = {
     id: true,
@@ -15,6 +13,9 @@ export const TransactionSelect: Prisma.TransactionsSelect = {
     amount: true,
     note: true,
     is_closed: true,
+    partner_id: true,
+    order_id: true,
+    invoice_id: true,
 };
 
 export const TransactionSelectAll: Prisma.TransactionsSelect = {
@@ -59,8 +60,8 @@ export const TransactionSelectWithBankOrder: Prisma.TransactionsSelect = {
     payment: {
         select: {
             id: true,
-            type: true
-        }
+            type: true,
+        },
     },
     invoice: {
         select: InvoiceSelection,

@@ -13,10 +13,10 @@ import { BaseRepo } from '@common/repositories/base.repo';
 import { DEFAULT_EXCLUDED_FIELDS, OrderStatus } from '@config/app.constant';
 import { Prisma } from '@prisma/client';
 
-export abstract class BaseService<T, S, W> {
+export abstract class BaseService<T, S, W, R extends BaseRepo<T, any, W> = BaseRepo<T, any, W>> {
     protected db = DatabaseAdapter.getInstance();
 
-    constructor(protected readonly repo: BaseRepo<T, any, W>) {}
+    constructor(protected readonly repo: R) {}
 
     protected async validateForeignKeys<T extends { [key: string]: any }>(
         data: T[] | T,
@@ -422,7 +422,7 @@ export abstract class BaseService<T, S, W> {
     async canEdit(id: number, entityName: string, isAdmin: boolean, repo: any = this.repo) {
         const entity = await repo.findOne({ id, ...(!isAdmin && { status: OrderStatus.PENDING }) } as any);
 
-        if (!entity || isAdmin === false) {
+        if (!entity) {
             throw new APIError({
                 message: `common.status.${StatusCode.BAD_REQUEST}`,
                 status: ErrorCode.BAD_REQUEST,

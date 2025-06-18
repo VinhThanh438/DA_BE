@@ -59,7 +59,7 @@ export class ExcelController {
                 case 'purchaseContract': // hop dong mua hang / chờ a Công gửi
                     path = await this.excelService.exportExcelPurchaseContract(id);
                     break;
-                case 'bankTransaction': // giao dich ngan hang // tiền ngân hàng
+                case 'bankTransaction': // giao dich ngan hang // tiền ngân hàng // pdf
                     // path = await this.excelService.exportExcelTransaction(req.query);
                     path = await this.excelService.exportExcelTransactionBank(req.query);
                     break;

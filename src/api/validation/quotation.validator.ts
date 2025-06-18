@@ -9,7 +9,7 @@ import { queryFilter as baseQueryFilter, detailsSchema } from './common.validato
 
 const QuotationBody = {
     partner_id: Joi.number().required(),
-    organization_id: Joi.number().required(),
+    // organization_id: Joi.number().required(),
     code: Joi.string().optional().allow(null, '').max(100),
     time_at: Joi.string().isoDate().optional().allow(null),
     expired_date: Joi.string().isoDate().optional().allow(null),
@@ -28,7 +28,7 @@ const CustomerQuotationBody = {
 
 const SupplierQuotationBody = {
     organization_name: Joi.string().required(),
-    organization_id: Joi.number().required(),
+    // organization_id: Joi.number().required(),
     tax: Joi.string().required(),
     name: Joi.string().required(),
     phone: Joi.string().required(),
@@ -101,6 +101,34 @@ export const queryFilter: schema = {
                 .required()
                 .valid(...values(QuotationType)),
             isMain: Joi.boolean().optional().default(false),
+            supplierIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
+            employeeIds: Joi.alternatives()
+                .try(
+                    Joi.array().items(Joi.number()),
+                    Joi.string().custom((value, helpers) => {
+                        if (!value || value === '') return null;
+                        const ids = value.split(',').map((id: string) => parseInt(id.trim(), 10));
+                        if (ids.some((id: number) => isNaN(id))) {
+                            return helpers.error('any.invalid');
+                        }
+                        return ids;
+                    }),
+                )
+                .optional()
+                .allow(null, ''),
         }),
     ),
 };

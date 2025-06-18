@@ -31,8 +31,6 @@ export const ADMIN_PASSWORD: string = process.env.ADMIN_PASSWORD || '';
 export const ADMIN_USER_NAME: string = process.env.ADMIN_USER_NAME || '';
 export const ADMIN_MAIL: string = process.env.ADMIN_MAIL || '';
 
-export const SOCKET_PORT: number = process.env.SOCKET_PORT ? parseInt(process.env.SOCKET_PORT, 10) : 3001;
-
 export const MAIL_SERVICE: string = process.env.MAIL_SERVICE || 'gmail';
 export const MAIL_USERNAME: string = process.env.MAIL_USERNAME || '';
 export const MAIL_PASSWORD: string = process.env.MAIL_PASSWORD || '';

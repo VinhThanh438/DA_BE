@@ -34,7 +34,7 @@ export class AuthMiddleware {
                     status: StatusCode.REQUEST_UNAUTHORIZED,
                 });
             }
-            
+
             const deviceId = req?.userDevice?.device;
             if (!deviceId) {
                 throw new APIError({
@@ -95,7 +95,7 @@ export class AuthMiddleware {
                             status: StatusCode.REQUEST_UNAUTHORIZED,
                         });
                     }
-                    const newAccessToken = TokenHelper.generateToken({ id: user.id }, deviceId);
+                    const newAccessToken = TokenHelper.generateToken({ id: user.id, eId: user.eId }, deviceId);
 
                     res.cookie('access_token', 'Bearer ' + newAccessToken);
                     req.user = user;

@@ -3,22 +3,25 @@ import { BankSelection } from './bank.select';
 import { ContractSelection } from './contract.select';
 import { EmployeeShortSelection } from './employee.select';
 import { PartnerSelection } from './partner.select';
-import { OrderSelection } from './order.select';
+import { OrderSelectionPartner } from './order.select';
 import { InvoiceDetailSelectionAll } from './invoice-detail.select';
+import { InvoiceSelection } from './base.select';
 
-export const InvoiceSelection: Prisma.InvoicesSelect = {
-    id: true,
-    code: true,
-    time_at: true,
-    invoice_date: true,
-    status: true,
-    rejected_reason: true,
-    note: true,
-    files: true,
+export const InvoiceSelectionWithTotal: Prisma.InvoicesSelect = {
+    ...InvoiceSelection,
+    total_amount: true,
+    total_money: true,
+    total_vat: true,
+    total_commission: true,
+
+    total_amount_paid: true,
+    total_amount_debt: true,
+    total_commission_paid: true,
+    total_commission_debt: true,
 };
 
 export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
-    ...InvoiceSelection,
+    ...InvoiceSelectionWithTotal,
     details: {
         select: InvoiceDetailSelectionAll,
     },
@@ -35,12 +38,12 @@ export const InvoiceSelectionAll: Prisma.InvoicesSelect = {
         select: PartnerSelection,
     },
     order: {
-        select: OrderSelection,
+        select: OrderSelectionPartner,
     },
 };
 
 export const InvoiceSelectionWithDetails: Prisma.InvoicesSelect = {
-    ...InvoiceSelection,
+    ...InvoiceSelectionWithTotal,
     details: {
         select: InvoiceDetailSelectionAll,
     },

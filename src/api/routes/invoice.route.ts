@@ -1,8 +1,8 @@
 import { InvoiceController } from '@api/controllers/invoice.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { queryById, queryFilter } from '@api/validation/common.validator';
-import { approve, create, update } from '@api/validation/invoice.validator';
+import { queryById } from '@api/validation/common.validator';
+import { approve, create, update, queryFilter } from '@api/validation/invoice.validator';
 import express from 'express';
 
 const router = express.Router();

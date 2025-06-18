@@ -107,10 +107,22 @@ export class InventoryController extends BaseController<Inventories> {
     public async different(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const query = req.query as IPaginationInput;
-            const data = await this.service.paginate(query);
+            const data = await this.service.different(query);
             res.sendJson(data);
         } catch (error) {
             logger.error(`${this.constructor.name}.different: `, error);
+            next(error);
+        }
+    }
+
+    public async updateRealQuantity(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IInventory;
+            const id = Number(req.params.id);
+            const result = await this.service.updateRealQuantity(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.updateRealQuantityRequest: `, error);
             next(error);
         }
     }

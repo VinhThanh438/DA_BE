@@ -27,21 +27,6 @@ async function main() {
         },
     });
 
-    const employee = await prisma.employees.create({
-        data: {
-            name: 'Alexander',
-            email: 'john.doe@example.com',
-            code: 'EMP002',
-            gender: 'male',
-            age: 28,
-            phone: '0987654321',
-            base_salary: 30000000,
-            date_of_birth: new Date('1995-03-15'),
-            organization_id: null, // Will be set later
-            job_position_id: null, // Will be set later
-        },
-    });
-
     // 3. Seed organization
     const organization = await prisma.organizations.create({
         data: {
@@ -66,14 +51,13 @@ async function main() {
         data: { organization_id: organization.id },
     });
 
-    await prisma.employees.update({
-        where: { id: employee.id },
-        data: { organization_id: organization.id },
-    });
+    // await prisma.employees.update({
+    //     where: { id: employee.id },
+    //     data: { organization_id: organization.id },
+    // });
 
     console.log('✅ Seeded data:', {
         leader,
-        employee,
         organization,
     });
 }

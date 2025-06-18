@@ -5,13 +5,14 @@ import { ObjectSchema } from 'joi';
 import { queryFilter as baseQueryFilter } from './common.validator';
 import { values } from 'lodash';
 import { BankType } from '@config/app.constant';
+import { z } from 'zod';
 
 export const create = {
     body: wrapSchema(
         Joi.object<IBank>({
             bank: Joi.string().required(),
             account_number: Joi.string().optional().allow(null, ''),
-            name: Joi.string().required(),
+            name: Joi.string().optional().allow(null, ''),
             description: Joi.string().optional().allow(null, ''),
             code: Joi.string().optional().allow(null, ''),
             balance: Joi.number().optional().allow(null),
@@ -54,3 +55,12 @@ export const queryFilter: schema = {
         }),
     ),
 };
+
+export const transferSchema = z.object({
+    bank_id: z.number(),
+    amount: z.number(),
+    time_at: z.string().datetime(),
+    file: z.string().optional().nullable(),
+    note: z.string().optional().nullable(),
+    organization_id: z.number().optional(),
+});

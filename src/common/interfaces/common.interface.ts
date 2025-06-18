@@ -11,6 +11,7 @@ export interface IPaginationInfo {
 export interface IPaginationResponse<T = any> {
     data: T | T[];
     pagination: IPaginationInfo;
+    summary?: T;
 }
 
 export interface IArrayDataInput {
@@ -23,14 +24,22 @@ export interface IFilterArgs extends IArrayDataInput {
     endAt?: DateString;
     keyword?: string;
     timeField?: string;
+    productIds?: number[];
+    supplierIds?: number[];
+    warehouseIds?: number[];
+    deliveryIds?: number[];
+    customerIds?: number[];
+    employeeIds?: number[];
+    plate?: string
+    childrenIds?: number
 }
 
 export interface IPaginationInput extends IArrayDataInput {
     page?: number;
     size?: number;
     args?: IFilterArgs;
-    startAt?: DateString;
-    endAt?: DateString;
+    startAt?: string;
+    endAt?: string;
     keyword?: string;
     organizationId?: any;
 }
@@ -90,4 +99,10 @@ export interface IApproveRequest {
     status: CommonApproveStatus;
     rejected_reason?: string;
     files?: string[];
+}
+
+export interface SearchField {
+    path: string[];
+    exactMatch?: boolean;
+    isArray?: boolean;
 }

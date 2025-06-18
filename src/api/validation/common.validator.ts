@@ -52,7 +52,7 @@ export const queryFilter: schema = {
                     }),
                 )
                 .optional()
-                .allow(null, ''),
+                .allow(null, '')
         }),
     ),
 };

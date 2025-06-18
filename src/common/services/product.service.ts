@@ -3,11 +3,13 @@ import { APIError } from '@common/error/api.error';
 import { ErrorKey, StatusCode } from '@common/errors';
 
 import { IIdResponse } from '@common/interfaces/common.interface';
-import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
+import { IEventProductHistoryUpdated, IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
 import { ProductRepo } from '@common/repositories/product.repo';
 import { BaseService } from './base.service';
 import { UnitRepo } from '@common/repositories/unit.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
+import eventbus from '@common/eventbus';
+import { EVENT_PRODUCT_HISTORY_UPDATED } from '@config/event.constant';
 
 export class ProductService extends BaseService<Products, Prisma.ProductsSelect, Prisma.ProductsWhereInput> {
     private productRepo: ProductRepo = new ProductRepo();
@@ -55,7 +57,7 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         return { id: output };
     }
     async updateProduct(id: number, body: IUpdateProduct): Promise<IIdResponse> {
-        await this.isExist({ code: body.code, id }, true);
+        // await this.isExist({ code: body.code, id }, true);
         const unitNotFound: string[] = [];
         const unitExisted: string[] = [];
         const unit = await this.unitRepo.findOne({ id: id });
@@ -86,28 +88,46 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
                 }
             }
         }
-        const productGroup = await this.productRepo.findOne({ id: body.product_group_id });
 
-        if (!productGroup) {
-            throw new APIError({
-                message: 'product_group.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: ['product_group.not_found'],
-            });
+        let product = null;
+
+        if (body.product_group_id) {
+            product = await this.productRepo.findOne({ id: body.product_group_id });
+            if (!product) {
+                throw new APIError({
+                    message: 'product_group.not_found',
+                    status: StatusCode.BAD_REQUEST,
+                    errors: [`product_group.${ErrorKey.NOT_FOUND}`],
+                });
+            }
+
+            (body as any).product_group = { connect: { id: body.product_group_id } };
+            delete body.product_group_id;
         }
+
+        if (body.unit_id) {
+            (body as any).unit = { connect: { id: body.unit_id } };
+            delete body.unit_id;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(body, 'price')) {
+            body.current_price = body.price;
+            delete body.price;
+        }
+
         if (unitNotFound && unitNotFound.length > 0) {
-            // this.validateUnit(unitNotFound, 'unit_id.not_found');
             this.validateUnit(unitExisted, 'unit_id.existed');
         }
 
         const output = await this.db.$transaction(async (prisma) => {
             const { delete: del, add, update, ...mapperProduct } = body;
             const extra_units = { add, update, delete: body.delete };
-            const updateProduct = await this.productRepo.update({ id: id }, mapperProduct, prisma);
+            const updateProductId = await this.productRepo.update({ id: id }, mapperProduct, prisma);
+            await this.handleParentProduct(id, body.code || '', prisma);
 
             if (extra_units?.add && extra_units.add.length > 0) {
                 const unitsToAdd = extra_units.add.map(({ key, ...mapper }) => {
-                    return { product_id: updateProduct, ...mapper };
+                    return { product_id: updateProductId, ...mapper };
                 });
                 await prisma.productUnits.createMany({ data: unitsToAdd });
             } else if (extra_units?.delete && extra_units.delete.length > 0) {
@@ -125,17 +145,28 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
                     });
                 }
             }
-            return updateProduct;
+            return updateProductId;
         });
+
+        if (product && body.current_price && body.current_price !== Number(product.current_price)) {
+            eventbus.emit(EVENT_PRODUCT_HISTORY_UPDATED, {
+                id: id,
+                current_price: body.current_price,
+            } as IEventProductHistoryUpdated);
+        }
+
         return { id: output };
     }
 
     async createProduct(body: IProduct): Promise<IIdResponse> {
-        await this.isExist({ code: body.code });
         const unitNotFound: string[] = [];
         const unit = await this.unitRepo.findOne({ id: body.unit_id });
         if (!unit) {
             unitNotFound.push('0');
+        }
+        if (body.price) {
+            body.current_price = body.price;
+            delete body.price;
         }
         if (body.extra_units) {
             for (const unit of body.extra_units) {
@@ -174,9 +205,27 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             body.extra_units = extra_units;
         }
 
-        const output = await this.productRepo.create({ ...body });
+        const { product_group_id, unit_id, ...productData } = body;
+        const createdId = await this.productRepo.create({
+            ...productData,
+            product_group: { connect: { id: product_group_id } },
+            unit: { connect: { id: unit_id } },
+        });
+        await this.handleParentProduct(createdId, body.code || '');
 
-        return { id: output };
+        eventbus.emit(EVENT_PRODUCT_HISTORY_UPDATED, {
+            id: createdId,
+            current_price: body.current_price,
+        } as IEventProductHistoryUpdated);
+
+        return { id: createdId };
+    }
+
+    private async handleParentProduct(productId: number, code: string, tx?: Prisma.TransactionClient) {
+        const productParent = await this.repo.findOne({ code, id: { not: productId } }, false, tx);
+        if (productParent) {
+            await this.repo.update({ id: productId }, { parent_id: productParent.id }, tx);
+        }
     }
 
     async getById(id: number): Promise<Partial<Products>> {

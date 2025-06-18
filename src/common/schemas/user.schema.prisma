@@ -1,13 +1,12 @@
-
 model Users {
-  id                  Int      @id @default(autoincrement())
-  code                String   @default(cuid())
-  email               String? // === email trong employee hoac tu them email khac
-  username            String   @unique
-  password            String
-  device_uid          String[] @default([])
-  employee_id         Int?
-  organization_id     Int? // truong nay chi dung de sort user theo to chuc neu can lay thong tin organ thi join qua employee
+  id              Int      @id @default(autoincrement())
+  code            String   @default(cuid())
+  email           String? // === email trong employee hoac tu them email khac
+  username        String   @unique
+  password        String
+  device_uid      String[] @default([])
+  employee_id     Int?
+  organization_id Int? // truong nay chi dung de sort user theo to chuc neu can lay thong tin organ thi join qua employee
 
   is_disabled     Boolean @default(false)
   is_deleted      Boolean @default(false)
@@ -17,10 +16,10 @@ model Users {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  employee                 Employees?        @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  organization             Organizations?        @relation(fields: [organization_id], references: [id], onDelete: SetNull)
-  device_requests          DeviceRequests[]  @relation("DeviceRequestUser")
-  approved_device_requests DeviceRequests[]  @relation("DeviceRequestApprovedBy")
+  employee                 Employees?       @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization             Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  device_requests          DeviceRequests[] @relation("DeviceRequestUser")
+  approved_device_requests DeviceRequests[] @relation("DeviceRequestApprovedBy")
   tokens                   Tokens[]
   user_roles               UserRoles[]
 
@@ -44,15 +43,15 @@ model Tokens {
 }
 
 model DeviceRequests {
-  id          Int           @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   user_id     Int
   device_uid  String
   ip_address  String?
   user_agent  String?
   status      PrsRequestStatus @default(pending)
   approved_id Int?
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @updatedAt
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
 
   user        Users  @relation("DeviceRequestUser", fields: [user_id], references: [id])
   approved_by Users? @relation("DeviceRequestApprovedBy", fields: [approved_id], references: [id])

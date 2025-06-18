@@ -40,6 +40,10 @@ export interface IPartner extends IUpdateChildAction {
         address_type: string;
         address_name: string;
     }[];
+    banks: IBank[];
+    banks_add?: IBank[];
+    banks_update?: IBank[];
+    banks_delete?: number[];
 }
 
 export interface IPartnerDebtQueryFilter extends IPaginationInput {

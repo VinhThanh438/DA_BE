@@ -17,14 +17,14 @@ export class ProductGroupService {
     }
 
     async create(body: ICreateProductGroup): Promise<IIdResponse> {
-        const isExist = await this.productGroupRepo.isExist({ name: body.name });
-        if (isExist) {
-            throw new APIError({
-                message: 'common.existed',
-                status: ErrorCode.BAD_REQUEST,
-                errors: [`name.${ErrorKey.EXISTED}`],
-            });
-        }
+        // const isExist = await this.productGroupRepo.isExist({ name: body.name });
+        // if (isExist) {
+        //     throw new APIError({
+        //         message: 'common.existed',
+        //         status: ErrorCode.BAD_REQUEST,
+        //         errors: [`name.${ErrorKey.EXISTED}`],
+        //     });
+        // }
         const output = await this.productGroupRepo.create(body);
         return { id: output };
     }
@@ -35,14 +35,14 @@ export class ProductGroupService {
     }
 
     async delete(id: number): Promise<IIdResponse> {
-        const isExist = await this.productGroupRepo.isExist({ id: id });
-        if (!isExist) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: ErrorCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
+        // const isExist = await this.productGroupRepo.isExist({ id: id });
+        // if (!isExist) {
+        //     throw new APIError({
+        //         message: 'common.not_found',
+        //         status: ErrorCode.BAD_REQUEST,
+        //         errors: [`id.${ErrorKey.NOT_FOUND}`],
+        //     });
+        // }
         const output = await this.productGroupRepo.delete({ id: id });
         return { id: output };
     }

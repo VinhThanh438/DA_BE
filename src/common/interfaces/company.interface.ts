@@ -15,7 +15,7 @@ export interface PrismaModelTypes<T, S extends Record<string, any>, W> {
     where: W;
 }
 
-export interface ICreateOrganization {
+export interface IOrganization {
     name: string;
     code: string;
     industry?: string;

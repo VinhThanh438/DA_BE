@@ -1,7 +1,13 @@
+import PrismaSearchBuilder from '@common/helpers/searchBuilder';
 import { TimeHelper } from '@common/helpers/time.helper';
 import { transformDecimal } from '@common/helpers/transform.util';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { IPaginationInfo, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
+import {
+    IPaginationInfo,
+    IPaginationInput,
+    IPaginationResponse,
+    SearchField,
+} from '@common/interfaces/common.interface';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -16,7 +22,9 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     protected abstract defaultSelect: S; // Default fields to select (e.g., SomethingSelection)
     protected abstract detailSelect: S; // Default fields to select (e.g., SomethingSelection)
     protected abstract modelKey: keyof Prisma.TransactionClient;
-    protected searchableFields: string[] = [];
+    protected searchableFields: Record<string, SearchField[]> = {
+        basic: [],
+    };
     protected timeFieldDefault: string = 'created_at';
     private dbAdapter = DatabaseAdapter.getInstance();
 
@@ -25,17 +33,18 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
     }
 
     public async paginate(
-        { page, size, keyword, startAt, endAt, ...args }: Partial<IPaginationInput>,
+        { page = 1, size = 10, keyword, startAt, endAt, ...args }: Partial<IPaginationInput>,
         includeRelations: boolean = false,
         query: object = {},
+        customSelect: any = null,
+        orderBy: any = { id: 'desc' },
     ): Promise<IPaginationResponse> {
-        const currentPage: number = page ? Number(page) : 1;
-        const limit: number = size ? Number(size) : 10;
-        const skip = (currentPage - 1) * limit;
+        const searchConditions = PrismaSearchBuilder.buildSearch(keyword, this.searchableFields.basic);
 
         const where: any = {
             ...query,
             ...args,
+            ...searchConditions,
         };
 
         if (startAt || endAt) {
@@ -44,32 +53,55 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
             if (endAt) where[this.timeFieldDefault].lte = TimeHelper.parseEndOfDayDate(endAt);
         }
 
-        if (keyword && this.searchableFields.length) {
-            where.OR = this.searchableFields.map((field) => ({
-                [field]: { contains: keyword, mode: 'insensitive' },
-            }));
+        // Build select condition
+        let buildSelect: any;
+        if (includeRelations) {
+            if (customSelect) {
+                buildSelect = {
+                    ...this.detailSelect,
+                    ...customSelect,
+                };
+            } else {
+                buildSelect = this.detailSelect;
+            }
+        } else {
+            buildSelect = this.defaultSelect;
         }
 
-        const [data, totalRecords] = await Promise.all([
-            this.db.findMany({
-                where: { ...where, ...(args && args) },
-                select: includeRelations ? this.detailSelect : this.defaultSelect,
-                skip,
-                take: limit,
-                orderBy: { id: 'desc' },
-            }),
-            this.db.count({ where: { ...where, ...(args && args) } }),
-        ]);
+        //
+        const totalRecords = await this.db.count({ where: { ...where, ...(args && args) } });
 
-        const totalPages = Math.ceil(totalRecords / limit);
+        if (page === 0 && size === 0) {
+            return {
+                data: [],
+                pagination: {
+                    totalPages: 1,
+                    totalRecords: totalRecords,
+                    size,
+                    currentPage: 1,
+                } as IPaginationInfo,
+            };
+        }
+
+        const totalPages = totalRecords > 0 ? Math.ceil(totalRecords / size) : 1;
+        const currentPage = Math.min(page, totalPages);
+        const skip = (currentPage - 1) * size;
+
+        const data = await this.db.findMany({
+            where: { ...where, ...(args && args) },
+            select: buildSelect,
+            skip,
+            take: size,
+            orderBy,
+        });
 
         return {
             data: transformDecimal(data),
             pagination: {
-                totalPages: totalPages,
-                totalRecords: totalRecords,
-                size: limit,
-                currentPage: currentPage,
+                totalPages,
+                totalRecords,
+                size,
+                currentPage,
             } as IPaginationInfo,
         };
     }
@@ -155,6 +187,20 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         return db.findFirst({
             where: sanitizedWhere,
             select: this.defaultSelect,
+        });
+    }
+
+    public async findFirst(
+        where: W = {} as W,
+        includeRelations: boolean = false,
+        tx?: Prisma.TransactionClient,
+    ): Promise<Partial<T> | null> {
+        const sanitizedWhere = this.sanitizeJsonFilters(where);
+        const db = this.getModel(tx);
+
+        return db.findFirst({
+            where: sanitizedWhere,
+            select: includeRelations ? this.detailSelect : this.defaultSelect,
         });
     }
 
@@ -297,7 +343,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
      * Sanitize fields that are of type JsonNullable or JsonNullableFilter
      * by removing empty arrays or invalid values to prevent Prisma errors.
      */
-    private sanitizeJsonFilters(input: any): any {
+    protected sanitizeJsonFilters(input: any): any {
         if (!input || typeof input !== 'object') return input;
 
         const sanitized: any = {};

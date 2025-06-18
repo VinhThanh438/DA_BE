@@ -8,6 +8,7 @@ export interface ILoginRequest {
 
 export interface IPayload {
     id: number;
+    eId: number;
 }
 
 export interface ILoginResponse {

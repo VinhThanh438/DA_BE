@@ -42,6 +42,7 @@ import { EmployeeService } from './employee.service';
 import { UserService } from './user.service';
 import { InventoryService } from './inventory.service';
 import { TransactionService } from './transaction.service';
+import { formatPhoneNumber } from '@common/helpers/formatPhoneNumber';
 export class ExcelService {
     private static instance: ExcelService;
     private orderService = OrderService.getInstance();
@@ -52,7 +53,7 @@ export class ExcelService {
     private inventoryService = InventoryService.getInstance();
     private transactionService = TransactionService.getInstance();
 
-    private constructor() {}
+    private constructor() { }
 
     public static getInstance(): ExcelService {
         if (!this.instance) {
@@ -83,14 +84,14 @@ export class ExcelService {
         await page.setContent(contentHtml);
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            landscape: true,
+            landscape: false,
             printBackground: true,
-            // width: 210
+            // width: 240,
             margin: {
-                top: '50px',
-                right: '50px',
-                bottom: '50px',
-                left: '50px',
+                top: '20px',
+                right: '20px',
+                bottom: '20px',
+                left: '20px',
             },
         });
         await browser.close();
@@ -117,7 +118,7 @@ export class ExcelService {
                 total_money: item.quantity * Number(item.price),
                 vat: item.vat,
                 total_money_vat: (item.quantity * Number(item.price) * item.vat) / 100,
-                total_money_all: item.quantity * Number(item.price) * (1 + item.vat / 100),
+                total_money_all: item.quantity * Number(item.price) + (item.quantity * Number(item.price) * item.vat) / 100,
                 commission_vat: item.commission,
                 commission_money: (item.quantity * Number(item.price) * item.commission) / 100,
             };
@@ -252,7 +253,7 @@ export class ExcelService {
             const headerOrderPDF = {
                 company: order.organization?.name || '',
                 address: order.organization?.address || '',
-                contact: `Điện thoại:  ${order.organization?.phone_number || ''}${'  '} – ${'  '} Hotline: ${order.organization?.hotline || ''}`,
+                contact: `Điện thoại:  ${order.organization?.phone_number ? formatPhoneNumber(order.organization?.phone_number) : ''}${'  '} – ${'  '} Hotline: ${order.organization?.hotline ? formatPhoneNumber(order.organization?.hotline) : ''}`,
                 tax_code: order.organization?.tax_code || '',
                 time_at: timeAtString,
                 partner_name: order.partner?.name || '',
@@ -274,6 +275,7 @@ export class ExcelService {
                 commission_money: this.getTotal(dataBody, 'commission_money'),
             };
             const contentHtml = orderPDF(dataBody, headerOrderPDF, sum);
+            console.log("dataBody", JSON.stringify(dataBody));
             await this.convertPDF(path, contentHtml);
         }
 
@@ -339,6 +341,7 @@ export class ExcelService {
             path = `uploads/Phieu_Nhap_Kho_${query.id}.pdf`;
             const data = await this.inventoryService.findById(Number(query.id));
             const dataUser = await this.userService.getEmployeeByUser(userId);
+            console.log('data', JSON.stringify(data));
             const final_data = { ...data, user: dataUser };
             const contentHtml = importWarehousePDF(final_data);
             await this.convertPDF(path, contentHtml);
@@ -477,8 +480,8 @@ export class ExcelService {
                 type === 'mb'
                     ? 'Nhật ký giao dịch Ngân hàng MB'
                     : type === 'bidv'
-                      ? 'Nhật ký giao dịch Ngân hàng BIDV'
-                      : 'Nhật ký giao dịch Qũy tiền mặt';
+                        ? 'Nhật ký giao dịch Ngân hàng BIDV'
+                        : 'Nhật ký giao dịch Qũy tiền mặt';
             worksheet.getCell('A2').font = { bold: true, size: 14 };
             worksheet.mergeCells('D2:G2');
             worksheet.getCell('D2').value = type === 'mb' ? 'MB BANK' : type === 'bidv' ? 'BIDV' : 'Sổ quỹ';
@@ -548,8 +551,8 @@ export class ExcelService {
                 type === 'mb'
                     ? 'Nhật ký giao dịch Ngân hàng MB'
                     : type === 'bidv'
-                      ? 'Nhật ký giao dịch Ngân hàng BIDV'
-                      : 'Nhật ký giao dịch Qũy tiền mặt';
+                        ? 'Nhật ký giao dịch Ngân hàng BIDV'
+                        : 'Nhật ký giao dịch Qũy tiền mặt';
             worksheet.getCell('A2').font = { bold: true, size: 14 };
             worksheet.mergeCells('D2:G2');
             worksheet.getCell('D2').value = type === 'mb' ? 'MB BANK' : type === 'bidv' ? 'BIDV' : 'Sổ quỹ';
@@ -676,11 +679,12 @@ export class ExcelService {
                 // sumCommissionDebt: 50000000,
                 // sumCommissionPayRequest: 70000000,
             };
-            if (!query.partnerId) {
+            if (!query.id) {
                 throw new Error('partner_id.not_found');
             }
-            const data = await this.partnerService.getDebt({ partnerId: query.parterId });
-            const dataPartner = await this.partnerService.findById(query.parterId);
+            const data = await this.partnerService.getDebt({ partnerId: Number(query.id) });
+            console.log("data", JSON.stringify(data));
+            const dataPartner = await this.partnerService.findById(Number(query.id));
             const dataUser = await this.userService.getEmployeeByUser(userId);
             const finalData = { ...data, partner: dataPartner, user: dataUser };
             const contentHtml = debtComparisonPDF(finalData, sumData, header);

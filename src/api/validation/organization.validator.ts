@@ -1,5 +1,5 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { ICreateOrganization } from '@common/interfaces/company.interface';
+import { IOrganization } from '@common/interfaces/company.interface';
 import { OrganizationType } from '@config/app.constant';
 import { Joi, schema } from 'express-validation';
 import { ObjectSchema } from 'joi';
@@ -16,7 +16,7 @@ export const queryFilter: schema = {
 
 export const create: schema = {
     body: wrapSchema(
-        Joi.object<ICreateOrganization>({
+        Joi.object<IOrganization>({
             name: Joi.string().required().min(1).max(300),
             code: Joi.string().optional().allow(null, '').min(1).max(100),
             logo: Joi.string().optional().allow(null, ''),

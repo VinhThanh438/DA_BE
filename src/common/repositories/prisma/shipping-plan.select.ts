@@ -1,6 +1,6 @@
 import { Prisma } from '.prisma/client';
 import { PartnerSelection } from './partner.select';
-import { OrderSelection } from './order.select';
+import { OrderSelection } from './base.select';
 
 export const ShippingPlanSelection: Prisma.ShippingPlansSelect = {
     id: true,
@@ -22,5 +22,12 @@ export const ShippingPlanSelectionAll: Prisma.ShippingPlansSelect = {
     },
     order: {
         select: OrderSelection,
+    },
+};
+
+export const ShippingPlanSelectionWithPartner: Prisma.ShippingPlansSelect = {
+    ...ShippingPlanSelection,
+    partner: {
+        select: PartnerSelection,
     },
 };

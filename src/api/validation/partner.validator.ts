@@ -44,6 +44,18 @@ const PartnerBody = {
     partner_group_id: Joi.number().optional().allow(null),
 };
 
+const BankBody = {
+    bank: Joi.string().optional().allow(null, ''),
+    account_number: Joi.string().optional().allow(null, ''),
+    name: Joi.string()
+        .optional()
+        .allow(null, '')
+        .pattern(/^[A-Z\s]+$/),
+    branch: Joi.string().optional().allow(null, ''),
+    responsibility: Joi.string().optional().allow(null, ''),
+    partner_id: Joi.number().optional().allow(null, ''), // This is optional for bank creation
+};
+
 const RepresentativeBody = {
     id: Joi.number().optional().allow(null, ''),
     name: Joi.string().optional().allow(null, ''),
@@ -74,8 +86,8 @@ export const create: schema = {
     body: wrapSchema(
         Joi.object<IPartner>({
             ...PartnerBody,
-
             representatives: Joi.array().items(Joi.object<IRepresentative>(RepresentativeBody)).optional().allow(null),
+            banks: Joi.array().items(Joi.object<IBank>(BankBody)).optional().allow(null),
         }),
     ),
 };
@@ -90,6 +102,12 @@ export const update: schema = {
             update: Joi.array().items(Joi.object<IRepresentative>(RepresentativeBody)).optional().allow(null),
 
             delete: Joi.array().items(Joi.number()).optional().default([]),
+
+            banks_add: Joi.array().items(Joi.object<IRepresentative>(BankBody)).optional().allow(null),
+
+            banks_update: Joi.array().items(Joi.object<IRepresentative>(BankBody)).optional().allow(null),
+
+            banks_delete: Joi.array().items(Joi.number()).optional().default([]),
         }),
     ),
 };

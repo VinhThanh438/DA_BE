@@ -1,8 +1,8 @@
 import { Prisma } from '.prisma/client';
 import { CommonDetailSelectionAll } from './common-detail.select';
 import { EmployeeSelection } from './employee.select';
-import { OrganizationSelection } from './organization.select';
 import { PartnerSelection } from './partner.select';
+import { OrderSelection, OrganizationSelection } from './base.select';
 
 export const ContractSelection: Prisma.ContractsSelect = {
     id: true,
@@ -20,6 +20,9 @@ export const ContractSelectionAll: Prisma.ContractsSelect = {
     ...ContractSelection,
     details: {
         select: CommonDetailSelectionAll,
+    },
+    order: {
+        select: OrderSelection,
     },
     partner: {
         select: PartnerSelection,

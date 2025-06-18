@@ -2,7 +2,7 @@ import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { BaseService } from './base.service';
 import { Organizations, Prisma } from '.prisma/client';
 import { OrganizationType } from '@config/app.constant';
-import { ICreateOrganization } from '@common/interfaces/company.interface';
+import { IOrganization } from '@common/interfaces/company.interface';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { IEmployee } from '@common/interfaces/employee.interface';
@@ -90,7 +90,7 @@ export class OrganizationService extends BaseService<
         return result;
     }
 
-    public async createOrganization(request: Partial<ICreateOrganization>): Promise<IIdResponse> {
+    public async createOrganization(request: Partial<IOrganization>): Promise<IIdResponse> {
         await this.isExist({ code: request.code });
 
         await this.validateForeignKeys(request, {
@@ -103,7 +103,7 @@ export class OrganizationService extends BaseService<
         return { id };
     }
 
-    public async updateOrganization(id: number, request: Partial<ICreateOrganization>): Promise<IIdResponse> {
+    public async updateOrganization(id: number, request: Partial<IOrganization>): Promise<IIdResponse> {
         await this.findById(id);
 
         await this.isExist({ name: request.name, code: request.code, id }, true);

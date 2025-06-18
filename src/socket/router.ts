@@ -17,23 +17,9 @@ export class Router {
         logger.info(`Registering events for socket: ${socket.id}`);
 
         // Event: Join a room
-        socket.on('joinRoom', (room: string) => {
-            socket.join(room);
-            logger.info(`Socket ${socket.id} joined room: ${room}`);
-            socket.to(room).emit('message', `User ${socket.id} has joined the room.`);
-        });
-
-        // Event: Leave a room
-        socket.on('leaveRoom', (room: string) => {
-            socket.leave(room);
-            logger.info(`Socket ${socket.id} left room: ${room}`);
-            socket.to(room).emit('message', `User ${socket.id} has left the room.`);
-        });
-
-        // Event: Send a message
-        socket.on('sendMessage', ({ room, message }: { room: string; message: string }) => {
-            logger.info(`Message from ${socket.id} to room ${room}: ${message}`);
-            socket.to(room).emit('message', `User ${socket.id}: ${message}`);
+        socket.emit('notification', () => {
+            logger.info(`emitting notification to socket: ${socket.id}`);
+            socket.send('message', `User ${socket.id} has joined the room.`);
         });
 
         // Handle disconnection

@@ -21,7 +21,7 @@ router.post(
     controller.create.bind(controller),
 );
 
-router.put('/approve/:id', validateRequest(approve), orderController.approveShippingPlan.bind(controller));
+router.put('/approve/:id', validateRequest(approve), orderController.approveShippingPlan.bind(orderController));
 
 router.put('/:id', validateRequest(update), controller.update.bind(controller));
 

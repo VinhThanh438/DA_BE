@@ -11,24 +11,33 @@ enum PrsOrderStatus {
 }
 
 model Orders {
-  id         Int       @id @default(autoincrement())
-  code       String    @default(cuid())
-  type       PrsOrderType @default(purchase)
-  address    String?
-  phone      String?
-  note       String?
-  payment_method       String?
-  status     PrsOrderStatus?  @default(pending)
-  rejected_reason String?
-  time_at DateTime @default(now())
-  files      Json?     @default("[]")
-  delivery_progress Float? @default(0)
+  id                Int             @id @default(autoincrement())
+  code              String          @default(cuid())
+  type              PrsOrderType    @default(purchase)
+  address           String?
+  phone             String?
+  note              String?
+  payment_method    String?
+  status            PrsOrderStatus? @default(pending)
+  rejected_reason   String?
+  time_at           DateTime        @default(now())
+  files             Json?           @default("[]")
+  delivery_progress Float?          @default(0)
 
-  employee_id     Int?
-  partner_id      Int?
-  organization_id Int?
+  product_quality   String?
+  delivery_location String?
+  delivery_method   String?
+  delivery_time     String?
+  payment_note      String?
+  additional_note   String?
+
+  employee_id       Int?
+  partner_id        Int?
+  organization_id   Int?
   representative_id Int?
-  bank_id         Int?
+  bank_id           Int?
+  tolerance         Int     @default(0)
+  isDone            Boolean @default(false)
 
   partner        Partners?        @relation(fields: [partner_id], references: [id])
   bank           Banks?           @relation(fields: [bank_id], references: [id])
@@ -36,22 +45,22 @@ model Orders {
   organization   Organizations?   @relation(fields: [organization_id], references: [id])
   representative Representatives? @relation(fields: [representative_id], references: [id])
 
-  created_at             DateTime                @default(now())
-  updated_at             DateTime                @updatedAt
-  details                CommonDetails[]
-
-  @@map("orders")
-  @@index([type])
-  order_expenses OrderExpenses[]
-  productions Productions[]
-  contracts Contracts[]
-  inventories Inventories[]
-  purchase_requests PurchaseRequests[]
-  transactions Transactions[]
-  shipping_plans ShippingPlans[] 
-  payments Payments[]
-  transaction_warehouses TransactionWarehouses[]
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
+  details                 CommonDetails[]
+  order_expenses          OrderExpenses[]
+  productions             Productions[]
+  contracts               Contracts[]
+  inventories             Inventories[]
+  purchase_requests       PurchaseRequests[]
+  transactions            Transactions[]
+  shipping_plans          ShippingPlans[]
+  payments                Payments[]
+  transaction_warehouses  TransactionWarehouses[]
   payment_request_details PaymentRequestDetails[]
-  invoices Invoices[]
-  // financeRecords FinanceRecords[]
+  invoices                Invoices[]
+  loans                   Loans[]
+
+  @@index([type])
+  @@map("orders")
 }

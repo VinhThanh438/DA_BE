@@ -34,18 +34,6 @@ export class ContractController extends BaseController<Contracts> {
 
     public async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as IContract;
-            const id = Number(req.params.id);
-            const result = await this.service.updateContract(id, body);
-            res.sendJson(result);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.update: `, error);
-            next(error);
-        }
-    }
-
-    public async updateChildEntity(req: Request, res: Response, next: NextFunction) {
-        try {
             const id = Number(req.params.id);
             const body = req.body as IContract;
             const data = await this.service.updateContractEntity(id, body);

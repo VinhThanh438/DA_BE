@@ -43,4 +43,20 @@ export class SpatialClassificationMiddleware {
             return next(error);
         }
     }
+
+    public static assignInfoToQuery(req: Request, res: Response, next: NextFunction) {
+        try {
+            const organizationId = req.query.organizationId;
+
+            if (organizationId) {
+                (req.query as any).organization_id = Number(organizationId);
+                delete (req.query as any).organizationId;
+            }
+
+            return next();
+        } catch (error) {
+            logger.error('SpatialClassificationMiddleware.assignInfoToQuery error:', error);
+            return next(error);
+        }
+    }
 }

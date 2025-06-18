@@ -1,47 +1,67 @@
 model Invoices {
-  id              Int           @id @default(autoincrement())
-  code            String        @unique
+  id              Int              @id @default(autoincrement())
+  code            String           @unique
   status          PrsInvoiceStatus @default(pending)
   time_at         DateTime?
-  invoice_date         DateTime?  @default(now())
-  files           Json?         @default("[]")
+  invoice_date    DateTime?        @default(now())
+  files           Json?            @default("[]")
   rejected_reason String?
-  note String?
+  note            String?
+  content         String? // Nội dung hóa đơn
+  type            PrsInvoiceType?  @default(supplier) // Loại hóa đơn: bán hàng, mua hàng, vận chuyển
 
-  bank_id         Int? // Tài khoản ngân hàng
-  employee_id     Int? // Nhân viên bán hàng
-  partner_id      Int? // Khách hàng
-  organization_id Int?
-  contract_id     Int? // Hợp đồng
-  order_id     Int? // Hợp đồng
+  total_amount     Float? @default(0) // Tổng tiền hóa đơn
+  total_money      Float? @default(0) // Tổng tiền
+  total_vat        Float? @default(0) // Tổng tiền thuế
+  total_commission Float? @default(0) // Tổng tiền hoa hồng
+
+  total_amount_paid     Float? @default(0) // Tổng tiền đã thanh toán
+  total_amount_debt     Float? @default(0) // Tổng tiền còn nợ
+  total_commission_paid Float? @default(0) // Tổng tiền hoa hồng đã thanh toán
+  total_commission_debt Float? @default(0) // Tổng tiền hoa hồng còn nợ
+
+  bank_id              Int? // Tài khoản ngân hàng
+  employee_id          Int? // Nhân viên bán hàng
+  partner_id           Int? // Khách hàng
+  organization_id      Int?
+  contract_id          Int? // Hợp đồng
+  order_id             Int? // Hợp đồng
+  is_payment_completed Boolean @default(false) // Kiểm tra xem đã hóa đơn đã thanh toán hết hay chưa
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  bank    Banks?   @relation(fields: [bank_id], references: [id], onDelete: SetNull)
-  contract        Contracts?      @relation(fields: [contract_id], references: [id], onDelete: SetNull)
-  employee        Employees?      @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  partner         Partners?       @relation(fields: [partner_id], references: [id], onDelete: SetNull)
-  order         Orders?       @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  organization    Organizations?  @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  bank                    Banks?                  @relation(fields: [bank_id], references: [id], onDelete: SetNull)
+  contract                Contracts?              @relation(fields: [contract_id], references: [id], onDelete: SetNull)
+  employee                Employees?              @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  partner                 Partners?               @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  order                   Orders?                 @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  organization            Organizations?          @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  payments                Payments[]
+  payment_request_details PaymentRequestDetails[]
+  transactions            Transactions[]
+  details                 InvoiceDetails[]
+  loans                   Loans[]
 
   @@map("invoices")
-  payments Payments[]
-  payment_request_details PaymentRequestDetails[]
-  transactions Transactions[]
-  details InvoiceDetails[]
+}
+
+enum PrsInvoiceType {
+  customer // Hóa đơn bán hàng
+  supplier // Hóa đơn mua hàng
+  delivery // Hóa đơn vận chuyển
 }
 
 model InvoiceDetails {
-  id          Int       @id @default(autoincrement())
-  note        String?
-  invoice_id  Int?
+  id              Int     @id @default(autoincrement())
+  note            String?
+  invoice_id      Int?
   order_detail_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  invoice Invoices? @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  invoice      Invoices?      @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
   order_detail CommonDetails? @relation(fields: [order_detail_id], references: [id], onDelete: Cascade)
 
   @@map("invoice_details")

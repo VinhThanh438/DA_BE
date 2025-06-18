@@ -1,7 +1,9 @@
 import { Organizations, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { OrganizationSelection, OrganizationSelectionAll } from './prisma/organization.select';
+import { OrganizationSelectionAll } from './prisma/organization.select';
+import { SearchField } from '@common/interfaces/common.interface';
+import { OrganizationSelection } from './prisma/base.select';
 
 export class OrganizationRepo extends BaseRepo<
     Organizations,
@@ -12,5 +14,7 @@ export class OrganizationRepo extends BaseRepo<
     protected defaultSelect = OrganizationSelection;
     protected detailSelect = OrganizationSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'organizations';
-    protected searchableFields = ['name', 'code'];
+    protected searchableFields: Record<string, SearchField[]> = {
+        basic: [{ path: ['name'] }, { path: ['code'] }],
+    };
 }

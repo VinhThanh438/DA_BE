@@ -3,6 +3,7 @@ import { ClauseSelection } from './clause.select';
 import { EmployeeSelection } from './employee.select';
 import { PartnerGroupSelection } from './partner-group.select';
 import { RepresentativeSelectionAll } from './representative.select';
+import { BankSelection } from './bank.select';
 
 export const PartnerSelection: Prisma.PartnersSelect = {
     id: true,
@@ -32,5 +33,8 @@ export const PartnerSelectionAll: Prisma.PartnersSelect = {
     },
     employee: {
         select: EmployeeSelection,
+    },
+    banks: {
+        select: BankSelection,
     },
 };

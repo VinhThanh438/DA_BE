@@ -1,9 +1,10 @@
 import { Prisma } from '.prisma/client';
-import { PaymentRequestSelect } from './payment-request.select';
 import { OrderSelectionPartner } from './order.select';
-import { InvoiceSelection } from './invoice.select';
 import { PartnerSelection } from './partner.select';
 import { BankSelection } from './bank.select';
+import { PaymentRequestDetailSelection } from './payment-request-details.select';
+import { TransactionSelect } from './transaction.select';
+import { InvoiceSelection } from './base.select';
 
 export const PaymentSelect: Prisma.PaymentsSelect = {
     id: true,
@@ -16,7 +17,6 @@ export const PaymentSelect: Prisma.PaymentsSelect = {
     status: true,
     rejected_reason: true,
 
-    payment_request_id: true,
     bank_id: true,
     partner_id: true,
     organization_id: true,
@@ -28,12 +28,15 @@ export const PaymentSelect: Prisma.PaymentsSelect = {
     amount: true,
     counterparty: true,
     attached_documents: true,
+    transactions: {
+        select: TransactionSelect,
+    },
 };
 
 export const PaymentSelectAll: Prisma.PaymentsSelect = {
     ...PaymentSelect,
-    payment_request: {
-        select: PaymentRequestSelect,
+    payment_request_detail: {
+        select: PaymentRequestDetailSelection,
     },
     order: {
         select: OrderSelectionPartner,
