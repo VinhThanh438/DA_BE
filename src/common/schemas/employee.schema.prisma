@@ -29,14 +29,12 @@ model Employees {
   identity_issued_place String?
   identity_issued_date  DateTime?
   identity_expired_date DateTime?
-  indentity_files       Json?     @default("[]")
 
   // HO CHIEU
   passport_code         String?
   passport_issued_place String?
   passport_issued_date  DateTime?
   passport_expired_date DateTime?
-  passport_files        Json?     @default("[]")
 
   // BANK
   bank_branch String?
@@ -73,17 +71,19 @@ model Employees {
   inventories  Inventories[]
   transactions Transactions[]
 
-  job_position               JobPositions?      @relation(fields: [job_position_id], references: [id], onDelete: SetNull)
-  organization               Organizations?     @relation("EmployeeOrganization", fields: [organization_id], references: [id], onDelete: SetNull)
+  job_position               JobPositions?       @relation(fields: [job_position_id], references: [id], onDelete: SetNull)
+  organization               Organizations?      @relation("EmployeeOrganization", fields: [organization_id], references: [id], onDelete: SetNull)
   productions                Productions[]
   contracts                  Contracts[]
   purchase_requests          PurchaseRequests[]
   warehouses                 Warehouses[]
-  payment_requests_requested PaymentRequests[]  @relation("RequesterEmployee")
-  payment_requests_approved  PaymentRequests[]  @relation("ApproverEmployee")
+  payment_requests_requested PaymentRequests[]   @relation("RequesterEmployee")
+  payment_requests_approved  PaymentRequests[]   @relation("ApproverEmployee")
   organizations              Organizations[]
   gate_logs                  GateLogs[]
   deposits                   Deposits[]
+  quotation_request          QuotationRequests[]
+  // commissions                Commissions[]
 
   @@map("employees")
 }

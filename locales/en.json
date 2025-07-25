@@ -21,7 +21,10 @@
             },
             "foreign-key-constraint-violation": "Foreign key constraint violation: referenced key does not exist",
             "resource-not-found": "Resource not found!",
-            "developer-error": 	"Developer error: Please review the source code."
+            "developer-error": "Developer error: Please review the source code.",
+            "too-large": "File size exceeds the 20MB limit!",
+            "edit-restriction-warning": "Editing is not allowed after 90 days from confirmation!",
+            "timezone-missing": "Timezone is missing!"
         },
         "auth": {
             "signup": {

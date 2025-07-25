@@ -4,7 +4,6 @@ import { IApproveRequest } from '@common/interfaces/common.interface';
 import { IOrder } from '@common/interfaces/order.interface';
 import logger from '@common/logger';
 import { OrderService } from '@common/services/order.service';
-import { OrderStatus } from '@config/app.constant';
 import { NextFunction, Request, Response } from 'express';
 
 export class OrderController extends BaseController<Orders> {

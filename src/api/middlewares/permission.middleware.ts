@@ -16,7 +16,7 @@ export class PermissionMiddleware {
     public static hasPermission(module: IRoleModule, action: IRoleAction) {
         return async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const db = DatabaseAdapter.getInstance();
+                const db = DatabaseAdapter.getInstance().getClient();
 
                 const userId = req.user?.id;
                 // Admin bypass check
@@ -88,7 +88,7 @@ export class PermissionMiddleware {
      */
     public static async checkAdmin(req: Request, res: Response, next: NextFunction) {
         try {
-            const db = DatabaseAdapter.getInstance();
+            const db = DatabaseAdapter.getInstance().getClient();
             const userId = req.user?.id;
 
             const isAdmin = await PermissionMiddleware.isAdminUser(db, userId);

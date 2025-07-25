@@ -1,0 +1,17 @@
+// nguồn phôi cho sản xuất
+model RawMaterials {
+    id         Int     @id @default(autoincrement())
+    product_id Int
+    quantity   Int     @default(0) // số lượng
+    note       String?
+
+    production_id Int? // id của mesh production
+
+    production Productions? @relation(fields: [production_id], references: [id], onDelete: Cascade)
+    product         Products?        @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@map("raw_materials")
+}

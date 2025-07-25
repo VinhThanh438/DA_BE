@@ -4,7 +4,7 @@ import { IOrder } from './order.interface';
 import { IInvoice } from './invoice.interface';
 import { IPartner } from './partner.interface';
 import { IBank } from './bank.interface';
-import { IOrganization } from './company.interface';
+import { IOrganization } from './organization.interface';
 import { IReport } from './report.interface';
 import { IInterestLog } from './loan.interface';
 
@@ -12,7 +12,7 @@ export interface IPayment {
     id?: number;
     code?: string;
     status: PaymentRequestStatus;
-    type: PaymentRequestType;
+    type: PaymentRequestType | PaymentType;
     rejected_reason?: string;
     note?: string;
     category?: string;

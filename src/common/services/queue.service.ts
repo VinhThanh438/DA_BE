@@ -1,38 +1,59 @@
+import { Processor, Queue, QueueOptions } from 'bullmq';
 import { RedisAdapter } from '@common/infrastructure/redis.adapter';
 import logger from '@common/logger';
-import BullQueue, { JobStatusClean, Queue } from 'bull';
+import { WorkerOptions, Worker } from 'bullmq';
 
 export class QueueService {
-    private static queues: Map<string, Queue> = new Map<string, Queue>();
+    private static queues: Map<string, Queue> = new Map();
+    private static queueOptions: QueueOptions;
 
-    static async getQueue<T = unknown>(jobName: string): Promise<Queue<T>> {
-        let queue = QueueService.queues.get(jobName);
+    public static async getQueue(queueName: string): Promise<Queue> {
+        let queue = this.queues.get(queueName);
         if (!queue) {
-            queue = new BullQueue<T>(jobName, await RedisAdapter.getQueueOptions());
-            queue.on('failed', (job, error) => {
-                logger.error('Failed process job', { error, data: job });
-            });
+            this.queueOptions = await RedisAdapter.getQueueOptions();
+            queue = new Queue(queueName, { connection: this.queueOptions });
             queue.on('error', (error) => {
-                logger.error('Error process queue', { error, data: { jobName } });
+                logger.error(`Error process queue`, { error, queueName });
             });
-            QueueService.queues.set(jobName, queue);
+            this.queues.set(queueName, queue);
         }
         return queue;
     }
 
-    static async closeAllQueues(): Promise<void> {
+    public static async closeAllQueues(): Promise<void> {
         const promises: Promise<void>[] = [];
-        QueueService.queues.forEach((queue) => {
+        this.queues.forEach((queue) => {
             promises.push(queue.close());
         });
         await Promise.all(promises);
-        QueueService.queues.clear();
+        this.queues.clear();
         logger.info('All queues have been closed successfully');
     }
 
-    async cleanQueues(period: number, type: JobStatusClean = 'completed'): Promise<unknown> {
-        const promises: any[] = [];
-        QueueService.queues.forEach((queue) => promises.push(queue.clean(period, type)));
-        return Promise.all(promises);
+    public static async cleanQueues(
+        type: 'completed' | 'wait' | 'delayed' | 'failed' | 'active' | 'paused' = 'completed',
+        grace: number = 0,
+    ): Promise<void> {
+        const promises: Promise<any>[] = [];
+        this.queues.forEach((queue) => {
+            promises.push(queue.clean(grace, 1000, type));
+        });
+        await Promise.all(promises);
+        logger.info('All queues have been cleaned');
+    }
+
+    public static async createWorker(opts: {
+        queueName: string;
+        processor: Processor;
+        options?: WorkerOptions;
+    }): Promise<Worker> {
+        if (!this.queueOptions) {
+            this.queueOptions = await RedisAdapter.getQueueOptions();
+        }
+
+        return new Worker(opts.queueName, opts.processor, {
+            connection: this.queueOptions.connection,
+            ...(opts.options || {}),
+        });
     }
 }

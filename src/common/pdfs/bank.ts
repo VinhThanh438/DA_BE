@@ -1,5 +1,5 @@
 import { capitalizeWords, convertMoneyText, formatNumberWithDots } from '@common/helpers/format-number-with-dots';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { TransactionOrderType, TransactionType } from '@config/app.constant';
 
 export const bankPDF = (data: any, sum: any) => {
@@ -13,7 +13,7 @@ export const bankPDF = (data: any, sum: any) => {
         [TransactionOrderType.COMMISSION]: 'Thanh toán hoa hồng',
         [TransactionOrderType.INTEREST]: 'Thanh toán lãi khoản vay',
         [TransactionOrderType.LOAN]: 'Thanh toán dư nợ khoản vay',
-    }
+    };
 
     return `<html lang="en">
     <head>
@@ -73,19 +73,20 @@ export const bankPDF = (data: any, sum: any) => {
                 <th>Đơn hàng</th>
                 <th>Hóa đơn</th>
             </tr>
-                ${transactions.map((item, index) => {
-        let parseAmount = parseInt(item?.amount || 0);
-        if (item?.type === TransactionType.IN) {
-            sumIncome += parseAmount;
-            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) + parseAmount;
-        } else if (item?.type === TransactionType.OUT) {
-            sumExpense += parseAmount;
-            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) - parseAmount;
-        }
-        // sumDebt += currentDebt;
-        return `<tr>
+                ${transactions
+                    .map((item, index) => {
+                        let parseAmount = parseInt(item?.amount || 0);
+                        if (item?.type === TransactionType.IN) {
+                            sumIncome += parseAmount;
+                            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) + parseAmount;
+                        } else if (item?.type === TransactionType.OUT) {
+                            sumExpense += parseAmount;
+                            currentDebt = (currentDebt === 0 ? data?.beginning || 0 : currentDebt) - parseAmount;
+                        }
+                        // sumDebt += currentDebt;
+                        return `<tr>
                     <td>${index + 1}</td>
-                    <td>${item?.time_at ? TimeHelper.format(item.time_at, 'DD/MM/YYYY') : ''}</td>
+                    <td>${item?.time_at ? TimeAdapter.format(item.time_at, 'DD/MM/YYYY') : ''}</td>
                     <td style="text-align: left">${contentMap[item?.order_type]}</td>
                     <td style="color: red">${item?.partner?.code || ''}</td>
                     <td>${item?.type === TransactionType.IN && parseAmount > 0 ? formatNumberWithDots(parseAmount) : ''}</td>
@@ -94,7 +95,8 @@ export const bankPDF = (data: any, sum: any) => {
                     <td>${item?.order?.code || ''}</td>
                     <td>${item?.invoice?.code || ''}</td>
                     </tr>`;
-    }).join('')}
+                    })
+                    .join('')}
             <tr>
                 <td colspan="4">Tổng</td>
                 <td style=" font-weight: 700">

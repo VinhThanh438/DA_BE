@@ -1,5 +1,5 @@
 import { PurchaseRequestRepo } from '@common/repositories/purchase-request.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { PurchaseRequests, Prisma, Quotations } from '.prisma/client';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
@@ -14,7 +14,8 @@ import { ProductionRepo } from '@common/repositories/production.repo';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { handleFiles } from '@common/helpers/handle-files';
 import { UnitRepo } from '@common/repositories/unit.repo';
-import { deleteFileSystem } from '@common/helpers/delete-file-system';
+import eventbus from '@common/eventbus';
+import { EVENT_DELETE_UNUSED_FILES } from '@config/event.constant';
 
 export class PurchaseRequestService extends BaseService<
     PurchaseRequests,
@@ -160,13 +161,13 @@ export class PurchaseRequestService extends BaseService<
 
             // clean up file
             if (files_delete && files_delete.length > 0) {
-                deleteFileSystem(files_delete);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_delete);
             }
 
             return { id };
         } catch (error) {
             if (files_add && files_add.length > 0) {
-                deleteFileSystem(files_add);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_add);
             }
             throw error;
         }

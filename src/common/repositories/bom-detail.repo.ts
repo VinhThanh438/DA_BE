@@ -1,15 +1,11 @@
-import { BillOfMaterialDetails, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
+import { BomDetails, Prisma } from '.prisma/client';
 import { BaseRepo } from './base.repo';
-import { BillOfMaterialDetailSelection, BillOfMaterialDetailSelectionAll } from './prisma/bom-detail.select';
+import { BomDetailSelection, BomDetailSelectionAll } from './prisma/prisma.select';
 
-export class BillOfMaterialDetailRepo extends BaseRepo<
-    BillOfMaterialDetails,
-    Prisma.BillOfMaterialDetailsSelect,
-    Prisma.BillOfMaterialDetailsWhereInput
-> {
-    protected db = DatabaseAdapter.getInstance().billOfMaterialDetails;
-    protected defaultSelect = BillOfMaterialDetailSelection;
-    protected detailSelect = BillOfMaterialDetailSelectionAll;
-    protected modelKey: keyof Prisma.TransactionClient = 'billOfMaterialDetails';
+export class BomDetailRepo extends BaseRepo<BomDetails, Prisma.BomDetailsSelect, Prisma.BomDetailsWhereInput> {
+    protected db = DatabaseAdapter.getInstance().getClient().bomDetails;
+    protected defaultSelect = BomDetailSelection;
+    protected detailSelect = BomDetailSelectionAll;
+    protected modelKey: keyof Prisma.TransactionClient = 'bomDetails';
 }

@@ -52,14 +52,24 @@ export const queryFilter: schema = {
                 .valid(...values(BankType))
                 .optional()
                 .allow(null, ''),
+            partnerId: Joi.number().optional().allow(null, ''),
         }),
     ),
+};
+
+export const fundBalance: schema = {
+    params: wrapSchema(
+        Joi.object({
+            id: Joi.number().required(),
+        }),
+    ),
+    query: wrapSchema(extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {})),
 };
 
 export const transferSchema = z.object({
     bank_id: z.number(),
     amount: z.number(),
-    time_at: z.string().datetime(),
+    time_at: (z as any).isoDateTz(),
     file: z.string().optional().nullable(),
     note: z.string().optional().nullable(),
     organization_id: z.number().optional(),

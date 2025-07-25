@@ -1,4 +1,4 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Prisma, Loans } from '.prisma/client';
 import {
     IApproveRequest,
@@ -13,7 +13,7 @@ import { InvoiceRepo } from '@common/repositories/invoice.repo';
 import { ILoan, IInterestLog } from '@common/interfaces/loan.interface';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { transformDecimal } from '@common/helpers/transform.util';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { InterestLogRepo } from '@common/repositories/interest-log.repo';
 import { handleFiles } from '@common/helpers/handle-files';
 import { calculateInterestAmount } from '@common/helpers/canculate-interest-amount.helper';
@@ -21,11 +21,7 @@ import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-d
 import { PaymentRepo } from '@common/repositories/payment.repo';
 import logger from '@common/logger';
 import { PaymentRequestType, TransactionOrderType, TransactionType } from '@config/app.constant';
-import {
-    IEventInterestLogPaymented,
-    IPaymentCreatedEvent,
-    ITransaction,
-} from '@common/interfaces/transaction.interface';
+import { IEventInterestLogPaymented, IPaymentCreatedEvent } from '@common/interfaces/transaction.interface';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import moment from 'moment';
@@ -39,7 +35,6 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
     private bankRepo: BankRepo = new BankRepo();
     private organizationRepo: OrganizationRepo = new OrganizationRepo();
     private orderRepo: OrderRepo = new OrderRepo();
-    private paymentRequesDetailRepo: PaymentRequestDetailRepo = new PaymentRequestDetailRepo();
     private paymentRepo: PaymentRepo = new PaymentRepo();
     private invoiceRepo: InvoiceRepo = new InvoiceRepo();
     private interestLogRepo: InterestLogRepo = new InterestLogRepo();
@@ -62,8 +57,8 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
         const rows: IInterestLog[] = [];
 
         let currentDebt = loan.amount;
-        const disbursementDate = TimeHelper.parse(loan.disbursement_date as Date);
-        const endDate = TimeHelper.parse(TimeHelper.getCurrentDate() as Date);
+        const disbursementDate = TimeAdapter.parse(loan.disbursement_date as Date);
+        const endDate = TimeAdapter.parse(TimeAdapter.getCurrentDate() as Date);
         const paymentDay = loan.payment_day;
 
         let closingDate = disbursementDate.clone().date(paymentDay as number);
@@ -73,18 +68,18 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
 
         const sortedLogs = [...(loan.interest_logs || [])].sort(
             (a: IInterestLog, b: IInterestLog) =>
-                TimeHelper.parse(a.time_at as Date).valueOf() - TimeHelper.parse(b.time_at as Date).valueOf(),
+                TimeAdapter.parse(a.time_at as Date).valueOf() - TimeAdapter.parse(b.time_at as Date).valueOf(),
         );
 
         let currentDate = disbursementDate.clone();
 
         while (closingDate.isSameOrBefore(endDate)) {
             const payment = sortedLogs.find((p: IInterestLog) => {
-                const paymentDate = TimeHelper.parse(p.time_at as Date);
+                const paymentDate = TimeAdapter.parse(p.time_at as Date);
                 return paymentDate.isAfter(currentDate) && paymentDate.isSameOrBefore(closingDate);
             });
 
-            const rawClosingDate = payment ? TimeHelper.parse(payment.time_at as Date) : closingDate.clone();
+            const rawClosingDate = payment ? TimeAdapter.parse(payment.time_at as Date) : closingDate.clone();
             const actualClosingDate = rawClosingDate.clone().add(1, 'day');
 
             const interestDays = actualClosingDate.diff(currentDate, 'day');
@@ -112,6 +107,10 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
     }
 
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        if (query.bank) {
+            query.keyword = query.bank;
+            delete query.bank;
+        }
         const result = await this.repo.paginate(query, true);
 
         let totalInterestAmount = 0;
@@ -123,7 +122,7 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
                 if (!loan) return loan;
 
                 let interestLogs = Array.isArray(loan.interest_logs) ? [...loan.interest_logs] : [];
-                const today = TimeHelper.now().startOf('day');
+                const today = TimeAdapter.now().startOf('day');
 
                 if (interestLogs.length > 0) {
                     interestLogs.sort((a, b) => {
@@ -136,8 +135,8 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
                     const defaultRate = Number(loan.interest_rate) || 0;
 
                     const lastInterestLog = interestLogs[interestLogs.length - 1];
-                    const interestDay = TimeHelper.getDistanceToNearestPastDay(
-                        TimeHelper.parseToDate(today.toISOString()),
+                    const interestDay = TimeAdapter.getDistanceToNearestPastDay(
+                        TimeAdapter.parseToDate(today.toISOString()),
                         lastInterestLog.time_at as Date,
                     );
                     const interestAmount = calculateInterestAmount(
@@ -164,7 +163,7 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
                         totalPaymentAmount += Number(log.amount) || 0;
                         if (log.is_paymented) {
                             let payment = null;
-                            const paymentRequestDetail = await this.paymentRequesDetailRepo.findOne({
+                            const paymentRequestDetail = await this.paymentRequestDetailRepo.findOne({
                                 interest_log_id: log.id,
                             });
                             if (paymentRequestDetail) {
@@ -180,7 +179,7 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
                         }
                     }
 
-                    const lastDate = TimeHelper.parse(lastPayment.time_at as Date).startOf('day');
+                    const lastDate = TimeAdapter.parse(lastPayment.time_at as Date).startOf('day');
 
                     if (today.isAfter(lastDate)) {
                         const interestDays = today.diff(lastDate, 'day');
@@ -202,7 +201,7 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
                         });
                     }
                 } else {
-                    const lastDate = TimeHelper.parse(loan.disbursement_date as Date).startOf('day');
+                    const lastDate = TimeAdapter.parse(loan.disbursement_date as Date).startOf('day');
                     const interestDays = today.diff(lastDate, 'day');
                     const interestAmount = calculateInterestAmount(
                         Number(loan.current_debt),
@@ -306,11 +305,11 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
         for (const loan of loans) {
             const lastInterestLogRecord = await this.interestLogRepo.findFirst({ loan_id: loan.id });
             if (lastInterestLogRecord) {
-                const currentDate = TimeHelper.getCurrentDate();
-                const currentDay = TimeHelper.getDayOfMonth(currentDate);
+                const currentDate = TimeAdapter.getCurrentDate();
+                const currentDay = TimeAdapter.getDayOfMonth(currentDate);
 
                 if (currentDay === Number(loan.payment_day) + 1) {
-                    const interestDays = TimeHelper.getDistanceToNearestPastDay(
+                    const interestDays = TimeAdapter.getDistanceToNearestPastDay(
                         currentDate,
                         lastInterestLogRecord.time_at as Date,
                     );
@@ -395,7 +394,7 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
             throw new Error('interest log records not found!');
         }
 
-        const distance = TimeHelper.getDistanceToNearestPastDay(
+        const distance = TimeAdapter.getDistanceToNearestPastDay(
             paymentData.time_at as string,
             interestLastRecord.time_at as Date,
         );
@@ -446,11 +445,13 @@ export class LoanService extends BaseService<Loans, Prisma.LoansSelect, Prisma.L
         const loan = await this.repo.findOne({ order_id: orderId });
 
         if (!loan) {
-            throw new Error('Loan not found!');
+            logger.error('LoanEvent.addInvoiceInfo: Loan not found for order ID:', orderId);
+            return;
         }
 
         if (loan.invoice_id) {
-            throw new Error('Invoice existed!');
+            logger.info('LoanEvent.addInvoiceInfo: Invoice already exists for this loan.');
+            return;
         }
 
         await this.repo.update(

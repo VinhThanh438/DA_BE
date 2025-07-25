@@ -1,4 +1,4 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { PaymentRequests, Prisma } from '.prisma/client';
 import {
     IApproveRequest,

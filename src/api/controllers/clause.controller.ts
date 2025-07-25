@@ -1,4 +1,4 @@
-import { ClauseService } from '@common/services/clause.service';
+import { ClauseService } from '@common/services/master/clause.service';
 import { BaseController } from './base.controller';
 
 export class ClauseController extends BaseController {

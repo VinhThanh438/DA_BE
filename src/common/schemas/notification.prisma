@@ -1,0 +1,24 @@
+model Notifications {
+    id       Int      @id @default(autoincrement())
+    send_at  DateTime
+    user_id  Int
+    type     String
+    event_id Int
+
+    title           String
+    content         String
+    is_seen         Boolean  @default(false)
+    description     String?
+    create_by       Int
+    update_by       Int
+    flag            Boolean  @default(true)
+    created_at      DateTime @default(now())
+    updated_at      DateTime @updatedAt
+    dayToEvent      String
+    organization_id Int?
+
+    user         Users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+
+    @@map("notifications")
+}

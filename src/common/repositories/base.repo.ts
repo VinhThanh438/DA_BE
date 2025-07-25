@@ -1,5 +1,5 @@
 import PrismaSearchBuilder from '@common/helpers/searchBuilder';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { transformDecimal } from '@common/helpers/transform.util';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import {
@@ -26,7 +26,7 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         basic: [],
     };
     protected timeFieldDefault: string = 'created_at';
-    private dbAdapter = DatabaseAdapter.getInstance();
+    private dbAdapter = DatabaseAdapter.getInstance().getClient();
 
     protected getModel(tx?: Prisma.TransactionClient): any {
         return tx ? tx[this.modelKey] : this.db;
@@ -49,8 +49,8 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
 
         if (startAt || endAt) {
             where[this.timeFieldDefault] = {};
-            if (startAt) where[this.timeFieldDefault].gte = TimeHelper.parseStartOfDayDate(startAt);
-            if (endAt) where[this.timeFieldDefault].lte = TimeHelper.parseEndOfDayDate(endAt);
+            if (startAt) where[this.timeFieldDefault].gte = TimeAdapter.parseStartOfDayDate(startAt);
+            if (endAt) where[this.timeFieldDefault].lte = TimeAdapter.parseEndOfDayDate(endAt);
         }
 
         // Build select condition
@@ -154,8 +154,9 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
 
     public async findMany(
         where: W = {} as W,
-        includeRelations: boolean = false,
+        includeRelations = false,
         tx?: Prisma.TransactionClient,
+        include: Record<string, any> = {},
     ): Promise<Partial<T>[]> {
         let sanitizedWhere = this.sanitizeJsonFilters(where);
 
@@ -172,11 +173,23 @@ export abstract class BaseRepo<T, S extends Record<string, any>, W> {
         sanitizedWhere = this.sanitizeInOperators(sanitizedWhere);
 
         const db = this.getModel(tx);
-        const data = await db.findMany({
+
+        const query: any = {
             where: sanitizedWhere,
             orderBy: { [this.timeFieldDefault]: 'desc' },
-            select: includeRelations ? this.detailSelect : this.defaultSelect,
-        });
+        };
+
+        if (includeRelations) {
+            if (include && Object.keys(include).length > 0) {
+                query.include = include;
+            } else {
+                query.select = this.detailSelect;
+            }
+        } else {
+            query.select = this.defaultSelect;
+        }
+
+        const data = await db.findMany(query);
         return transformDecimal(data);
     }
 

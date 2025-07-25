@@ -1,26 +1,25 @@
 import logger from '@common/logger';
-import { Queue } from 'bull';
 import { Router } from './router';
+import { IWorker } from './interface';
 
 /**
- * Abstraction around bull processor
+ * Abstraction around bullmq processor (Worker manager)
  */
 export class WorkerServer {
-    private queues: Queue[] = [];
+    private workers: IWorker[] = [];
 
     public async setup(): Promise<void> {
-        await this.registerQueues();
-        return;
+        this.workers = await Router.register();
+        logger.info(`WorkerServer: ${this.workers.length} jobs registered.`);
     }
 
-    public async kill(): Promise<unknown> {
-        const promises = this.queues.map((queue) =>
-            queue.close(false).catch((e) => logger.error('Error closing queue', e)),
+    public async kill(): Promise<void> {
+        const promises = this.workers.map((item) =>
+            item.worker?.close().catch((e) => {
+                logger.error('Error closing worker', e);
+            }),
         );
-        return Promise.all(promises);
-    }
-
-    private async registerQueues(): Promise<void> {
-        this.queues = await Router.register();
+        await Promise.all(promises);
+        logger.info('WorkerServer: all jobs closed.');
     }
 }

@@ -1,0 +1,26 @@
+model UnloadingCosts {
+    id              Int                     @id @default(autoincrement())
+    price           Float                   @default(0) // Giá cước hạ hàng
+    vat             Float?                  @default(0) // % VAT
+    quantity        Int                     @default(0) // Số chuyến
+    note            String? // Ghi chú
+    rejected_reason String?
+    status          PrsUnloadingCostStatus? @default(pending)
+    files           Json?                   @default("[]")
+
+    unit_id         Int? // ID của đơn vị tính
+    order_id        Int? // ID của đơn hàng
+    organization_id Int?
+
+    unit         Units?         @relation(fields: [unit_id], references: [id], onDelete: SetNull)
+    order        Orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+    organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+
+    @@map("unloading_costs")
+}
+
+enum PrsUnloadingCostStatus {
+    pending
+    confirmed
+    rejected
+}

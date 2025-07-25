@@ -1,38 +1,28 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Orders, Prisma } from '.prisma/client';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
-import {
-    IApproveRequest,
-    ICommonDetails,
-    IIdResponse,
-    IPaginationInput,
-    IPaginationResponse,
-} from '@common/interfaces/common.interface';
+import { IApproveRequest, ICommonDetails, IIdResponse, IPaginationResponse } from '@common/interfaces/common.interface';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { IOrder, IOrderDetailPurchaseProcessing, IOrderPaginationInput } from '@common/interfaces/order.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { PartnerRepo } from '@common/repositories/partner.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
-import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
+import { DEFAULT_EXCLUDED_FIELDS, OrderType } from '@config/app.constant';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
-import { ContractService } from './contract.service';
-import { InvoiceService } from './invoice.service';
-import { OrderExpenseService } from './order-expense.service';
-import { ProductionService } from './production.service';
-import { InventoryService } from './inventory.service';
 import { RepresentativeRepo } from '@common/repositories/representative.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import { UnitRepo } from '@common/repositories/unit.repo';
-import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { handleFiles } from '@common/helpers/handle-files';
 import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
-import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';
-import { TransactionWarehouseRepo } from '@common/repositories/transaction-warehouse.repo';
-import { CommonDetailSelectionAll } from '@common/repositories/prisma/common-detail.select';
 import moment from 'moment-timezone';
 import { calculateConvertQty } from '@common/helpers/calculate-convert-qty';
+import { UnloadingCostRepo } from '@common/repositories/unloading-cost.repo';
+import { CommonService } from './common.service';
+import { EVENT_DELETE_UNUSED_FILES } from '@config/event.constant';
+import eventbus from '@common/eventbus';
+import { TransactionWarehouseService } from './transaction-warehouse.service';
 
 export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prisma.OrdersWhereInput> {
     private static instance: OrderService;
@@ -42,14 +32,11 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     private productRepo: ProductRepo = new ProductRepo();
     private bankRepo: BankRepo = new BankRepo();
     private unitRepo: UnitRepo = new UnitRepo();
-    private contractService: ContractService = ContractService.getInstance();
-    private orderExpenseService: OrderExpenseService = OrderExpenseService.getInstance();
-    private productionService: ProductionService = ProductionService.getInstance();
-    private inventoryService: InventoryService = InventoryService.getInstance();
     private representativeRepo: RepresentativeRepo = new RepresentativeRepo();
     private transactionRepo: TransactionRepo = new TransactionRepo();
     private shippingPlanRepo: ShippingPlanRepo = new ShippingPlanRepo();
-    private transactionWarehouseRepo: TransactionWarehouseRepo = new TransactionWarehouseRepo();
+    private unloadingCostRepo = new UnloadingCostRepo();
+    private transWhService = TransactionWarehouseService.getInstance();
 
     private constructor() {
         super(new OrderRepo());
@@ -124,22 +111,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             return sum + detailTotal + detailVat;
         }, 0);
 
-        // tiến độ giao hàng
-        // const initQty = await this.calculateTotalConvertedQuantity(order.id || 0);
-        // const importQty = await this.transactionWarehouseRepo.aggregate(
-        //     { order_id: order.id, type: 'in' },
-        //     {
-        //         _sum: {
-        //             real_quantity: true,
-        //         },
-        //     },
-        // );
-        // const completionPercentage = initQty > 0 ? ((importQty?._sum?.real_quantity || 0) / initQty) * 100 : 0;
-
-        // console.log("initQty", initQty);
-        // console.log("importQty", importQty);
-
-        // Change the synchronous map to an async map using Promise.all
         const detailsWithPayments = await Promise.all(
             (order.details ?? []).map(async (detail: ICommonDetails) => {
                 const quantity = detail.quantity;
@@ -159,11 +130,13 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 const commission_debt = commission - commission_paid;
 
                 // Await the async method call
-                const progress = await this.getOrderDetailPurchaseProcessing({
-                    ...detail,
-                    order_id: order.id,
-                } as IOrderDetailPurchaseProcessing);
-
+                const progress =
+                    order.type === OrderType.PURCHASE
+                        ? await this.getOrderDetailPurchaseProcessing({
+                            ...detail,
+                            order_id: order.id,
+                        } as IOrderDetailPurchaseProcessing)
+                        : await this.getOrderDetailExportProcessing({ ...detail, order_id: order.id });
                 return {
                     ...detail,
                     amount_paid,
@@ -171,14 +144,14 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     commission_paid,
                     commission_debt,
                     progress,
+                    product: CommonService.transformProductDataStock(detail.product as any),
                 };
             }),
         );
 
         return {
             ...order,
-            // delivery_progress: parseFloat(completionPercentage.toFixed(2)),
-            details: detailsWithPayments,
+            details: detailsWithPayments as any,
         };
     }
 
@@ -190,14 +163,75 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
     }
 
     public async paginate(query: IOrderPaginationInput): Promise<IPaginationResponse> {
-        // if (query.isDone) {
-        //     query.delivery_progress = { gte: 95 };
-        // }
         // delete query.isDone;
+
+        if (query.types && Array.isArray(query.types) && query.types.length > 0) {
+            query.type = { in: query.types };
+            delete query.types;
+        }
 
         const data = await this.repo.paginate(query, true);
         data.data = await Promise.all(data.data.map((order: IOrder) => this.attachPaymentInfoToOrder(order)));
-        return this.enrichTotals(data);
+
+        // Calculate totals for each order and overall summary
+        let summary_total_money = 0;
+        let summary_total_vat = 0;
+        let summary_total_commission = 0;
+
+        const enrichedData = await Promise.all(
+            data.data.map(async (order: any) => {
+                let total_money = 0;
+                let total_vat = 0;
+                let total_commission = 0;
+
+                for (const detail of order.details || []) {
+                    const quantity = Number(detail.quantity || 0);
+                    const price = Number(detail.price || 0);
+                    const vat = Number(detail.vat || 0);
+                    const commission = Number(detail.commission || 0);
+
+                    const detailTotal = quantity * price;
+                    const detailVat = (detailTotal * vat) / 100;
+                    const detailCommission = (detailTotal * commission) / 100;
+
+                    total_money += detailTotal;
+                    total_vat += detailVat;
+                    total_commission += detailCommission;
+                }
+
+                const total_amount = total_money + total_vat;
+
+                // Add to summary totals
+                summary_total_money += total_money;
+                summary_total_vat += total_vat;
+                summary_total_commission += total_commission;
+
+                return {
+                    ...order,
+                    // details: order.details.map((detail: any) => ({
+                    //     ...detail,
+                    //     product: CommonService.transformProductDataStock(detail.product || {}),
+                    // })),
+                    total_money: parseFloat(total_money.toFixed(2)),
+                    total_vat: parseFloat(total_vat.toFixed(2)),
+                    total_amount: parseFloat(total_amount.toFixed(2)),
+                    total_commission: parseFloat(total_commission.toFixed(2)),
+                };
+            }),
+        );
+
+        const summary_total_amount = summary_total_money + summary_total_vat;
+
+        return {
+            ...data,
+            data: enrichedData,
+            summary: {
+                total_money: parseFloat(summary_total_money.toFixed(2)),
+                total_vat: parseFloat(summary_total_vat.toFixed(2)),
+                total_amount: parseFloat(summary_total_amount.toFixed(2)),
+                total_commission: parseFloat(summary_total_commission.toFixed(2)),
+            },
+        };
     }
 
     public async findById(id: number): Promise<Partial<IOrder> | null> {
@@ -226,7 +260,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             bank_id: this.bankRepo,
         });
 
-        const { shipping_plans, details, contracts, order_expenses, productions, inventories, ...orderData } = request;
+        const { shipping_plans, details, unloading_costs, ...orderData } = request;
 
         await this.db.$transaction(async (tx) => {
             const { partner_id, employee_id, bank_id, representative_id, ...restData } = orderData;
@@ -248,53 +282,11 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     tx,
                 );
 
-                const mappedDetails = details.map((item) => {
-                    const { product_id, unit_id, ...rest } = item;
-                    return {
-                        ...rest,
-                        order: orderId ? { connect: { id: orderId } } : undefined,
-                        product: product_id ? { connect: { id: product_id } } : undefined,
-                        unit: unit_id ? { connect: { id: unit_id } } : undefined,
-                    };
+                const mappedData = this.autoMapConnection(details, {
+                    order_id: orderId,
                 });
 
-                if (contracts && contracts.length > 0) {
-                    await Promise.all(
-                        contracts.map((ele) => {
-                            ele.order_id = orderId;
-                            return this.contractService.createContract(ele, tx);
-                        }),
-                    );
-                }
-
-                if (order_expenses && order_expenses.length > 0) {
-                    await Promise.all(
-                        order_expenses.map((ele) => {
-                            ele.order_id = orderId;
-                            return this.orderExpenseService.createOrderExpense(ele, tx);
-                        }),
-                    );
-                }
-
-                if (productions && productions.length > 0) {
-                    await Promise.all(
-                        productions.map((ele) => {
-                            ele.order_id = orderId;
-                            return this.productionService.createProduction(ele, tx);
-                        }),
-                    );
-                }
-
-                if (inventories && inventories.length > 0) {
-                    await Promise.all(
-                        inventories.map((ele) => {
-                            ele.order_id = orderId;
-                            return this.inventoryService.createInventory(ele, tx);
-                        }),
-                    );
-                }
-
-                const filteredData = this.filterData(mappedDetails, DEFAULT_EXCLUDED_FIELDS, ['details']);
+                const filteredData = this.filterData(mappedData, DEFAULT_EXCLUDED_FIELDS, ['details']);
 
                 await this.orderDetailRepo.createMany(filteredData, tx);
             } else {
@@ -315,9 +307,24 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 );
                 const data = shipping_plans.map((item) => {
                     const { key, ...rest } = item;
-                    return { ...rest, order_id: orderId };
+                    return { ...rest, order_id: orderId, organization_id: request.organization_id };
                 });
                 await this.shippingPlanRepo.createMany(data, tx);
+            }
+
+            if (unloading_costs && unloading_costs.length > 0) {
+                await this.validateForeignKeys(
+                    unloading_costs,
+                    {
+                        unit_id: this.unitRepo,
+                    },
+                    tx,
+                );
+                const data = unloading_costs.map((item) => {
+                    const { key, ...rest } = item;
+                    return { ...rest, order_id: orderId, organization_id: request.organization_id };
+                });
+                await this.unloadingCostRepo.createMany(data);
             }
         });
         return { id: orderId };
@@ -331,7 +338,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             delete: deleteIds,
             contracts,
             invoices,
-            order_expenses,
             productions,
             inventories,
             files_add,
@@ -340,6 +346,9 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             shipping_plans_add,
             shipping_plans_delete,
             shipping_plans_update,
+            unloading_costs_add,
+            unloading_costs_update,
+            unloading_costs_delete,
             ...orderData
         } = request;
 
@@ -348,25 +357,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
             if (!orderExists) {
                 return { id };
             }
-
-            // check can edit
-            // const initQty = await this.calculateTotalConvertedQuantity(id);
-            // const importQty = await this.transactionWarehouseRepo.aggregate(
-            //     { order_id: id, type: 'in' },
-            //     {
-            //         _sum: {
-            //             real_quantity: true,
-            //         },
-            //     },
-            // );
-            // const completionPercentage = initQty > 0 ? ((importQty?._sum?.real_quantity || 0) / initQty) * 100 : 0;
-            // if ((orderExists.delivery_progress || 0) >= 95) {
-            //     throw new APIError({
-            //         message: `common.status.${StatusCode.BAD_REQUEST}`,
-            //         status: ErrorCode.BAD_REQUEST,
-            //         errors: [`quantity.${ErrorKey.FULFILLED}`],
-            //     });
-            // }
 
             // start update
             await this.validateForeignKeys(request, {
@@ -447,7 +437,6 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     await this.validateForeignKeys(
                         shipping_plans_update,
                         {
-                            id: this.shippingPlanRepo,
                             partner_id: this.partnerRepo,
                         },
                         tx,
@@ -462,27 +451,47 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
 
                 // [delete] shippings
                 if (shipping_plans_delete && shipping_plans_delete.length > 0) {
-                    await this.orderDetailRepo.deleteMany({ id: { in: shipping_plans_delete } }, tx, false);
+                    await this.shippingPlanRepo.deleteMany({ id: { in: shipping_plans_delete } }, tx, false);
                 }
 
-                // handle invoices
+                if (unloading_costs_add && unloading_costs_add.length > 0) {
+                    await this.validateForeignKeys(unloading_costs_add, { unit_id: this.unitRepo }, tx);
+                    const data = unloading_costs_add.map((item) => {
+                        const { key, ...rest } = item;
+                        return { ...rest, order_id: id };
+                    });
+                    await this.unloadingCostRepo.createMany(data, tx);
+                }
 
-                // handle expenses
+                if (unloading_costs_update && unloading_costs_update.length > 0) {
+                    await this.validateForeignKeys(
+                        unloading_costs_update,
+                        {
+                            unit_id: this.unitRepo,
+                        },
+                        tx,
+                    );
+                    const data = unloading_costs_update.map((item) => {
+                        const { key, ...rest } = item;
+                        return rest;
+                    });
+                    await this.unloadingCostRepo.updateMany(data, tx);
+                }
 
-                // handle productions
-
-                // handle inventories
+                if (unloading_costs_delete && unloading_costs_delete.length > 0) {
+                    await this.unloadingCostRepo.deleteMany({ id: { in: unloading_costs_delete } }, tx, false);
+                }
             });
 
             // clean up file
             if (files_delete && files_delete.length > 0) {
-                deleteFileSystem(files_delete);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_delete);
             }
 
             return { id };
         } catch (error) {
             if (files_add && files_add.length > 0) {
-                deleteFileSystem(files_add);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_add);
             }
             throw error;
         }
@@ -638,17 +647,8 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                         order_detail_id: orderDetail.id,
                     },
                     select: {
-                        // real_quantity: true,
-                        // order_detail_id: true,
-                        // order_detail: {
-                        //     select: {
-                        //         product_id: true,
-                        //     },
-                        // },
                         transaction_warehouses: {
                             select: {
-                                // convert_quantity: true,
-                                // real_quantity: true,
                                 quantity: true,
                             },
                         },
@@ -662,6 +662,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         const importBatches = inventoryTransactions.map((transaction) => ({
             time_at: moment(transaction.time_at).format('YYYY-MM-DD'),
             code: transaction.code,
+            shipping_plan_id: transaction.shipping_plan_id,
             transaction: transaction,
         }));
 
@@ -690,6 +691,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     productImports.push({
                         time_at: batch.time_at,
                         code: batch.code,
+                        shipping_plan_id: batch.shipping_plan_id,
                         quantity: batchQuantity,
                     });
                     totalQuantity += batchQuantity;
@@ -697,6 +699,7 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                     productImports.push({
                         time_at: batch.time_at,
                         code: batch.code,
+                        shipping_plan_id: batch.shipping_plan_id,
                         quantity: 0,
                     });
                 }
@@ -704,17 +707,99 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
                 productImports.push({
                     time_at: batch.time_at,
                     code: null,
+                    shipping_plan_id: batch.shipping_plan_id || null,
                     quantity: 0,
                 });
             }
         });
+
+        const exports = await this.getOrderDetailExports(orderDetail);
+        const totalExportQuantity = await this.calculateOrderDetailExportQuantity(orderDetail.id);
 
         return {
             product_id: productId,
             product: orderDetail.product,
             imports: productImports,
             total: totalQuantity,
+            exports,
+            total_export: totalExportQuantity,
         };
+    }
+
+    /**
+     * Get purchase processing information for a specific order detail
+     * @param orderDetailId ID of the order detail to check
+     * @returns Import information for the specific product
+     */
+    public async getOrderDetailExportProcessing(orderDetail: IOrderDetailPurchaseProcessing) {
+        if (!orderDetail || !orderDetail.product?.id || !orderDetail.order_id) {
+            return {};
+        }
+
+        const productId = orderDetail.product?.id;
+
+        const exports = await this.getOrderDetailExports(orderDetail);
+        const totalExportQuantity = await this.calculateOrderDetailExportQuantity(orderDetail.id);
+
+        return {
+            product_id: productId,
+            product: orderDetail.product,
+            imports: exports,
+            total: totalExportQuantity,
+        };
+    }
+
+    // ✅ Thêm hàm mới để lấy dữ liệu xuất kho
+    private async getOrderDetailExports(orderDetail: IOrderDetailPurchaseProcessing) {
+        if (!orderDetail?.id) return [];
+
+        // Lấy các transaction xuất kho cho OrderDetail này
+        const exportTransactions = await this.db.transactionWarehouses.findMany({
+            where: {
+                inventory_detail: {
+                    order_detail_id: orderDetail.id,
+                },
+                type: 'out',
+            },
+            select: {
+                id: true,
+                quantity: true,
+                time_at: true,
+                inventory: {
+                    select: {
+                        id: true,
+                        code: true,
+                    },
+                },
+            },
+            orderBy: { time_at: 'asc' },
+        });
+
+        // Format dữ liệu xuất kho
+        return exportTransactions.map((tx) => ({
+            time_at: moment(tx.time_at).format('YYYY-MM-DD'),
+            code: tx.inventory?.code || null,
+            quantity: tx.quantity || 0,
+        }));
+    }
+
+    // ✅ Thêm hàm mới để tính tổng số lượng đã xuất kho
+    private async calculateOrderDetailExportQuantity(orderDetailId: number | undefined): Promise<number> {
+        if (!orderDetailId) return 0;
+
+        const result = await this.db.transactionWarehouses.aggregate({
+            where: {
+                inventory_detail: {
+                    order_detail_id: orderDetailId,
+                },
+                type: 'out',
+            },
+            _sum: {
+                quantity: true,
+            },
+        });
+
+        return result._sum.quantity || 0;
     }
 
     public async approve(id: number, body: IApproveRequest): Promise<IIdResponse> {
@@ -729,5 +814,23 @@ export class OrderService extends BaseService<Orders, Prisma.OrdersSelect, Prism
         await this.repo.update({ id }, dataToUpdate);
 
         return { id };
+    }
+
+    async calculateAndUpdateOrderProcessing(
+        orderData: IOrder,
+        quantity: number,
+        initQty: number,
+        tx?: Prisma.TransactionClient,
+    ) {
+        const percent = initQty > 0 ? (quantity / initQty) * 100 : 0;
+        const isDone = percent >= 100 - (orderData?.tolerance || 0);
+        await this.repo.update(
+            { id: orderData.id },
+            {
+                delivery_progress: percent,
+                isDone,
+            },
+            tx,
+        );
     }
 }

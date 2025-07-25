@@ -1,12 +1,14 @@
 import { OrganizationRepo } from '@common/repositories/organization.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Organizations, Prisma } from '.prisma/client';
 import { OrganizationType } from '@config/app.constant';
-import { IOrganization } from '@common/interfaces/company.interface';
+import { ActionType, IEventOrgCacheData, IOrganization } from '@common/interfaces/organization.interface';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { IEmployee } from '@common/interfaces/employee.interface';
-import { OrganizationSelectionAll } from '@common/repositories/prisma/organization.select';
+import { OrganizationSelectionAll } from '@common/repositories/prisma/prisma.select';
+import eventbus from '@common/eventbus';
+import { EVENT_UPDATE_ORGANIZATION_CACHE_DATA } from '@config/event.constant';
 
 interface IHierarchyModel {
     id: number;
@@ -100,6 +102,14 @@ export class OrganizationService extends BaseService<
 
         const id = await this.repo.create(request);
 
+        if ([OrganizationType.COMPANY, OrganizationType.HEAD_QUARTER].includes(request.type as OrganizationType)) {
+            // Cache the organization data if it's a company
+            eventbus.emit(EVENT_UPDATE_ORGANIZATION_CACHE_DATA, {
+                id,
+                action: ActionType.CREATE,
+            } as IEventOrgCacheData);
+        }
+
         return { id };
     }
 
@@ -114,6 +124,18 @@ export class OrganizationService extends BaseService<
         });
 
         await this.repo.update({ id }, request);
+
+        eventbus.emit(EVENT_UPDATE_ORGANIZATION_CACHE_DATA, { id, action: ActionType.UPDATE } as IEventOrgCacheData);
+
+        return { id };
+    }
+
+    public async deleteOrganization(id: number): Promise<IIdResponse> {
+        await this.findOne({ id });
+
+        await this.repo.delete({ id });
+
+        eventbus.emit(EVENT_UPDATE_ORGANIZATION_CACHE_DATA, { id, action: ActionType.DELETE } as IEventOrgCacheData);
 
         return { id };
     }

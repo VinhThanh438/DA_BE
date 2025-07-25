@@ -1,5 +1,5 @@
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { CommonDetails, Prisma } from '.prisma/client';
 import logger from '@common/logger';
 
@@ -60,4 +60,6 @@ export class CommonDetailService extends BaseService<
         logger.info(`Updated import quantity for detail #${detail.id}: ${currentQty} → ${newQty}`);
         return { newQty, qty: detail.quantity || 0 };
     }
+
+
 }

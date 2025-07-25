@@ -32,6 +32,7 @@ export class ExpressServer {
 
         this.httpServer = this.listen(server, port);
         this.server = server;
+
         return this.server;
     }
 
@@ -52,10 +53,12 @@ export class ExpressServer {
                     if (err) {
                         reject(err);
                     } else {
+                        logger.info('HTTP server closed');
                         resolve();
                     }
                 });
             } else {
+                logger.info('HTTP server closed');
                 resolve();
             }
         });
@@ -79,7 +82,7 @@ export class ExpressServer {
             'http://localhost:3001',
             'https://api.thepdonganh.itomo.one',
             'https://thepdonganh.itomo.one',
-            'https://kswrz0sc-3000.asse.devtunnels.ms',
+            'http://192.168.1.18:3000',
         ];
 
         server.use(
@@ -95,7 +98,7 @@ export class ExpressServer {
             }),
         );
         server.set('trust proxy', true);
-        server.use(RateLimiterMiddleware.createGlobalLimiter());
+        server.use(RateLimiterMiddleware.globalLimiter);
     }
 
     private async i18next(server: Express) {
@@ -116,7 +119,7 @@ export class ExpressServer {
     }
 
     private configureRoutes(server: Express) {
-        server.use(PublicPath.PUBLIC_FILES, express.static('uploads'));
+        server.use(PublicPath.PUBLIC_FOLDER, express.static('uploads'));
         server.use('/api/v1', routes);
     }
 

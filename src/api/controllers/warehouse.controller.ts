@@ -1,6 +1,6 @@
 import { BaseController } from './base.controller';
 import { Warehouses } from '.prisma/client';
-import { WarehouseService } from '@common/services/warehouse.service';
+import { WarehouseService } from '@common/services/master/warehouse.service';
 
 export class WarehouseController extends BaseController<Warehouses> {
     private static instance: WarehouseController;

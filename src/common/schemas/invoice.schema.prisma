@@ -1,14 +1,13 @@
 model Invoices {
-  id              Int              @id @default(autoincrement())
-  code            String           @unique
-  status          PrsInvoiceStatus @default(pending)
+  id              Int             @id @default(autoincrement())
+  code            String          @unique
   time_at         DateTime?
-  invoice_date    DateTime?        @default(now())
-  files           Json?            @default("[]")
+  invoice_date    DateTime?       @default(now())
+  files           Json?           @default("[]")
   rejected_reason String?
   note            String?
   content         String? // Nội dung hóa đơn
-  type            PrsInvoiceType?  @default(supplier) // Loại hóa đơn: bán hàng, mua hàng, vận chuyển
+  type            PrsInvoiceType? @default(purchase) // Loại hóa đơn: bán hàng, mua hàng, vận chuyển
 
   total_amount     Float? @default(0) // Tổng tiền hóa đơn
   total_money      Float? @default(0) // Tổng tiền
@@ -23,33 +22,38 @@ model Invoices {
   bank_id              Int? // Tài khoản ngân hàng
   employee_id          Int? // Nhân viên bán hàng
   partner_id           Int? // Khách hàng
+  facility_id          Int? // Dịch vụ
   organization_id      Int?
-  contract_id          Int? // Hợp đồng
-  order_id             Int? // Hợp đồng
+  order_id             Int? // Đơn hàng
+  shipping_plan_id     Int? // Kế hoạch vận chuyển
   is_payment_completed Boolean @default(false) // Kiểm tra xem đã hóa đơn đã thanh toán hết hay chưa
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  facility                Facility?               @relation(fields: [facility_id], references: [id], onDelete: SetNull)
   bank                    Banks?                  @relation(fields: [bank_id], references: [id], onDelete: SetNull)
-  contract                Contracts?              @relation(fields: [contract_id], references: [id], onDelete: SetNull)
   employee                Employees?              @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   partner                 Partners?               @relation(fields: [partner_id], references: [id], onDelete: SetNull)
   order                   Orders?                 @relation(fields: [order_id], references: [id], onDelete: SetNull)
   organization            Organizations?          @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  shipping_plan           ShippingPlans?          @relation(fields: [shipping_plan_id], references: [id], onDelete: SetNull)
   payments                Payments[]
   payment_request_details PaymentRequestDetails[]
   transactions            Transactions[]
   details                 InvoiceDetails[]
   loans                   Loans[]
+  facility_orders         FacilityOrders[]
+  debts                   Debts[]
 
   @@map("invoices")
 }
 
 enum PrsInvoiceType {
-  customer // Hóa đơn bán hàng
-  supplier // Hóa đơn mua hàng
+  sell // Hóa đơn bán hàng
+  purchase // Hóa đơn mua hàng
   delivery // Hóa đơn vận chuyển
+  facility // Hóa đơn dịch vụ
 }
 
 model InvoiceDetails {
@@ -65,10 +69,4 @@ model InvoiceDetails {
   order_detail CommonDetails? @relation(fields: [order_detail_id], references: [id], onDelete: Cascade)
 
   @@map("invoice_details")
-}
-
-enum PrsInvoiceStatus {
-  pending
-  rejected
-  confirmed
 }

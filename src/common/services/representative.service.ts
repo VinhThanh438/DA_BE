@@ -1,12 +1,13 @@
 import { RepresentativeRepo } from '@common/repositories/representative.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Representatives, Prisma } from '.prisma/client';
 import { IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { IDebtResponse } from '@common/interfaces/debt.interface';
-import { IRepresenDebtQueryFilter } from '@common/interfaces/representative.interface';
+import { IRepresentDebtQueryFilter } from '@common/interfaces/representative.interface';
 import { OrderStatus, TransactionOrderType } from '@config/app.constant';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
+import { PartnerRepo } from '@common/repositories/partner.repo';
 
 export class RepresentativeService extends BaseService<
     Representatives,
@@ -16,6 +17,7 @@ export class RepresentativeService extends BaseService<
     private static instance: RepresentativeService;
     private orderRepo: OrderRepo = new OrderRepo();
     private transactionRepo: TransactionRepo = new TransactionRepo();
+    private partnerRepo: PartnerRepo = new PartnerRepo();
 
     private constructor() {
         super(new RepresentativeRepo());
@@ -29,6 +31,7 @@ export class RepresentativeService extends BaseService<
     }
 
     public async paginate({ type, ...query }: IPaginationInput): Promise<IPaginationResponse> {
+        delete query.OR;
         const data = await this.repo.paginate(query, true);
 
         const result = {
@@ -61,11 +64,11 @@ export class RepresentativeService extends BaseService<
         return result;
     }
 
-    public async getDebt(query: IRepresenDebtQueryFilter): Promise<IDebtResponse> {
+    public async getDebt(query: IRepresentDebtQueryFilter): Promise<IDebtResponse> {
         const { startAt, endAt, representativeId } = query;
 
         await this.validateForeignKeys(query, {
-            partner_id: this.repo,
+            partner_id: this.partnerRepo,
         });
 
         // beginning debt
@@ -117,7 +120,6 @@ export class RepresentativeService extends BaseService<
         for (const ele of enrichedData.data) {
             const {
                 details,
-                order_expenses,
                 productions,
                 contracts,
                 invoices,

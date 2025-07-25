@@ -17,7 +17,7 @@ export class MailAdapter {
             });
         }
 
-        return MailAdapter.transporter;
+        return this.transporter;
     }
 
     public static async sendMail(options: MailOptions): Promise<void> {
@@ -45,8 +45,8 @@ export class MailAdapter {
     }
 
     public static async disconnect(): Promise<void> {
-        if (MailAdapter.transporter) {
-            MailAdapter.transporter.close();
+        if (this.transporter) {
+            this.transporter.close();
             logger.info('Mail server connection closed.');
         }
     }

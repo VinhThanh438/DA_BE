@@ -9,7 +9,7 @@ import {
     EVENT_TOKEN_EXPIRED,
     EVENT_USER_LOGIN,
     EVENT_DEVICE_PENDING_APPROVAL,
-    EVENT_USER_FIRST_LOGGIN,
+    EVENT_USER_FIRST_LOGIN,
 } from '@config/event.constant';
 
 export class AuthEvent {
@@ -20,7 +20,7 @@ export class AuthEvent {
         eventbus.on(EVENT_TOKEN_EXPIRED, this.tokenExpiredHandler);
         eventbus.on(EVENT_USER_LOGIN, this.userLogInHandler);
         eventbus.on(EVENT_DEVICE_PENDING_APPROVAL, this.devicePendingApprovalHandler);
-        eventbus.on(EVENT_USER_FIRST_LOGGIN, this.updateLogginStatusHandler);
+        eventbus.on(EVENT_USER_FIRST_LOGIN, this.updateLogginStatusHandler);
     }
 
     private static userService = UserService.getInstance();

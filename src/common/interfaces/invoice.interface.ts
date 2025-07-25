@@ -1,11 +1,14 @@
-import { InvoiceStatus, InvoiceType } from '@config/app.constant';
+import { CommonApproveStatus, InvoiceType } from '@config/app.constant';
 import { ICommonDetails, IUpdateChildAction } from './common.interface';
 import { IBank } from './bank.interface';
 import { IContract } from './contract.interface';
 import { IEmployee } from './employee.interface';
 import { IOrder } from './order.interface';
 import { IPartner } from './partner.interface';
-import { IOrganization } from './company.interface';
+import { IOrganization } from './organization.interface';
+import { IShippingPlan } from './shipping-plan.interface';
+import { IFacility } from './facility.interface';
+import { IFacilityOrder } from './facility-order.interface';
 
 export interface IInvoice extends IUpdateChildAction {
     id?: number;
@@ -14,7 +17,6 @@ export interface IInvoice extends IUpdateChildAction {
     invoice_date?: DateString;
     note?: string;
     files?: string[];
-    status?: InvoiceStatus;
     content?: string;
     type: InvoiceType;
 
@@ -24,6 +26,9 @@ export interface IInvoice extends IUpdateChildAction {
     organization_id: number;
     contract_id: number;
     order_id?: number;
+    shipping_plan_id?: number;
+    inventory_id?: number;
+    facility_id?: number;
 
     bank?: IBank;
     employee?: IEmployee;
@@ -31,6 +36,9 @@ export interface IInvoice extends IUpdateChildAction {
     contract?: IContract;
     order?: IOrder;
     organization?: IOrganization;
+    shipping_plan?: IShippingPlan;
+    facility?: IFacility;
+    facility_orders?: IFacilityOrder[];
 
     details: IInvoiceDetail[];
 }
@@ -45,7 +53,7 @@ export interface IInvoiceDetail {
 }
 
 export interface IApproveRequest {
-    status: InvoiceStatus;
+    status: CommonApproveStatus;
     rejected_reason?: string;
 }
 

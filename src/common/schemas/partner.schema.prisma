@@ -2,6 +2,7 @@ enum PrsPartnerType {
   customer // khach hang
   supplier // nha cung cap
   delivery // giao hang
+  facility // dich vu
 }
 
 model Partners {
@@ -47,9 +48,13 @@ model Partners {
   loans           Loans[]
   banks           Banks[]
 
-  inventory_as_supplier Inventories[]     @relation("Supplier")
-  inventory_as_customer Inventories[]     @relation("Customer")
-  payment_requests      PaymentRequests[] @relation("ApproverEmployee")
+  inventory_as_supplier Inventories[]       @relation("Supplier")
+  inventory_as_customer Inventories[]       @relation("Customer")
+  inventory_as_delivery Inventories[]       @relation("Delivery")
+  payment_requests      PaymentRequests[]   @relation("ApproverEmployee")
+  quotation_requests    QuotationRequests[]
+  facilities            Facility[]
+  debts                 Debts[]
 
   @@map("partners")
 }
@@ -106,6 +111,7 @@ model Representatives {
   banks           Banks[]
   orders          Orders[]
   transactions    Transactions[]
+  commissions     Commissions[]
   paymentRequests PaymentRequests[] @relation("RepresentativeEmployee")
 
   @@map("representatives")

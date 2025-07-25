@@ -2,6 +2,7 @@ import eventbus from '@common/eventbus';
 import { IPaymentCreatedEvent, IPaymentDeletedEvent } from '@common/interfaces/transaction.interface';
 import logger from '@common/logger';
 import { BankRepo } from '@common/repositories/bank.repo';
+import { PaymentType } from '@config/app.constant';
 import { EVENT_PAYMENT_CREATED, EVENT_PAYMENT_DELETED } from '@config/event.constant';
 
 export class BankEvent {
@@ -12,6 +13,7 @@ export class BankEvent {
 
     static register(): void {
         this.bankRepo = new BankRepo();
+
         eventbus.on(EVENT_PAYMENT_CREATED, this.paymentCreatedHandler.bind(this));
         eventbus.on(EVENT_PAYMENT_DELETED, this.paymentDeletedHandler.bind(this));
     }
@@ -33,7 +35,10 @@ export class BankEvent {
         try {
             const bank = await this.bankRepo.findOne({ id: body.bank_id });
             if (bank) {
-                const newBalance = Number(bank?.balance) + Number(body.refund);
+                const newBalance =
+                    body.type === PaymentType.EXPENSE
+                        ? Number(bank?.balance) + Number(body.refund)
+                        : Number(bank?.balance) - Number(body.refund);
                 await this.bankRepo.update({ id: body.bank_id }, { balance: newBalance });
                 logger.info('BankEvent.paymentDeletedHandler: balance updated successfully!');
             } else {

@@ -4,8 +4,8 @@ export const createDepositSchema = z.object({
     bank_id: z.number(),
     employee_id: z.number().optional(),
     account_number: z.string(),
-    deposit_date: z.string().datetime(),
-    withdraw_date: z.string().datetime({ offset: true }).optional(),
+    deposit_date: (z as any).isoDateTz().optional(),
+    withdraw_date: (z as any).isoDateTz().optional(),
     unit: z.enum(['VND', 'USD']).optional().default('VND'),
     term: z.number(),
     amount: z.number(),
@@ -13,15 +13,15 @@ export const createDepositSchema = z.object({
     compound_interest: z.number().optional(),
     note: z.string().optional().nullable(),
     organization_id: z.number().optional(),
-    time_at: z.string().datetime(),
+    time_at: (z as any).isoDateTz(),
     created_by: z.number().optional(),
 });
 
 export const updateDepositSchema = z.object({
     bank_id: z.number().optional(),
     account_number: z.string().optional(),
-    deposit_date: z.string().datetime().optional(),
-    withdraw_date: z.string().datetime({ offset: true }).optional(),
+    deposit_date: (z as any).isoDateTz().optional(),
+    withdraw_date: (z as any).isoDateTz().optional(),
     amount: z.number().optional(),
     term: z.number().optional(),
     unit: z.enum(['VND', 'USD']).optional(),
@@ -44,8 +44,8 @@ export const getPaginatedDepositsSchema = z.object({
         .optional()
         .transform((val) => parseInt(val as string) || 10),
     keyword: z.string().optional(),
-    startAt: z.string().date().optional().nullable(),
-    endAt: z.string().date().optional().nullable(),
+    startAt: (z as any).isoDateTz().optional().nullable(),
+    endAt: (z as any).isoDateTz().optional().nullable(),
     bankId: z
         .string()
         .transform((val) => parseInt(val))
@@ -64,5 +64,5 @@ export const approveDepositSchema = z.object({
 
 export const settlementDepositSchema = z.object({
     real_compound_interest: z.number(),
-    real_withdraw_date: z.string().datetime({ offset: true }),
+    real_withdraw_date: (z as any).isoDateTz(),
 });

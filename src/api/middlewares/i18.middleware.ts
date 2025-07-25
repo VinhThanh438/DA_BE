@@ -12,12 +12,17 @@ export default {
     LANGUAGES,
     async getI18n(): Promise<i18n> {
         if (!i18nInstance) {
+            const [enData, viData] = await Promise.all([
+                fs.promises.readFile(path.join(__dirname, '../../../locales/en.json'), 'utf8'),
+                fs.promises.readFile(path.join(__dirname, '../../../locales/vi.json'), 'utf8'),
+            ]);
+
             await i18next.use(i18nMiddleware.LanguageDetector).init({
                 preload: LANGUAGES,
                 fallbackLng: Language.VN,
                 resources: {
-                    en: JSON.parse(fs.readFileSync(path.join(__dirname, '../../../locales/en.json'), 'utf8')),
-                    vi: JSON.parse(fs.readFileSync(path.join(__dirname, '../../../locales/vi.json'), 'utf8')),
+                    en: JSON.parse(enData),
+                    vi: JSON.parse(viData),
                 },
                 detection: {
                     lookupQuerystring: 'lang',

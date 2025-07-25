@@ -1,5 +1,6 @@
 import { CellFormulaValue, CellRichTextValue, DataValidation, Worksheet } from 'exceljs';
 import { ICustomizeCell, IHeader } from '../interfaces/excel.interface';
+import logger from '@common/logger';
 
 // Tính độ sâu tối đa của header để xác định số dòng header
 export const getMaxDepth = (headers: any, currentDepth = 0) => {
@@ -153,7 +154,6 @@ export function renderExcelHeader(
         if (template && numberRowTemplate && numberRowTemplate > 0) {
             for (let i = 1; i <= numberRowTemplate; i++) {
                 worksheet.getRow(startRow + maxDepth + i - 1).height = 25;
-                // console.log("countLeafColumns:", countLeafColumns(headerData));
                 for (let j = 1; j <= leafColumns.length; j++) {
                     const cell = worksheet.getCell(startRow + maxDepth + i - 1, j);
                     cell.border = {
@@ -349,7 +349,7 @@ export function renderExcelHeader(
 
         return worksheet;
     } catch (error: any) {
-        console.log('Error rendering Excel header:', error);
+        logger.error('Error rendering Excel header:', error);
         throw new Error('Error rendering Excel header');
     }
 }
@@ -555,7 +555,7 @@ export const readExcelData = (
                     if (typeof cell.value === 'object' && 'result' in cell.value) {
                         dataCustomizeCell[item.key] = (cell.value as CellFormulaValue).result;
                     } else {
-                        console.log(dataCustomizeCell[item.key], cell.value);
+                        logger.info(dataCustomizeCell[item.key], cell.value);
                         dataCustomizeCell[item.key] = cell.value;
                     }
                 }

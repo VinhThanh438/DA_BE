@@ -1,32 +1,33 @@
 import logger from '@common/logger';
-import { DoneCallback, Job, Queue } from 'bull';
+import { Job } from 'bullmq';
 import { SEND_CONFIRM_MAIL_JOB as JOB_NAME } from '@config/job.constant';
-import { QueueService } from '@common/services/queue.service';
 import { MailService } from '@common/services/mail.service';
 import { IJobSendConfirmEmailData } from '@common/interfaces/common.interface';
+import { BaseJob } from './base.job';
 
-export class SendConfirmMailJob {
-    static async register(): Promise<Queue<unknown>> {
-        logger.info(`Listening to queue: ${JOB_NAME}`);
-        const queue = await QueueService.getQueue<IJobSendConfirmEmailData>(JOB_NAME);
-        await queue.process(this.handler);
-        return queue;
+export class SendConfirmMailJob extends BaseJob<IJobSendConfirmEmailData> {
+    public readonly queueName = JOB_NAME;
+
+    constructor() {
+        super();
     }
 
-    public static async handler(job: Job<IJobSendConfirmEmailData>, done: DoneCallback): Promise<void> {
+    public static getInstance(): SendConfirmMailJob {
+        return new SendConfirmMailJob();
+    }
+
+    public async handler(job: Job<IJobSendConfirmEmailData>): Promise<void> {
         try {
-            logger.debug(`Process job ${JOB_NAME}-${job.id} with data: `, job.data);
+            logger.info(`Processing job: ${this.queueName}`);
             const data = {
                 email: job.data.email,
                 name: job.data.name,
                 status: job.data.status,
             };
             MailService.sendConfirmMail(data);
-            logger.debug(`Processed job ${JOB_NAME}-${job.id}`);
-            done();
+            logger.info(`Job processed successfully: ${this.queueName}`);
         } catch (error) {
-            logger.error(`Process ${JOB_NAME} error: `, error);
-            done(error as Error);
+            logger.error(`Error processing job ${this.queueName}: `, error);
         }
     }
 }

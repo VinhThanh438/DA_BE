@@ -2,8 +2,8 @@ import { OrderController } from '@api/controllers/order.controller';
 import { ShippingPlanController } from '@api/controllers/shipping-plan.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { approve, queryById, queryFilter } from '@api/validation/common.validator';
-import { create, update } from '@api/validation/shipping-plan.validator';
+import { approve, queryById } from '@api/validation/common.validator';
+import { create, update, queryFilter } from '@api/validation/shipping-plan.validator';
 import express from 'express';
 
 const router = express.Router();

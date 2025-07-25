@@ -1,4 +1,4 @@
-import { TransactionOrderType, TransactionType } from '@config/app.constant';
+import { PaymentType, TransactionOrderType, TransactionType } from '@config/app.constant';
 
 export interface ITransaction {
     id?: number;
@@ -9,6 +9,7 @@ export interface ITransaction {
     amount?: number;
     description?: string;
     is_closed?: boolean;
+    note?: string;
 
     partner_id?: number;
     employee_id?: number;
@@ -24,6 +25,11 @@ export interface ITransaction {
     payment_id?: number;
 
     bank?: any;
+    order?: any;
+    invoice?: any;
+    organization?: any;
+    partner?: any;
+    payment?: any;
     // order?: IOrder;
     // invoice?: IInvoice;
     // payment?: IPayment;
@@ -39,6 +45,7 @@ export interface IJobHandleLoanPayment extends IPaymentCreatedEvent {}
 export interface IPaymentDeletedEvent {
     bank_id?: number;
     refund?: number;
+    type?: PaymentType;
 }
 
 export interface IEventInterestLogPaymented {

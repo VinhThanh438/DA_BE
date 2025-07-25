@@ -17,13 +17,15 @@ export class UploadMiddleware {
          *
          * @returns {Function} Express middleware function
          */
-        return (req: Request, res: Response, next: NextFunction) => {
+        return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
             let folderPath: string;
 
             folderPath = path.join(__dirname, '../../../uploads');
 
-            if (!fs.existsSync(folderPath)) {
-                fs.mkdirSync(folderPath, { recursive: true });
+            try {
+                await fs.promises.access(folderPath);
+            } catch {
+                await fs.promises.mkdir(folderPath, { recursive: true });
             }
 
             const storage = multer.diskStorage({
@@ -31,8 +33,6 @@ export class UploadMiddleware {
                     cb(null, folderPath);
                 },
                 filename: (req, file, cb) => {
-                    // const nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
-                    // const uniqueSuffix = `${nameWithoutExt}-${Date.now()}${path.extname(file.originalname)}`;
                     const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
                     const fileExtension = fileName.split('.').pop();
                     const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));

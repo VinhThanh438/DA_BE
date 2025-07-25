@@ -1,4 +1,4 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { PaymentRequestDetails, Prisma } from '.prisma/client';
 import { IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-details.repo';
@@ -22,8 +22,8 @@ export class PaymentRequestDetailService extends BaseService<
     }
 
     public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
-        if (query.organization_id) {
-            delete query.organization_id;
+        if (query.OR) {
+            delete query.OR;
         }
 
         let totalAmount = 0;
@@ -37,16 +37,16 @@ export class PaymentRequestDetailService extends BaseService<
 
             aggregateConditions.order = orderConditions;
             query.order = orderConditions;
-
             delete query.paymentMethod;
         }
+
         const aggregateResult = await this.repo.aggregate(aggregateConditions, {
             _sum: { amount: true },
         });
 
         totalAmount = Number(aggregateResult._sum?.amount || 0);
 
-        const result = await this.repo.paginate(query, true);
+        const result = await this.repo.paginate(aggregateConditions, true);
 
         if (!result.summary) result.summary = {} as any;
 

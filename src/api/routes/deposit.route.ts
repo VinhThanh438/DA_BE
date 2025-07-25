@@ -1,7 +1,8 @@
 import { DepositController } from '@api/controllers/deposit.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { approve, queryById } from '@api/validation/common.validator';
+import { zodValidateBody, zodValidateQuery } from '@api/middlewares/zod-validate.middleware';
+import { queryById } from '@api/validation/common.validator';
 import {
     approveDepositSchema,
     createDepositSchema,
@@ -9,7 +10,6 @@ import {
     settlementDepositSchema,
     updateDepositSchema,
 } from '@api/validation/deposit.validator';
-import { zodValidateBody, zodValidateQuery } from '@api/middlewares/zodValidate.middleware';
 import express from 'express';
 
 const router = express.Router();

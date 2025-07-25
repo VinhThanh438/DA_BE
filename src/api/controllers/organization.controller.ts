@@ -3,7 +3,7 @@ import { OrganizationService } from '@common/services/organization.service';
 import { Organizations } from '.prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
-import { IOrganization } from '@common/interfaces/company.interface';
+import { IOrganization } from '@common/interfaces/organization.interface';
 import { IPaginationInput } from '@common/interfaces/common.interface';
 import { OrganizationTypeIndex } from '@config/app.constant';
 
@@ -56,10 +56,22 @@ export class OrganizationController extends BaseController<Organizations> {
         }
     }
 
+    public async delete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+            const result = await this.service.deleteOrganization(id);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.delete: `, error);
+            next(error);
+        }
+    }
+
     public async paginate(req: Request, res: Response, next: NextFunction) {
         try {
             const { parentId, organization_id, ...query } = req.query as IPaginationInput;
             query.parent_id = parentId ? Number(parentId) : {};
+            delete query.OR;
             const result = await this.service.paginate(query);
             result.data = result.data.sort((a: any, b: any) => {
                 const indexA = OrganizationTypeIndex.get(a.type) ?? Infinity;

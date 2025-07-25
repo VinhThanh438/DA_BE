@@ -1,4 +1,4 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Contracts, Prisma } from '.prisma/client';
 import {
     IIdResponse,
@@ -117,7 +117,7 @@ export class ContractService extends BaseService<Contracts, Prisma.ContractsSele
             organization_id: this.organizationRepo,
         });
 
-        const { delete: deteleItems, update, add, ...body } = request;
+        const { delete: deleteItems, update, add, ...body } = request;
 
         await this.db.$transaction(async (tx) => {
             await this.repo.update({ id }, body as Partial<IContract>, tx);

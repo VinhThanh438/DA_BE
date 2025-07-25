@@ -78,6 +78,7 @@ web_modules/
 .env.test.local
 .env.production.local
 .env.local
+.env.docker
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -148,4 +149,7 @@ temp
 # src/common/base
 
 # migration
-src/common/schema/migrations
+src/common/schemas/migrations
+
+# vscode
+.vscode/

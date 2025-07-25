@@ -1,0 +1,64 @@
+// các dịch vụ chung của hệ thống
+model Facility {
+  id         Int     @id @default(autoincrement())
+  image      String?
+  name       String
+  code       String  @default(cuid())
+  price      Int     @default(0)
+  commission Float?  @default(0)
+  vat        Float   @default(0)
+  note       String?
+  is_default Boolean @default(false)
+
+  unit_id    Int
+  partner_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  unit            Units            @relation(fields: [unit_id], references: [id], onDelete: Cascade)
+  partner         Partners?        @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  shipping_plans  ShippingPlans[]
+  facility_orders FacilityOrders[]
+  invoices        Invoices[]
+
+  @@map("facilities")
+}
+
+model FacilityOrders {
+  id              Int            @id @default(autoincrement())
+  price           Float          @default(0)
+  vat             Float?         @default(0)
+  code            String         @default(cuid())
+  status          PrsOrderStatus @default(pending)
+  facility_type   String?
+  files           Json?          @default("[]")
+  note            String?
+  rejected_reason String?
+  quantity        Int            @default(0)
+
+  // material_id   Int? 
+  current_price Int @default(0)
+  temp_cost     Int @default(0)
+  real_quantity Int @default(0)
+  real_price    Int @default(0)
+  main_quantity Int @default(0)
+
+  quotation_id    Int?
+  facility_id     Int?
+  organization_id Int?
+  order_id        Int?
+  invoice_id      Int?
+
+  quotation    Quotations?    @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+  invoices     Invoices?      @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  facility     Facility?      @relation(fields: [facility_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
+
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  commissions Commissions[]
+
+  @@map("facility_orders")
+}

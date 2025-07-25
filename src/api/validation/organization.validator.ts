@@ -1,5 +1,5 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { IOrganization } from '@common/interfaces/company.interface';
+import { IOrganization } from '@common/interfaces/organization.interface';
 import { OrganizationType } from '@config/app.constant';
 import { Joi, schema } from 'express-validation';
 import { ObjectSchema } from 'joi';

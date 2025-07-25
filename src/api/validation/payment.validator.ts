@@ -28,8 +28,8 @@ export const create: schema = {
                 .valid(...Object.values(PaymentType))
                 .required(),
             note: Joi.string().allow(null, '').max(1000).optional(),
-            time_at: Joi.string().isoDate().optional().allow(null),
-            payment_date: Joi.string().isoDate().required(),
+            time_at: Joi.isoDateTz().optional().allow(null),
+            payment_date: Joi.isoDateTz().required(),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
             category: Joi.string().allow(null, '').optional(),
 
@@ -63,8 +63,8 @@ export const update: schema = {
                 .valid(...Object.values(PaymentType))
                 .optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
-            time_at: Joi.string().isoDate().optional().allow(null),
-            payment_date: Joi.string().isoDate().optional().allow(null),
+            time_at: Joi.isoDateTz().optional().allow(null),
+            payment_date: Joi.isoDateTz().optional().allow(null),
 
             files_add: Joi.array().items(Joi.string()).optional().default([]),
             files_delete: Joi.array().items(Joi.string()).optional().default([]),

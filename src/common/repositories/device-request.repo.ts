@@ -2,10 +2,10 @@ import { DeviceRequests, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { RequestStatus } from '@config/app.constant';
 import { ICreateAndUpdateResponse } from '@common/interfaces/common.interface';
-import { DeviceRequestSelection } from './prisma/device-request.select';
+import { DeviceRequestSelection } from './prisma/prisma.select';
 
 export class DeviceRequestRepo {
-    private static db = DatabaseAdapter.getInstance().deviceRequests;
+    private static db = DatabaseAdapter.getInstance().getClient().deviceRequests;
 
     public static async delete(id: number): Promise<Partial<DeviceRequests> | null> {
         return this.db.delete({

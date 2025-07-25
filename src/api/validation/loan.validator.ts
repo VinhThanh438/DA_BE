@@ -8,8 +8,8 @@ import { values } from 'lodash';
 
 const LoanBody = {
     account_number: Joi.string().required(),
-    disbursement_date: Joi.string().isoDate().optional().allow(null),
-    interest_calculation_date: Joi.string().isoDate().optional().allow(null),
+    disbursement_date: Joi.isoDateTz().optional().allow(null),
+    interest_calculation_date: Joi.isoDateTz().optional().allow(null),
     payment_day: Joi.number().optional().allow(null),
     term: Joi.number().optional().allow(null),
     amount: Joi.number().optional().allow(null),
@@ -21,7 +21,7 @@ const LoanBody = {
     partner_id: Joi.number().optional(),
     invoice_id: Joi.number().optional(),
     order_id: Joi.number().optional(),
-    order: Joi.object().optional()
+    order: Joi.object().optional(),
 };
 
 export const create: schema = {
@@ -43,6 +43,7 @@ export const queryFilter: schema = {
             status: Joi.string()
                 .optional()
                 .valid(...values(LoanStatus)),
+            bank: Joi.string().optional().allow(null, ''),
         }),
     ),
 };

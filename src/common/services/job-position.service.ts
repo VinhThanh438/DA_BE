@@ -1,7 +1,7 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { JobPositions, Prisma } from '.prisma/client';
 import { IIdResponse } from '@common/interfaces/common.interface';
-import { ICreateUpdateJobPosition } from '@common/interfaces/company.interface';
+import { ICreateUpdateJobPosition } from '@common/interfaces/organization.interface';
 import { JobPositionRepo } from '@common/repositories/job-position.repo';
 import { PositionRepo } from '@common/repositories/position.repo';
 import { OrganizationRepo } from '@common/repositories/organization.repo';

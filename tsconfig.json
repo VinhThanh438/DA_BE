@@ -14,13 +14,12 @@
         "paths": {
             "@api/*": ["src/api/*"],
             "@worker/*": ["src/worker/*"],
-            "@socket/*": ["src/socket/*"],
             "@common/*": ["src/common/*", "common/*"],
             "@config/*": ["src/config/*"],
             "*": ["node_modules/*"]
         },
         "typeRoots": ["./@types", "./node_modules/@types"],
-        "types": ["node", "express"]
+        "types": ["node", "express", "joi", "zod"]
     },
     "include": ["src", "@types"],
     "exclude": ["node_modules", "src/locales/**/*"]

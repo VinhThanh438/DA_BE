@@ -20,7 +20,10 @@ model Inventories {
   representative_name String?
   identity_code       String?
   files               Json?            @default("[]")
-  content       String? // Nội dung chi tiết
+  content             String? // Nội dung chi tiết
+  vat                 Float?           @default(0) // %vat
+  confirmed_at        DateTime?
+  is_update_locked    Boolean          @default(false)
 
   employee_id      Int?
   supplier_id      Int?
@@ -29,6 +32,7 @@ model Inventories {
   organization_id  Int?
   order_id         Int?
   warehouse_id     Int?
+  delivery_id      Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -38,6 +42,7 @@ model Inventories {
   order         Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
   supplier      Partners?      @relation("Supplier", fields: [supplier_id], references: [id], onDelete: SetNull)
   customer      Partners?      @relation("Customer", fields: [customer_id], references: [id], onDelete: SetNull)
+  delivery      Partners?      @relation("Delivery", fields: [delivery_id], references: [id], onDelete: SetNull)
   shipping_plan ShippingPlans? @relation(fields: [shipping_plan_id], references: [id], onDelete: SetNull)
   warehouse     Warehouses?    @relation(fields: [warehouse_id], references: [id], onDelete: SetNull)
 
@@ -49,14 +54,20 @@ model Inventories {
 }
 
 model InventoryDetails {
-  id            Int      @id @default(autoincrement())
-  real_quantity Int?     @default(0)
-  quantity      Int?     @default(0)
-  price         Decimal? @default(0)
-  discount      Float?   @default(0)
-  commission    Float?   @default(0)
-  vat           Float? // %vat
-  note          String?
+  id                  Int     @id @default(autoincrement())
+  real_quantity       Int     @default(0) // So luong thuc te (nhap kho)
+  quantity            Int     @default(0)
+  quantity_adjustment Int     @default(0) // So luong dieu chinh
+  price               Decimal @default(0)
+  discount            Float   @default(0)
+  commission          Float   @default(0)
+  vat                 Float? // %vat
+  note                String?
+  money               Int     @default(0) // Tong tien (thuc te nhap kho)
+  real_money          Int     @default(0) // Tong tien thuc te (nhap kho)
+
+  real_kg Int @default(0) // So luong thuc te (nhap kho) theo kg
+  kg      Int @default(0) // So luong theo kg
 
   // product_id Int?
   // unit_id Int?
@@ -68,7 +79,7 @@ model InventoryDetails {
 
   // unit   Units?   @relation(fields: [unit_id], references: [id], onDelete: SetNull)
   // product   Products?   @relation(fields: [product_id], references: [id], onDelete: SetNull)
-  inventory              Inventories?            @relation(fields: [inventory_id], references: [id], onDelete: SetNull)
+  inventory              Inventories?            @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
   order_detail           CommonDetails?          @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
   transaction_warehouses TransactionWarehouses[]
 
@@ -88,6 +99,7 @@ model TransactionWarehouses {
   convert_quantity Int?                        @default(0)
   type             PrsTransactionWarehouseType
   note             String?
+  price            Int                         @default(0) // Giá chuyển đổi
 
   organization_id     Int?
   warehouse_id        Int?
@@ -105,8 +117,32 @@ model TransactionWarehouses {
   product          Products?         @relation(fields: [product_id], references: [id], onDelete: Cascade)
   child            Products?         @relation("ChildProductTrans", fields: [child_id], references: [id], onDelete: Cascade)
 
+  stock_trackings StockTrackings?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@map("transaction_warehouses")
+}
+
+model StockTrackings {
+  id              Int      @id @default(autoincrement())
+  time_at         DateTime @default(now())
+  current_balance Int      @default(0) // Số lượng tồn sau giao dịch
+  price           Int      @default(0) // Giá chuyển đổi
+
+  product_id               Int
+  child_id                 Int?
+  warehouse_id             Int
+  transaction_warehouse_id Int  @unique
+
+  product               Products              @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  child                 Products?             @relation("ChildStockTracking", fields: [child_id], references: [id], onDelete: Cascade)
+  warehouse             Warehouses?           @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  transaction_warehouse TransactionWarehouses @relation(fields: [transaction_warehouse_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("stock_trackings")
 }

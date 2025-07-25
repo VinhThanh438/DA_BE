@@ -1,8 +1,11 @@
 import logger from '@common/logger';
 import { REDIS_URI } from '@common/environment';
-import { QueueOptions } from 'bull';
+import { QueueOptions } from 'bullmq';
 import ioredis, { Redis, RedisOptions } from 'ioredis';
 
+/**
+ * Singleton Redis client
+ */
 export class RedisAdapter {
     private static client: Redis;
     private static subscriber: Redis;
@@ -18,7 +21,7 @@ export class RedisAdapter {
     static async connect(overrideClient = true, options = {}): Promise<Redis> {
         const tmp = new ioredis(REDIS_URI, {
             lazyConnect: true,
-            maxRetriesPerRequest: 10,
+            maxRetriesPerRequest: null,
             retryStrategy: (times) => {
                 const delay = Math.min(times * 50, 2000);
                 if (times < 5) {
@@ -67,7 +70,7 @@ export class RedisAdapter {
 
     static createClient(options: RedisOptions = {}): Redis {
         const tmp = new ioredis(REDIS_URI, {
-            maxRetriesPerRequest: 10,
+            maxRetriesPerRequest: null,
             retryStrategy: (times) => {
                 const delay = Math.min(times * 50, 2000);
                 if (times < 5) {
@@ -110,20 +113,11 @@ export class RedisAdapter {
             this.subscriber = await this.connect(false, clientOptions);
         }
         return {
+            connection: this.client,
             prefix: `Jobs:`,
             defaultJobOptions: {
                 removeOnComplete: 1000,
                 removeOnFail: 1000,
-            },
-            createClient: (type) => {
-                switch (type) {
-                    case 'client':
-                        return this.client;
-                    case 'subscriber':
-                        return this.subscriber;
-                    default:
-                        return this.createClient(clientOptions);
-                }
             },
         };
     }

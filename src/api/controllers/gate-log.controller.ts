@@ -14,26 +14,14 @@ export class GateLogController extends BaseController<GateLogs> {
         this.service = GateLogService.getInstance();
     }
 
-    public static getInstance(): GateLogController {
+    static getInstance(): GateLogController {
         if (!this.instance) {
             this.instance = new GateLogController();
         }
         return this.instance;
     }
 
-    public async assignEmployee(req: Request, res: Response, next: NextFunction) {
-        try {
-            const body = req.body as IGateLog;
-            const id = Number(req.params.id);
-            const result = await this.service.assignEmployee(id, body);
-            res.sendJson(result);
-        } catch (error) {
-            logger.error(`${this.constructor.name}.assignEmployee: `, error);
-            next(error);
-        }
-    }
-
-    public async updateGateLog(req: Request, res: Response, next: NextFunction) {
+    async updateGateLog(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IGateLog;
             const id = Number(req.params.id);
@@ -47,7 +35,7 @@ export class GateLogController extends BaseController<GateLogs> {
         }
     }
 
-    public async approve(req: Request, res: Response, next: NextFunction) {
+    async approve(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IGateLog;
             const id = Number(req.params.id);
@@ -59,7 +47,7 @@ export class GateLogController extends BaseController<GateLogs> {
         }
     }
 
-    public async connect(req: Request, res: Response, next: NextFunction) {
+    async connect(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IGateLog;
             const result = await this.service.connect(body);

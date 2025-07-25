@@ -5,12 +5,12 @@ export interface IGateLog {
     note?: string;
 
     entry_time?: Date;
-    entry_plate_image?: string;
-    entry_container_image?: string;
+    entry_plate_images?: string[];
+    entry_container_images?: string[];
 
     exit_time?: Date;
-    exit_plate_image?: string;
-    exit_container_image?: string;
+    exit_plate_images?: string[];
+    exit_container_images?: string[];
 
     employee_id?: number;
     inventory_id?: number;

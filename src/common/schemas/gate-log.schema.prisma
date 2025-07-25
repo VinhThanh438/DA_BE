@@ -3,16 +3,16 @@ model GateLogs {
     time_at DateTime        @default(now())
     status  PrsOrderStatus? @default(pending)
 
-    entry_time            DateTime? // thời gian vào
-    entry_plate_image     String?
-    entry_container_image String?
-    entry_note            String?
+    entry_time             DateTime? // thời gian vào
+    entry_plate_images     Json?     @default("[]")
+    entry_container_images Json?     @default("[]")
+    entry_note             String?
 
-    exit_time            DateTime? // thời gian ra
-    exit_plate_image     String?
-    exit_container_image String?
-    exit_note            String?
-    idx                  Int       @default(autoincrement())
+    exit_time             DateTime? // thời gian ra
+    exit_plate_images     Json?     @default("[]")
+    exit_container_images Json?     @default("[]")
+    exit_note             String?
+    idx                   Int       @default(autoincrement())
 
     files           Json?   @default("[]")
     rejected_reason String?

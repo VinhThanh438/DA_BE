@@ -1,12 +1,11 @@
 import { InterestLogs, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { InterestLogSelection, InterestLogSelectionAll } from './prisma/interest-log.select';
 import { IFilterArgs, IPaginationInput, IPaginationResponse, SearchField } from '@common/interfaces/common.interface';
-import { LoanSelection } from './prisma/loan.select';
+import { InterestLogSelection, InterestLogSelectionAll, LoanSelection } from './prisma/prisma.select';
 
 export class InterestLogRepo extends BaseRepo<InterestLogs, Prisma.InterestLogsSelect, Prisma.InterestLogsWhereInput> {
-    protected db = DatabaseAdapter.getInstance().interestLogs;
+    protected db = DatabaseAdapter.getInstance().getClient().interestLogs;
     protected defaultSelect = InterestLogSelection;
     protected detailSelect = InterestLogSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'interestLogs';

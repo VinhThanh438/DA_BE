@@ -13,6 +13,7 @@ model Products {
   unit_id          Int?
   organization_id  Int?
   parent_id        Int?
+  is_public        Boolean @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -23,16 +24,22 @@ model Products {
 
   extra_units                  ProductUnits[]
   common_details               CommonDetails[]
-  production_details           ProductionDetails[]
-  bom_details                  BillOfMaterialDetails[]
+  bom_details                  BomDetails[]
+  bom                          Bom?
   material_budgets             MaterialBudgets[]
   purchase_request_details     PurchaseRequestDetails[]
-  bill_of_materials            BillOfMaterials[]
   transaction_warehouses       TransactionWarehouses[]
-  transaction_warehouses_child TransactionWarehouses[]  @relation("ChildProductTrans")
-  parent                       Products?                @relation("ProductParent", fields: [parent_id], references: [id], onDelete: Cascade)
-  children                     Products[]               @relation("ProductParent")
+  transaction_warehouses_child TransactionWarehouses[]   @relation("ChildProductTrans")
+  parent                       Products?                 @relation("ProductParent", fields: [parent_id], references: [id], onDelete: Cascade)
+  children                     Products[]                @relation("ProductParent")
   product_histories            ProductHistories[]
+  quotation_request_details    QuotationRequestDetails[]
+  common_detail_materials      CommonDetails[]           @relation("CommonDetailMaterial")
+  shipping_plan_materials      ShippingPlans[]           @relation("ShippingPlanMaterial")
+  mesh_detail                  MeshDetail[]
+  stock_trackings              StockTrackings[]
+  stock_trackings_child        StockTrackings[]          @relation("ChildStockTracking")
+  raw_materials            RawMaterials[]
 
   @@map("products")
 }
@@ -59,18 +66,22 @@ enum PrsProductType {
 }
 
 model Units {
-  id   Int    @id @default(autoincrement())
-  name String
+  id         Int     @id @default(autoincrement())
+  name       String
+  is_default Boolean @default(false)
 
   product_units ProductUnits[]
   products      Products[]
 
-  organization_id          Int?
-  organization             Organizations?           @relation(fields: [organization_id], references: [id])
-  bill_of_material_details BillOfMaterialDetails[]
-  details                  CommonDetails[]
-  purchase_request_details PurchaseRequestDetails[]
-  production_details       ProductionDetails[]
+  organization_id           Int?
+  organization              Organizations?            @relation(fields: [organization_id], references: [id])
+  bom_details               BomDetails[]
+  details                   CommonDetails[]
+  purchase_request_details  PurchaseRequestDetails[]
+  quotation_request_details QuotationRequestDetails[]
+  facilities                Facility[]
+  work_pricings             WorkPricings[]
+  unloading_costs           UnloadingCosts[]
 
   @@map("units")
 }
@@ -98,3 +109,5 @@ model ProductUnits {
 
   @@map("product_units")
 }
+
+

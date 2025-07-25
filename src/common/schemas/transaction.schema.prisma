@@ -10,6 +10,7 @@ enum PrsTransactionOrderType {
   loan
   interest
   transfer
+  delivery
 }
 
 model Transactions {
@@ -31,6 +32,7 @@ model Transactions {
   loan_id                   Int? // Khoan vay
   payment_request_detail_id Int?
   deposit_id                Int? // Khoan gui 
+  shipping_plan_id          Int? // Ke hoach van chuyen
 
   is_closed Boolean? @default(false)
 
@@ -47,6 +49,10 @@ model Transactions {
   invoice        Invoices?        @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
   loan           Loans?           @relation(fields: [loan_id], references: [id], onDelete: Cascade)
   deposit        Deposits?        @relation(fields: [deposit_id], references: [id], onDelete: SetNull)
+  shipping_plan  ShippingPlans?   @relation(fields: [shipping_plan_id], references: [id], onDelete: SetNull)
 
+  @@index([partner_id, time_at, invoice_id])
+  @@index([partner_id, order_type, time_at])
+  @@index([invoice_id])
   @@map("transactions")
 }

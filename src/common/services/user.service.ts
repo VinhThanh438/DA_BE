@@ -4,7 +4,7 @@ import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { IIdResponse } from '@common/interfaces/common.interface';
 import { ICreateUser, IEventUserFirstLoggin, IUpdateEmployeeAccountStatus } from '@common/interfaces/user.interface';
 import { UserRepo } from '@common/repositories/user.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import logger from '@common/logger';
 import eventbus from '@common/eventbus';
 import { EVENT_USER_CREATED_OR_DELETED } from '@config/event.constant';
@@ -13,8 +13,7 @@ import { UserRoleRepo } from '@common/repositories/user-role.repo';
 import bcrypt from 'bcryptjs';
 import { RoleRepo } from '@common/repositories/role.repo';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
-import { EmployeeSelection } from '@common/repositories/prisma/employee.select';
-import { OrganizationSelection } from '@common/repositories/prisma/base.select';
+import { EmployeeSelection, OrganizationSelection } from '@common/repositories/prisma/prisma.select';
 
 export class UserService extends BaseService<Users, Prisma.UsersSelect, Prisma.UsersWhereInput> {
     private static instance: UserService;

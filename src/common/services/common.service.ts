@@ -1,6 +1,8 @@
 import { APIError } from '@common/error/api.error';
 import { StatusCode } from '@common/errors';
 import { generateUniqueCode } from '@common/helpers/generate-unique-code.helper';
+import { IProduct } from '@common/interfaces/product.interface';
+import { IStockTracking } from '@common/interfaces/stock-tracking.interface';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { ProductRepo } from '@common/repositories/product.repo';
 import { ModelPrefixMap, ModelStringMaps, PrefixCode } from '@config/app.constant';
@@ -76,5 +78,24 @@ export class CommonService {
         );
 
         return data.join(', ');
+    }
+
+    static transformProductDataStock(product: IProduct): IProduct {
+        const value =
+            (product.stock_trackings || []).length > 0 ? product.stock_trackings : product.stock_trackings_child;
+        let stockTrackings: IStockTracking[] = value || [];
+        // if (warehouseId) {
+        //     stockTrackings = (stockTrackings).filter((x: IStockTracking) => x.warehouse_id === warehouseId)
+        // }
+
+        const totalBalance = stockTrackings.reduce((sum, tracking) => {
+            return sum + tracking.current_balance;
+        }, 0);
+
+        return {
+            ...product,
+            stock_trackings: stockTrackings,
+            current_balance: totalBalance,
+        };
     }
 }

@@ -1,19 +1,19 @@
 model Contracts {
   id Int @id @default(autoincrement())
 
-  code           String    @default(cuid())// Số hợp đồng
-  tax            String? // Mã số thuế
-  note            String? // Ghi chú
-  time_at      DateTime? // Ngày ký
-  contract_date      DateTime? @default(now()) // Ngày hợp đồng
-  delivery_date  DateTime? // Hạn giao hàng
+  code          String    @default(cuid()) // Số hợp đồng
+  tax           String? // Mã số thuế
+  note          String? // Ghi chú
+  time_at       DateTime? // Ngày ký
+  contract_date DateTime? @default(now()) // Ngày hợp đồng
+  delivery_date DateTime? // Hạn giao hàng
 
-  type           PrsContractType @default(order)
+  type PrsContractType @default(order)
 
-  files  Json?          @default("[]")
+  files  Json?             @default("[]")
   status PrsContractStatus @default(doing)
 
-  order_id       Int? // Đơn hàng
+  order_id        Int? // Đơn hàng
   partner_id      Int?
   employee_id     Int? // Người ký
   organization_id Int? // Đơn vị ký
@@ -21,13 +21,12 @@ model Contracts {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  order  Orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  partner  Partners?   @relation(fields: [partner_id], references: [id], onDelete: SetNull)
-  employee  Employees?   @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  organization  Organizations?   @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   details CommonDetails[]
-  invoices         Invoices[]
 
   @@map("contracts")
 }
@@ -38,7 +37,7 @@ enum PrsContractStatus {
   cancelled
 }
 
- enum PrsContractType {
+enum PrsContractType {
   order
   purchase
 }

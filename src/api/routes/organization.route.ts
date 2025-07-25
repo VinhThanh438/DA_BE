@@ -1,7 +1,7 @@
 import { OrganizationController } from '@api/controllers/organization.controller';
 import { validateRequest } from '@api/middlewares/validate.middleware';
 import { queryById } from '@api/validation/common.validator';
-import { create, update, queryFilter  } from '@api/validation/organization.validator';
+import { create, update, queryFilter } from '@api/validation/organization.validator';
 import express from 'express';
 
 const router = express.Router();

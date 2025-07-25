@@ -22,6 +22,7 @@ model Users {
   approved_device_requests DeviceRequests[] @relation("DeviceRequestApprovedBy")
   tokens                   Tokens[]
   user_roles               UserRoles[]
+  notifications            Notifications[]
 
   @@map("users")
 }

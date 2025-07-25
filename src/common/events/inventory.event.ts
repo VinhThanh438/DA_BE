@@ -1,32 +1,54 @@
 import eventbus from '@common/eventbus';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { IGateLog } from '@common/interfaces/gate-log.interface';
-import { ITransactionWarehouse } from '@common/interfaces/transaction-warehouse.interface';
+import { IEventInventoryApproved } from '@common/interfaces/inventory.interface';
 import logger from '@common/logger';
 import { CommonDetailRepo } from '@common/repositories/common-detail.repo';
 import { GateLogRepo } from '@common/repositories/gate-log.repo';
-import { TransactionWarehouseRepo } from '@common/repositories/transaction-warehouse.repo';
-import { EVENT_CREATE_GATELOG, EVENT_INVENTORY_CREATED, EVENT_ORDER_IMPORT_QUANTITY } from '@config/event.constant';
+import { InventoryRepo } from '@common/repositories/inventory.repo';
+import { CommonApproveStatus } from '@config/app.constant';
+import {
+    EVENT_CREATE_GATELOG,
+    EVENT_DISABLE_UPDATE_INVENTORY,
+    EVENT_INVENTORY_APPROVED,
+    EVENT_ORDER_IMPORT_QUANTITY,
+} from '@config/event.constant';
 
 export class InventoryEvent {
     /**
      * Register inventory event
      */
-    private static transactionWarehouseRepo: TransactionWarehouseRepo;
     private static orderDetailRepo: CommonDetailRepo;
     private static gateLogRepo: GateLogRepo;
+    private static inventoryRepo: InventoryRepo;
 
-    static register(): void {
-        this.transactionWarehouseRepo = new TransactionWarehouseRepo();
+    public static register(): void {
         this.gateLogRepo = new GateLogRepo();
-        eventbus.on(EVENT_INVENTORY_CREATED, this.inventoryCreatedHandler.bind(this));
+        this.orderDetailRepo = new CommonDetailRepo();
+        this.inventoryRepo = new InventoryRepo();
+
+        eventbus.on(EVENT_INVENTORY_APPROVED, this.inventoryCreatedHandler.bind(this));
         eventbus.on(EVENT_ORDER_IMPORT_QUANTITY, this.updateImportQuantityHandler.bind(this));
         eventbus.on(EVENT_CREATE_GATELOG, this.gateLogCreatedHandler.bind(this));
+        eventbus.on(EVENT_DISABLE_UPDATE_INVENTORY, this.disableUpdateInventoryHandler.bind(this));
     }
 
-    private static async inventoryCreatedHandler(data: ITransactionWarehouse[]): Promise<void> {
+    private static async disableUpdateInventoryHandler(data: { id: number }): Promise<void> {
         try {
-            await this.transactionWarehouseRepo.createMany(data);
-            logger.info('InventoryEvent.inventoryCreatedHandler: Successfully!');
+            const { id } = data;
+            await this.inventoryRepo.update({ id }, { is_update_locked: true });
+            logger.info('InventoryEvent.disableUpdateInventoryHandler: Successfully!');
+        } catch (error: any) {
+            logger.error('InventoryEvent.disableUpdateInventoryHandler:', error);
+        }
+    }
+
+    private static async inventoryCreatedHandler(body: IEventInventoryApproved): Promise<void> {
+        try {
+            if (body.status && body.status === CommonApproveStatus.CONFIRMED) {
+                await this.inventoryRepo.update({ id: body.id }, { confirmed_at: TimeAdapter.currentDate() });
+                logger.info('InventoryEvent.inventoryCreatedHandler: updated successfully!');
+            }
         } catch (error: any) {
             logger.error('InventoryEvent.inventoryCreatedHandler:', error);
         }

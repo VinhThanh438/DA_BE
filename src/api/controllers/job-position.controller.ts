@@ -1,6 +1,6 @@
 import { BaseController } from './base.controller';
 import { JobPositions } from '.prisma/client';
-import { ICreateUpdateJobPosition } from '@common/interfaces/company.interface';
+import { ICreateUpdateJobPosition } from '@common/interfaces/organization.interface';
 import logger from '@common/logger';
 import { JobPositionService } from '@common/services/job-position.service';
 import { Request, Response, NextFunction } from 'express';

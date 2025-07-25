@@ -2,7 +2,7 @@ import { Prisma, Tokens } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 
 export class TokenRepo {
-    private static db = DatabaseAdapter.getInstance().tokens;
+    private static db = DatabaseAdapter.getInstance().getClient().tokens;
 
     public static async delete(id: number): Promise<Partial<Tokens> | null> {
         return this.db.delete({

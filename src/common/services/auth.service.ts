@@ -11,12 +11,13 @@ import {
     ILoginResponse,
     IPayload,
 } from '@common/interfaces/auth.interface';
+import { IOrganization } from '@common/interfaces/organization.interface';
 import { IEventUserFirstLoggin } from '@common/interfaces/user.interface';
 import logger from '@common/logger';
 import { TokenRepo } from '@common/repositories/token.repo';
 import { UserRepo } from '@common/repositories/user.repo';
 import { OrganizationType, REFRESH_TOKEN_EXPIRED_TIME } from '@config/app.constant';
-import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGGIN, EVENT_USER_LOGIN } from '@config/event.constant';
+import { EVENT_DEVICE_PENDING_APPROVAL, EVENT_USER_FIRST_LOGIN, EVENT_USER_LOGIN } from '@config/event.constant';
 import bcrypt from 'bcryptjs';
 
 export class AuthService {
@@ -38,13 +39,6 @@ export class AuthService {
                 status: StatusCode.BAD_REQUEST,
             });
         }
-
-        // if (body.password !== user.password) {
-        //     throw new APIError({
-        //         message: 'auth.login.invalid-password',
-        //         status: ErrorCode.BAD_REQUEST,
-        //     });
-        // }
 
         const isPasswordValid = await bcrypt.compare(body.password, user.password as string);
         if (!isPasswordValid) {
@@ -70,7 +64,7 @@ export class AuthService {
                     status: StatusCode.REQUEST_FORBIDDEN,
                 });
             }
-            eventbus.emit(EVENT_USER_FIRST_LOGGIN, {
+            eventbus.emit(EVENT_USER_FIRST_LOGIN, {
                 id: user.id,
                 device: body.device,
                 status: false,
@@ -79,7 +73,7 @@ export class AuthService {
 
         const transFormUserData: IPayload = {
             id: user.id as number,
-            eId: user.employee_id as number,
+            employee_id: user.employee_id as number,
         };
 
         const result = {
@@ -123,7 +117,7 @@ export class AuthService {
         return user;
     }
 
-    private static flattenOrganizations(org?: any): any[] {
+    private static flattenOrganizations(org?: IOrganization): IOrganization[] {
         if (!org) return [];
 
         const result: any[] = [];
@@ -132,7 +126,7 @@ export class AuthService {
         while (stack.length) {
             const current = stack.pop();
             if (current) {
-                const { sub_organization, ...orgWithoutChildren } = current;
+                const { sub_organization, ...orgWithoutChildren } = current as any;
                 if ([OrganizationType.COMPANY, OrganizationType.HEAD_QUARTER].includes(orgWithoutChildren.type)) {
                     result.push(orgWithoutChildren);
                 }

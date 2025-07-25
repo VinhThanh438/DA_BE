@@ -3,7 +3,6 @@ import { IPurchaseRequest, IPurchaseRequestDetail } from '@common/interfaces/pur
 import { PurchaseRequestStatus } from '@config/app.constant';
 import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
-import { ICommonDetails } from '@common/interfaces/common.interface';
 import { ObjectSchema } from 'joi/lib';
 import { queryFilter as baseQueryFilter } from './common.validator';
 
@@ -16,7 +15,7 @@ export const create: schema = {
                 .optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
-            time_at: Joi.string().isoDate().optional().allow(null),
+            time_at: Joi.isoDateTz().optional().allow(null),
 
             employee_id: Joi.number().optional().allow(null, ''),
             production_id: Joi.number().optional().allow(null, ''),
@@ -53,7 +52,7 @@ export const update: schema = {
                 .optional(),
             note: Joi.string().allow(null, '').max(1000).optional(),
             // files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
-            time_at: Joi.string().isoDate().optional().allow(null),
+            time_at: Joi.isoDateTz().optional().allow(null),
 
             employee_id: Joi.number().optional(),
             production_id: Joi.number().optional(),

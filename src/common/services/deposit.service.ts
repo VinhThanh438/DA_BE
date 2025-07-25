@@ -1,5 +1,5 @@
 import { Deposits, Prisma } from '.prisma/client';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { DepositRepo } from '@common/repositories/deposit.repo';
 import {
     IDepositApprove,
@@ -12,10 +12,9 @@ import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import moment from 'moment-timezone';
 import { APIError } from '@common/error/api.error';
-import { PaymentRequestStatus, PaymentRequestType, TransactionOrderType, TransactionType } from '@config/app.constant';
+import { PaymentRequestStatus, PaymentType, TransactionOrderType, TransactionType } from '@config/app.constant';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { ITransaction } from '@common/interfaces/transaction.interface';
-import { CommonService } from './common.service';
 import { IPayment } from '@common/interfaces/payment.interface';
 import { PaymentRepo } from '@common/repositories/payment.repo';
 
@@ -26,7 +25,6 @@ export class DepositService extends BaseService<
     DepositRepo
 > {
     private static instance: DepositService;
-    private static CommonServiceInstance: CommonService;
     private bankRepo: BankRepo = new BankRepo();
     private paymentRepo: PaymentRepo = new PaymentRepo();
     private organizationRepo: OrganizationRepo = new OrganizationRepo();
@@ -56,7 +54,6 @@ export class DepositService extends BaseService<
         employeeId: number,
         tx?: Prisma.TransactionClient,
     ): Promise<IIdResponse> {
-        console.log(request);
         // Validate required fields
         await this.validateForeignKeys(
             request,
@@ -111,7 +108,7 @@ export class DepositService extends BaseService<
             const paymentData: IPayment = {
                 code: '',
                 status: PaymentRequestStatus.CONFIRMED,
-                type: PaymentRequestType.INTEREST,
+                type: PaymentType.EXPENSE,
                 time_at: moment(request.time_at).toDate(),
                 payment_date: moment(request.deposit_date).toDate(),
                 bank_id: request.bank_id,

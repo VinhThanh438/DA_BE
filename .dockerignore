@@ -51,4 +51,14 @@ jspm_packages
 
 # Documentation file
 *.md
-s
+.vscode
+.script
+.idea
+.github/workflows
+.DS_Store
+.prettierrc
+.eslintrc.js
+LICENSE
+tslint.json
+README.md
+.eslintignore

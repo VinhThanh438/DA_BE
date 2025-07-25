@@ -1,11 +1,11 @@
 import { Inventories, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { InventorySelection, InventorySelectionAll } from './prisma/inventory.select';
 import { SearchField } from '@common/interfaces/common.interface';
+import { InventorySelection, InventorySelectionAll } from './prisma/prisma.select';
 
 export class InventoryRepo extends BaseRepo<Inventories, Prisma.InventoriesSelect, Prisma.InventoriesWhereInput> {
-    protected db = DatabaseAdapter.getInstance().inventories;
+    protected db = DatabaseAdapter.getInstance().getClient().inventories;
     protected defaultSelect = InventorySelection;
     protected detailSelect = InventorySelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'inventories';
@@ -17,5 +17,5 @@ export class InventoryRepo extends BaseRepo<Inventories, Prisma.InventoriesSelec
             { path: ['order', 'code'] },
             // { path: ['order_details', 'po'], isArray: true },
         ],
-    }
+    };
 }

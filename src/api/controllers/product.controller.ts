@@ -1,9 +1,9 @@
 import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
-import logger from '@common/logger';
 import { ProductService } from '@common/services/product.service';
 import { NextFunction, Request, Response } from 'express';
 import { BaseController } from './base.controller';
 import { Products } from '.prisma/client';
+import logger from '@common/logger';
 
 export class ProductController extends BaseController<Products> {
     private static instance: ProductController;
@@ -14,7 +14,7 @@ export class ProductController extends BaseController<Products> {
         this.service = ProductService.getInstance();
     }
 
-    public static getInstance(): ProductController {
+    static getInstance(): ProductController {
         if (!this.instance) {
             this.instance = new ProductController();
         }
@@ -40,6 +40,16 @@ export class ProductController extends BaseController<Products> {
             res.sendJson(output);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);
+            next(error);
+        }
+    }
+
+    async search(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const output = await this.service.search({ ...req.query, isPublic: true });
+            res.sendJson(output);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.search: `, error);
             next(error);
         }
     }

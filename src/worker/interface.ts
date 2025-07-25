@@ -1,11 +1,10 @@
-import { Job, DoneCallback, Queue } from 'bull';
+import type { Worker as BullMQWorker, Job } from 'bullmq';
 
-export interface JobHandler {
-    register(): Promise<Queue>;
-    handler(job: Job, done: DoneCallback): Promise<void>;
+export interface IWorker {
+    worker: BullMQWorker;
+    register(): Promise<IWorker>;
 }
 
-export interface RefreshJobData {
-    job?: string;
-    command: string;
+export interface JobHandler extends IWorker {
+    handler(job: Job): Promise<void>;
 }

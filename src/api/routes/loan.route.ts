@@ -2,7 +2,7 @@ import { InterestLogController } from '@api/controllers/interest-log.controller'
 import { LoanController } from '@api/controllers/loan.controller';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { zodValidateQuery } from '@api/middlewares/zodValidate.middleware';
+import { zodValidateQuery } from '@api/middlewares/zod-validate.middleware';
 import { approve, queryById } from '@api/validation/common.validator';
 import { getInterestLogs } from '@api/validation/interest-log.validator';
 import { create, queryFilter, update } from '@api/validation/loan.validator';

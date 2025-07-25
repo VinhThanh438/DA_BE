@@ -44,8 +44,6 @@ model Organizations {
   material_budgets       MaterialBudgets[]
   transactions           Transactions[]
   transaction_warehouses TransactionWarehouses[]
-  quotation_requests     QuotationRequests[]
-  order_expenses         OrderExpenses[]
   contracts              Contracts[]
   purchase_requests      PurchaseRequests[]
   clauses                Clauses[]
@@ -66,6 +64,9 @@ model Organizations {
   interest_logs          InterestLogs[]
   Deposits               Deposits[]
   gate_logs              GateLogs[]
+  unloading_costs        UnloadingCosts[]
+  facility_orders        FacilityOrders[]
+  notifications          Notifications[]
 
   @@map("organizations")
 }

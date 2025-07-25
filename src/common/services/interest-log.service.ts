@@ -1,5 +1,5 @@
 import { InterestLogRepo } from '@common/repositories/interest-log.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { InterestLogs, Prisma } from '.prisma/client';
 
 export class InterestLogService extends BaseService<

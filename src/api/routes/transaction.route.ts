@@ -10,10 +10,4 @@ router.get('/', validateRequest(queryFilter), controller.paginate.bind(controlle
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
 
-// router.post('/', validateRequest(createUnit), controller.create.bind(controller));
-
-// router.put('/:id', validateRequest(updateUnit), controller.update.bind(controller));
-
-// router.delete('/:id', validateRequest(queryById), controller.delete.bind(controller));
-
 export default router;

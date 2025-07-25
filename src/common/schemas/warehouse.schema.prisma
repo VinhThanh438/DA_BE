@@ -5,17 +5,19 @@ model Warehouses {
   phone   String?
   address String?
   note    String?
-  
-  created_at            DateTime                @default(now())
-  updated_at            DateTime                @updatedAt
 
-  employee_id Int? // Quan kho
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  employee_id     Int? // Quan kho
   organization_id Int? // Quan kho
 
-  employee Employees? @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
   organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
 
   transaction_warehouses TransactionWarehouses[]
-  inventories Inventories[]
+  inventories            Inventories[]
+  stock_trackings        StockTrackings[]
+
   @@map("warehouses")
 }

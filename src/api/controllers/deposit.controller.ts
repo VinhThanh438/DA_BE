@@ -32,7 +32,7 @@ export class DepositController extends BaseController<Deposits> {
         try {
             const body = req.body as IDepositCreate;
             const uId = req.user.id;
-            const eId = req.user.eId;
+            const eId = req.user.employee_id;
             const result = await this.service.createDeposit(body, uId, eId);
             res.sendJson(result);
         } catch (error) {

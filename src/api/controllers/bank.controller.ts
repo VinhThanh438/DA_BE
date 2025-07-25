@@ -23,12 +23,22 @@ export class BankController extends BaseController<Banks> {
 
     public async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const { page, size, keyword, ...query } = req.query;
-            let result;
-            if (page || size) {
-                result = await this.service.paginate(req.query);
+            if (!req.query.partnerId) {
+                req.query.partner_id = null as any;
+                req.query.representative_id = null as any;
+            } else {
+                req.query.partner_id = req.query.partnerId;
+                delete req.query.partnerId;
             }
-            result = await this.service.getAll(query);
+
+            const { page, size, startAt, endAt, keyword, ...query } = req.query;
+
+            let result;
+            if (page || size || (startAt && endAt)) {
+                result = await this.service.paginate(req.query);
+            } else {
+                result = await this.service.getAll(query);
+            }
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.getAll: `, error);
@@ -43,6 +53,29 @@ export class BankController extends BaseController<Banks> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.transfer: `, error);
+            next(error);
+        }
+    }
+
+    public async create(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const body = req.body;
+            const result = await this.service.createBank(body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.create: `, error);
+            next(error);
+        }
+    }
+
+    public async getFundBalanceById(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const bankId = Number(req.params.id);
+            const { startAt, endAt } = req.query;
+            const result = await this.service.getFundBalanceById(bankId, startAt as string, endAt as string);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.getFundBalanceById: `, error);
             next(error);
         }
     }

@@ -3,6 +3,8 @@ FROM node:23.11.0-slim as base
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y openssl
+
 COPY package*.json ./
 
 RUN yarn install
@@ -11,13 +13,21 @@ COPY . .
 
 RUN npx prisma generate
 
+# RUN yarn prisma:push
+
 RUN yarn build
 
 
-FROM base as be_thep_dong_anh
+FROM base as be_thep_dong_anh_api
 
 WORKDIR /app
 
 EXPOSE 4200
 
 CMD [ "npm", "start" ]
+
+FROM base as be_thep_dong_anh_worker
+
+WORKDIR  /app
+
+CMD ["npm", "run", "start:worker"]

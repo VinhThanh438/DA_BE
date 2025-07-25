@@ -3,7 +3,7 @@ import { BaseController } from './base.controller';
 import { Representatives } from '.prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import logger from '@common/logger';
-import { IRepresenDebtQueryFilter } from '@common/interfaces/representative.interface';
+import { IRepresentDebtQueryFilter } from '@common/interfaces/representative.interface';
 
 export class RepresentativeController extends BaseController<Representatives> {
     private static instance: RepresentativeController;
@@ -23,7 +23,7 @@ export class RepresentativeController extends BaseController<Representatives> {
 
     public async getDebt(req: Request, res: Response, next: NextFunction) {
         try {
-            const query = req.query as IRepresenDebtQueryFilter;
+            const query = req.query as IRepresentDebtQueryFilter;
             const result = await this.service.getDebt(query);
             res.sendJson(result);
         } catch (error) {

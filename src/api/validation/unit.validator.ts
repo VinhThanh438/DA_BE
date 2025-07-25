@@ -15,6 +15,7 @@ export const updateUnit: schema = {
     body: wrapSchema(
         Joi.object<IUpdateUnit>({
             name: Joi.string().trim().optional().max(255),
+            is_default: Joi.boolean().optional(),
         }),
     ),
     params: wrapSchema(

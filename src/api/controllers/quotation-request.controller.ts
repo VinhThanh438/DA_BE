@@ -3,7 +3,7 @@ import { BaseController } from './base.controller';
 import { QuotationRequests } from '.prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
-import { IQuotationRequest } from '@common/interfaces/quotation-request.interface';
+import { IApproveRequest } from '@common/interfaces/common.interface';
 
 export class QuotationRequestController extends BaseController<QuotationRequests> {
     private static instance: QuotationRequestController;
@@ -21,15 +21,27 @@ export class QuotationRequestController extends BaseController<QuotationRequests
         return this.instance;
     }
 
-    public async update(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const request = req.body as IQuotationRequest;
-            const id = Number(req.params.id);
-            const userId = req.user.id;
-            const result = await this.service.updateRequestQuotation(id, request, userId);
+            const query = req.query
+            delete query.organization_id
+            delete query.OR
+            const result = await this.service.paginate(query);
             res.sendJson(result);
         } catch (error) {
-            logger.error(`${this.constructor.name}.update: `, error);
+            logger.error(`${this.constructor.name}.paginate: `, error);
+            next(error);
+        }
+    }
+
+    async approve(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IApproveRequest;
+            const id = Number(req.params.id);
+            const result = await this.service.approve(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.approveRequest: `, error);
             next(error);
         }
     }

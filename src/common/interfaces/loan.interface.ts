@@ -1,6 +1,6 @@
 import { Loans } from '.prisma/client';
 import { IPartner } from './partner.interface';
-import { IOrganization } from './company.interface';
+import { IOrganization } from './organization.interface';
 import { IInvoice } from './invoice.interface';
 import { IBank } from './bank.interface';
 import { z } from 'zod';

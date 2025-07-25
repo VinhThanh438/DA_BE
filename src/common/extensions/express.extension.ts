@@ -44,6 +44,10 @@ express.response.sendJson = function (data?: object | any[]) {
             response.summary = (data as any).summary;
         }
 
+        if ((data as any).boms) {
+            response.boms = (data as any).boms;
+        }
+
         return this.json(response);
     }
 

@@ -13,6 +13,7 @@ export class PaymentRequestDetailEvent {
 
     static register(): void {
         this.paymentRequestDetailRepo = new PaymentRequestDetailRepo();
+
         eventbus.on(EVENT_PAYMENT_CREATED, this.paymentCreatedHandler.bind(this));
     }
 

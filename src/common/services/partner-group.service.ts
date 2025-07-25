@@ -1,5 +1,5 @@
 import { PartnerGroupRepo } from '@common/repositories/partner-group.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { PartnerGroups, Prisma } from '.prisma/client';
 
 export class PartnerGroupService extends BaseService<

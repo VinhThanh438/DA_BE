@@ -1,15 +1,14 @@
 import { Prisma, ProductHistories } from '.prisma/client';
 import { BaseRepo } from './base.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { ProductHistorySelection } from './prisma/base.select';
-import { ProductHistorySelectionAll } from './prisma/product-history.select';
+import { ProductHistorySelection, ProductHistorySelectionAll } from './prisma/prisma.select';
 
-export class ProductHistorieRepo extends BaseRepo<
+export class ProductHistoryRepo extends BaseRepo<
     ProductHistories,
     Prisma.ProductHistoriesSelect,
     Prisma.ProductHistoriesWhereInput
 > {
-    protected db = DatabaseAdapter.getInstance().productHistories;
+    protected db = DatabaseAdapter.getInstance().getClient().productHistories;
     protected defaultSelect = ProductHistorySelection;
     protected detailSelect = ProductHistorySelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'productHistories';

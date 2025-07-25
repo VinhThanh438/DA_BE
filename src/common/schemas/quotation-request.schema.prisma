@@ -1,34 +1,61 @@
 enum PrsQuotationRequestType {
-    employee
-    supplier
+  employee
+  supplier
 }
 
 enum PrsQuotationRequestStatus {
-    rejected
-    accepted
-    pending
+  pending
+  confirmed
+  rejected
 }
 
 model QuotationRequests {
-  id                Int                    @id @default(autoincrement())
-  organization_id   Int?
-  requester_name    String
-  organization_name String
-  receiver_name     String?
-  phone             String?
+  id              Int      @id @default(autoincrement())
+  code            String?
+  time_at         DateTime @default(now())
+  note            String?
+  rejected_reason String?
+  files           Json     @default("[]")
+
+  status      PrsQuotationRequestStatus @default(pending)
+  partner_id  Int? // Khach hang
+  employee_id Int? // Người phụ trách
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_save    Boolean  @default(false)
+
+  organization_name String?
   tax               String?
-  email             String?
   address           String?
-  note              String?
-  status            PrsQuotationRequestStatus @default(pending)
-  files             Json?                  @default("[]")
-  type              PrsQuotationRequestType   @default(employee)
+  phone             String?
+  requester_name    String?
+  email             String?
+
+  partner    Partners?                 @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  employee   Employees?                @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  details    QuotationRequestDetails[]
+  quotations Quotations[]
+
+  @@map("quotation_requests")
+}
+
+model QuotationRequestDetails {
+  id                   Int     @id @default(autoincrement())
+  quotation_request_id Int
+  product_id           Int
+  unit_id              Int
+  quantity             Int     @default(0)
+  note                 String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  organization Organizations? @relation(fields: [organization_id], references: [id])
+  quotation_request QuotationRequests @relation(fields: [quotation_request_id], references: [id], onDelete: Cascade)
+  product           Products?         @relation(fields: [product_id], references: [id])
+  unit              Units?            @relation(fields: [unit_id], references: [id])
+  details           CommonDetails[]
+  commissions       Commissions[]
 
-  @@map("quotation_requests")
-  quotations Quotations[]
+  @@map("quotation_request_details")
 }

@@ -1,10 +1,10 @@
 import { IPaginationInput } from '@common/interfaces/common.interface';
 import logger from '@common/logger';
-import { BaseService } from '@common/services/base.service';
+import { BaseService } from '@common/services/master/base.service';
 import { Request, Response, NextFunction } from 'express';
 
 export abstract class BaseController<T = any> {
-    constructor(protected readonly service: BaseService<T, any, any>) {}
+    constructor(protected readonly service: BaseService<T, any, any>) { }
 
     public async paginate(req: Request, res: Response, next: NextFunction) {
         try {

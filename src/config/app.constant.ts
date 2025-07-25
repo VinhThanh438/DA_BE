@@ -1,12 +1,11 @@
 import { PrsInventoryType, PrismaClient } from '.prisma/client';
-import { IRoleModule } from '@common/interfaces/role.interface';
 import { StringValue } from 'ms';
 const prisma = new PrismaClient();
 
 export const DEFAULT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 export enum PublicPath {
-    PUBLIC_FILES = '/uploads',
+    PUBLIC_FOLDER = '/uploads',
 }
 
 export enum Language {
@@ -36,6 +35,7 @@ export enum PartnerType {
     CUSTOMER = 'customer',
     SUPPLIER = 'supplier',
     DELIVERY = 'delivery',
+    FACILITY = 'facility',
 }
 
 export enum OrganizationType {
@@ -93,6 +93,9 @@ export enum PrefixCode {
     PAYMENT_REQUEST = 'YTT',
     PAYMENT_INCOME = 'PT',
     PAYMENT_EXPENSE = 'PC',
+    QUOTATION_REQUEST = 'YTBG',
+    FACILITY = 'DV',
+    MESH_SHEET = 'TSL',
 }
 
 export const ModelPrefixMap: Record<string, PrefixCode> = {
@@ -130,12 +133,14 @@ export const ModelPrefixMap: Record<string, PrefixCode> = {
     FINANCE_INCOME: PrefixCode.FINANCE_INCOME,
     FINANCE_EXPENSE: PrefixCode.FINANCE_EXPENSE,
     CONTRACT: PrefixCode.CONTRACT,
-    ORDEREXPENSE: PrefixCode.ORDER_EXPENSE,
     PURCHASEREQUEST: PrefixCode.PURCHASE_REQUEST,
     OTHER: PrefixCode.OTHER,
     PAYMENT_REQUEST: PrefixCode.PAYMENT_REQUEST,
     PAYMENT_INCOME: PrefixCode.PAYMENT_INCOME,
     PAYMENT_EXPENSE: PrefixCode.PAYMENT_EXPENSE,
+    QUOTATION_REQUEST: PrefixCode.QUOTATION_REQUEST,
+    FACILITY: PrefixCode.FACILITY,
+    MESH_SHEET: PrefixCode.MESH_SHEET,
 };
 
 export const ModelStringMaps: Record<string, any> = {
@@ -171,10 +176,12 @@ export const ModelStringMaps: Record<string, any> = {
     PRODUCTION: prisma.productions,
     PURCHASE_REQUEST: prisma.purchaseRequests,
     CONTRACT: prisma.contracts,
-    ORDEREXPENSE: prisma.orderExpenses,
     PAYMENT_REQUEST: prisma.paymentRequests,
     PAYMENT_INCOME: prisma.payments,
     PAYMENT_EXPENSE: prisma.payments,
+    QUOTATION_REQUEST: prisma.quotationRequests,
+    FACILITY: prisma.facility,
+    MESH_SHEET: prisma.mesh,
 };
 
 export enum CodeType {
@@ -212,9 +219,9 @@ export enum CodeType {
     PAYMENT_INCOME = 'payment_income',
     PAYMENT_EXPENSE = 'payment_expense',
     CONTRACT = 'contract',
-    ORDER_EXPENSE = 'orderexpense',
     PURCHASE_REQUEST = 'purchase_request',
     PAYMENT_REQUEST = 'payment_request',
+    MESH_SHEET = 'mesh_sheet',
 }
 
 export enum QuotationRequestType {
@@ -247,24 +254,12 @@ export enum ContractStatus {
     CANCELED = 'cancelled',
 }
 
-export enum InvoiceStatus {
-    PENDING = 'pending',
-    CONFIRMED = 'confirmed',
-    REJECTED = 'rejected',
-}
-
-export enum OrderExpenseType {
-    INCOME = 'income',
-    EXPENSE = 'expense',
-    ORDER_INCOME = 'order_income',
-    ORDER_EXPENSE = 'order_expense',
-}
-
 export enum ProductType {
     SUB_MATERIAL = 'sub_material',
     MAIN_MATERIAL = 'main_material',
     FINISHED = 'finished',
     SEMI = 'semi',
+    MATERIAL = 'material',
 }
 
 export const DEFAULT_EXCLUDED_FIELDS = ['key'];
@@ -322,6 +317,18 @@ export const InventoryType = {
     MATERIAL_OUT: PrsInventoryType.inventory_material_out,
 } as const;
 
+export const InventoryTypeOut: string[] = [
+    InventoryType.FINISHED_OUT,
+    InventoryType.NORMAL_OUT,
+    InventoryType.MATERIAL_OUT,
+];
+
+export const InventoryTypeIn: string[] = [
+    InventoryType.FINISHED_IN,
+    InventoryType.NORMAL_IN,
+    InventoryType.MATERIAL_IN,
+];
+
 export const InventoryTypeDirectionMap: Record<
     (typeof InventoryType)[keyof typeof InventoryType],
     TransactionWarehouseType
@@ -362,6 +369,7 @@ export enum PaymentRequestType {
     COMMISSION = 'commission',
     INTEREST = 'interest',
     LOAN = 'loan',
+    DELIVERY = 'delivery',
 }
 
 export enum DeptType {
@@ -375,6 +383,7 @@ export enum TransactionOrderType {
     LOAN = 'loan',
     INTEREST = 'interest',
     TRANSFER = 'transfer',
+    DELIVERY = 'delivery',
 }
 
 export enum TransactionType {
@@ -393,15 +402,12 @@ export enum PaymentType {
     EXPENSE = 'expense',
 }
 
-export enum TransactionType {
-    INCOME = 'income',
-    EXPENSE = 'expense',
-}
-
 export enum CommonApproveStatus {
     PENDING = 'pending',
     CONFIRMED = 'confirmed',
     REJECTED = 'rejected',
+    CUSTOMER_PENDING = 'customer_pending',
+    CUSTOMER_REJECTED = 'customer_rejected',
 }
 
 export enum BankType {
@@ -412,6 +418,8 @@ export enum BankType {
 
 export const logoLeft = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo.png';
 export const logoRight = 'https://api.thepdonganh.itomo.one/uploads/access/logos/logo2.png';
+export const LOGO_LEFT_PATH = 'uploads/access/logos/logo.png';
+export const LOGO_RIGHT_PATH = 'uploads/access/logos/logo2.png';
 
 export enum PaymentRequestDetailStatus {
     PENDING = 'pending',
@@ -431,7 +439,56 @@ export enum LoanStatus {
 }
 
 export enum InvoiceType {
-    SUPPLIER = 'supplier',
-    CUSTOMER = 'customer',
+    SELL = 'sell',
+    PURCHASE = 'purchase',
     DELIVERY = 'delivery',
+    FACILITY = 'facility',
+}
+
+export enum CommissionType {
+    PRICE = 'price',
+    QUANTITY = 'quantity',
+}
+
+export enum UnloadingStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    REJECTED = 'rejected',
+}
+
+export enum ExportFileType {
+    PURCHASE_ORDER = 'purchaseOrder',
+    SALE_ORDER = 'saleOrder',
+    PURCHASE_DEBT_COMMISSION = 'purchaseDebtCommission',
+    PURCHASE_DEBT_REPORT = 'purchaseDebtReport',
+    PURCHASE_DEBT_COMMISSION_REPORT = 'purchaseDebtCommissionReport',
+    INVENTORY_IMPORT = 'inventoryImport',
+    INVENTORY_EXPORT = 'inventoryExport',
+    PURCHASE_CONTRACT = 'purchaseContract',
+    BANK_TRANSACTION = 'bankTransaction',
+    QUOTATION = 'quotation',
+    PURCHASE_DEBT_COMPARISON = 'purchaseDebtComparison',
+    INVENTORY_FINISHED = 'inventoryFinished',
+    PRODUCTION_1 = 'production1',
+    PRODUCTION_2 = 'production2',
+    PRODUCTION_3 = 'production3',
+    EXPORT_MATERIAL = 'exportMaterial',
+}
+
+export enum FileType {
+    EXCEL = 'excel',
+    PDF = 'pdf',
+}
+
+export const PrefixFilePath = 'uploads/files';
+
+export enum ProductionType {
+    MESH = 'mesh',
+    NORMAL = 'normal',
+    DRAWN = 'drawn',
+}
+
+export enum DebtType {
+    INCOME = 'income',
+    EXPENSE = 'expense',
 }

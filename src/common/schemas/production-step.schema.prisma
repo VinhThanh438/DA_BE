@@ -1,0 +1,9 @@
+model ProductionStep {
+    id    Int    @id @default(autoincrement())
+    name  String
+    note  String?
+
+    work_pricings WorkPricings[]
+
+    @@map("production_steps")
+}

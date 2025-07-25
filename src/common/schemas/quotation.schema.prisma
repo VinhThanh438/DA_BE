@@ -1,46 +1,60 @@
 // Báo giá
 enum PrsQuotationStatus {
   pending
+  customer_pending
+  customer_rejected
   confirmed
   rejected
 }
 
-enum PrsQuatationType {
+enum PrsQuotationType {
   customer
   supplier
 }
 
 model Quotations {
-  id           Int       @id @default(autoincrement())
-  code         String    @default(cuid())
-  time_at      DateTime? @default(now())
-  expired_date DateTime? @default(now())
-  note         String?
+  id              Int              @id @default(autoincrement())
+  code            String           @default(cuid())
+  time_at         DateTime?        @default(now())
+  expired_date    String?
+  note            String?
   rejected_reason String?
-  type         PrsQuatationType @default(supplier) // loại báo giá
+  type            PrsQuotationType @default(supplier) // loại báo giá
 
-  status       PrsQuotationStatus @default(pending)
-  files        Json?           @default("[]")
-  quotation_files        Json?           @default("[]")
-  message        String?
+  status            PrsQuotationStatus @default(pending)
+  files             Json?              @default("[]")
+  quotation_files   Json?              @default("[]")
+  message           String?
   organization_name String?
-  is_confirmed Boolean?        @default(false)
+  is_confirmed      Boolean?           @default(false)
 
-  employee_id     Int? // nhan vien bao gia
-  partner_id      Int? // Khach hang
-  organization_id Int?
-  quotation_request_id Int?
-  purchase_request_id Int?
+  employee_id          Int? // nhan vien bao gia
+  partner_id           Int? // Khach hang
+  organization_id      Int?
+  quotation_request_id Int? // yêu cầu báo giá
+  purchase_request_id  Int?
 
-  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  product_quality   String?
+  delivery_location String?
+  delivery_method   String?
+  delivery_time     String?
+  payment_note      String?
+  additional_note   String?
+  detail_note       String?
+
+  organization      Organizations?     @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   quotation_request QuotationRequests? @relation(fields: [quotation_request_id], references: [id], onDelete: SetNull)
-  employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
-  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
-  purchase_request      PurchaseRequests?      @relation(fields: [purchase_request_id], references: [id], onDelete: SetNull)
+  employee          Employees?         @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  partner           Partners?          @relation(fields: [partner_id], references: [id], onDelete: SetNull)
+  purchase_request  PurchaseRequests?  @relation(fields: [purchase_request_id], references: [id], onDelete: SetNull)
 
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
-  details CommonDetails[]
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  details         CommonDetails[]
+  shipping_plans  ShippingPlans[]
+  facility_orders FacilityOrders[]
+
+  mesh Mesh?
 
   @@map("quotations")
 }

@@ -1,5 +1,5 @@
 import { wrapSchema } from '@common/helpers/wrap-schema.helper';
-import { CodeType, CommonApproveStatus } from '@config/app.constant';
+import { CodeType, CommonApproveStatus, DEFAULT_TIME_ZONE } from '@config/app.constant';
 import { Joi, schema } from 'express-validation';
 import { values } from 'lodash';
 
@@ -7,6 +7,7 @@ export const detailsSchema = {
     id: Joi.number().optional().allow(null, ''),
     product_id: Joi.number().optional().allow(null, ''),
     unit_id: Joi.number().optional().allow(null, ''),
+    quotation_request_detail_id: Joi.number().optional().allow(null, ''),
     quantity: Joi.number().min(0).optional().allow(null, ''),
     price: Joi.number().min(0).optional().allow(null, ''),
     discount: Joi.number().min(0).optional().allow('', null).default(0),
@@ -21,10 +22,11 @@ export const queryFilter: schema = {
         Joi.object({
             page: Joi.number().optional().min(1),
             size: Joi.number().optional().min(1),
-            startAt: Joi.string().isoDate().optional().allow(null),
-            endAt: Joi.string().isoDate().optional().allow(null),
+            startAt: Joi.isoDateTz().optional().allow(null),
+            endAt: Joi.isoDateTz().optional().allow(null),
             keyword: Joi.string().optional().allow(null, ''),
             organization_id: Joi.any().optional().allow(null, ''),
+            OR: Joi.any().optional().allow(null, ''),
             warehouseIds: Joi.alternatives()
                 .try(
                     Joi.array().items(Joi.number()),
@@ -52,7 +54,7 @@ export const queryFilter: schema = {
                     }),
                 )
                 .optional()
-                .allow(null, '')
+                .allow(null, ''),
         }),
     ),
 };
@@ -75,6 +77,7 @@ export const getCode: schema = {
     ),
 };
 
+const { CONFIRMED, REJECTED } = CommonApproveStatus;
 export const approve: schema = {
     params: wrapSchema(
         Joi.object({
@@ -84,10 +87,10 @@ export const approve: schema = {
     body: wrapSchema(
         Joi.object({
             status: Joi.string()
-                .valid(...Object.values([CommonApproveStatus.REJECTED, CommonApproveStatus.CONFIRMED]))
+                .valid(...Object.values([REJECTED, CONFIRMED]))
                 .required(),
             rejected_reason: Joi.string().when('status', {
-                is: CommonApproveStatus.REJECTED,
+                is: Joi.string().valid(REJECTED),
                 then: Joi.string().min(1).required(),
                 otherwise: Joi.string().allow(null, '').optional(),
             }),

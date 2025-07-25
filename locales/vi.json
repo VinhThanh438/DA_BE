@@ -21,7 +21,10 @@
             },
             "foreign-key-constraint-violation": "Lỗi khóa ngoại không tồn tại",
             "resource-not-found": "Tài nguyên không tồn tại!",
-            "developer-error": "Lỗi hệ thống do lập trình viên gây ra, vui lòng kiểm tra lại mã nguồn."
+            "developer-error": "Lỗi hệ thống do lập trình viên gây ra, vui lòng kiểm tra lại mã nguồn.",
+            "too-large": "Kích thước file vượt quá giới hạn 20MB!",
+            "edit-restriction-warning": "Không được chỉnh sửa sau 90 ngày kể từ khi được xác nhận!",
+            "timezone-missing": "Không tìm thấy timezone!"
         },
         "auth": {
             "signup": {

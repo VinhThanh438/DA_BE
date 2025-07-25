@@ -1,18 +1,14 @@
 import eventbus from '@common/eventbus';
 import { IEventInvoiceCreated } from '@common/interfaces/invoice.interface';
-import {
-    IEventInterestLogPaymented,
-    IJobHandleLoanPayment,
-    IPaymentCreatedEvent,
-} from '@common/interfaces/transaction.interface';
+import { IEventInterestLogPaymented, IPaymentCreatedEvent } from '@common/interfaces/transaction.interface';
 import logger from '@common/logger';
 import { LoanService } from '@common/services/loan.service';
 import { QueueService } from '@common/services/queue.service';
 import {
     EVENT_INTEREST_LOG_PAID,
-    EVENT_INVOICE_CREATED,
     EVENT_LOAN_PAID,
     EVENT_PAYMENT_CREATED,
+    EVENT_UPDATE_LOAN,
 } from '@config/event.constant';
 import { HANDLE_LOAN_PAYMENT_JOB } from '@config/job.constant';
 
@@ -26,7 +22,7 @@ export class LoanEvent {
         this.loanService = LoanService.getInstance();
 
         eventbus.on(EVENT_PAYMENT_CREATED, this.paymentCreatedHandler.bind(this));
-        eventbus.on(EVENT_INVOICE_CREATED, this.invoiceCreatedHandler.bind(this));
+        eventbus.on(EVENT_UPDATE_LOAN, this.updateLoanInfo.bind(this));
         eventbus.on(EVENT_INTEREST_LOG_PAID, this.interestLogPaidHandler.bind(this));
         eventbus.on(EVENT_LOAN_PAID, this.loanPaidHandler.bind(this));
     }
@@ -35,7 +31,7 @@ export class LoanEvent {
         try {
             const { payment_request_detail_id } = data;
             if (payment_request_detail_id) {
-                await (await QueueService.getQueue<IJobHandleLoanPayment>(HANDLE_LOAN_PAYMENT_JOB)).add(data);
+                await (await QueueService.getQueue(HANDLE_LOAN_PAYMENT_JOB)).add(HANDLE_LOAN_PAYMENT_JOB, data);
             } else {
                 logger.warn('LoanEvent.paymentCreatedHandler: No payment request details found.');
             }
@@ -44,16 +40,14 @@ export class LoanEvent {
         }
     }
 
-    private static async invoiceCreatedHandler(data: IEventInvoiceCreated): Promise<void> {
+    private static async updateLoanInfo(data: IEventInvoiceCreated): Promise<void> {
         try {
             const orderId = data.orderId;
             const invoiceId = data.invoiceId;
-
             await this.loanService.addInvoiceInfo(orderId, invoiceId);
-
-            logger.warn('LoanEvent.handler: loan updated successfully.');
+            logger.warn('LoanEvent.updateLoanInfo: loan updated successfully.');
         } catch (error: any) {
-            logger.error('LoanEvent.handler:', error);
+            logger.error('LoanEvent.updateLoanInfo:', error);
         }
     }
 

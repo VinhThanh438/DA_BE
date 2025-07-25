@@ -1,9 +1,9 @@
+import { ProductionService } from '@common/services/production/production.service';
+import { Request, Response, NextFunction } from 'express';
+import { ProductionType } from '@config/app.constant';
 import { BaseController } from './base.controller';
 import { Productions } from '.prisma/client';
-import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
-import { ProductionService } from '@common/services/production.service';
-import { IProduction } from '@common/interfaces/production.interface';
 
 export class ProductionController extends BaseController<Productions> {
     private static instance: ProductionController;
@@ -14,17 +14,41 @@ export class ProductionController extends BaseController<Productions> {
         this.service = ProductionService.getInstance();
     }
 
-    public static getInstance(): ProductionController {
+    static getInstance(): ProductionController {
         if (!this.instance) {
             this.instance = new ProductionController();
         }
         return this.instance;
     }
 
-    public async create(req: Request, res: Response, next: NextFunction) {
+    async paginate(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as IProduction;
-            const result = await this.service.createProduction(body);
+            const { type, ...filter } = req.query;
+
+            let result = null;
+            if (type === 'mesh') {
+                result = await this.service.paginate(filter);
+            } else {
+                result = await this.service.paginate(filter);
+            }
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.paginate: `, error);
+            next(error);
+        }
+    }
+
+    async create(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body;
+
+            let result = null;
+            if (body.type === ProductionType.MESH) {
+                result = await this.service.createMeshProduction(body);
+            } else {
+                result = await this.service.create(body);
+            }
+
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.create: `, error);
@@ -32,11 +56,18 @@ export class ProductionController extends BaseController<Productions> {
         }
     }
 
-    public async update(req: Request, res: Response, next: NextFunction) {
+    async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const body = req.body as IProduction;
+            const body = req.body;
             const id = Number(req.params.id);
-            const result = await this.service.updateProduction(id, body);
+
+            let result = null;
+            if (body.type === ProductionType.MESH) {
+                result = await this.service.updateMeshProduction(id, body);
+            } else {
+                result = await this.service.updateProduction(id, body);
+            }
+
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);

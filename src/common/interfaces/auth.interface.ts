@@ -8,7 +8,7 @@ export interface ILoginRequest {
 
 export interface IPayload {
     id: number;
-    eId: number;
+    employee_id: number;
 }
 
 export interface ILoginResponse {

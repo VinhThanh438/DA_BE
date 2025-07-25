@@ -1,25 +1,38 @@
-import { Prisma, Products } from '.prisma/client';
-import { APIError } from '@common/error/api.error';
-import { ErrorKey, StatusCode } from '@common/errors';
-
-import { IIdResponse } from '@common/interfaces/common.interface';
-import { IEventProductHistoryUpdated, IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
-import { ProductRepo } from '@common/repositories/product.repo';
-import { BaseService } from './base.service';
-import { UnitRepo } from '@common/repositories/unit.repo';
-import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import eventbus from '@common/eventbus';
+import {
+    IEventProductHistoryUpdated,
+    IProduct,
+    IUpdateProduct,
+    IWarehouseProduct,
+} from '@common/interfaces/product.interface';
+import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
 import { EVENT_PRODUCT_HISTORY_UPDATED } from '@config/event.constant';
+import { ProductRepo } from '@common/repositories/product.repo';
+import { UnitRepo } from '@common/repositories/unit.repo';
+import { ErrorKey, StatusCode } from '@common/errors';
+import { APIError } from '@common/error/api.error';
+import { Prisma, Products } from '.prisma/client';
+import { BaseService } from './master/base.service';
+import eventbus from '@common/eventbus';
+import { StockTrackingRepo } from '@common/repositories/stock-tracking.repo';
+import { InventoryDetailRepo } from '@common/repositories/inventory-detail.repo';
+import { InventoryRepo } from '@common/repositories/inventory.repo';
+import { TransactionWarehouseRepo } from '@common/repositories/transaction-warehouse.repo';
+import { TransactionType } from '@config/app.constant';
+import { IStockTracking } from '@common/interfaces/stock-tracking.interface';
 
 export class ProductService extends BaseService<Products, Prisma.ProductsSelect, Prisma.ProductsWhereInput> {
-    private productRepo: ProductRepo = new ProductRepo();
-    public unitRepo: UnitRepo = new UnitRepo();
-    public db = DatabaseAdapter.getInstance();
     private static instance: ProductService;
+    private unitRepo: UnitRepo = new UnitRepo();
+    private stockTrackingRepo: StockTrackingRepo = new StockTrackingRepo();
+    private inventoryDetailRepo: InventoryDetailRepo = new InventoryDetailRepo();
+    private inventoryRepo: InventoryRepo = new InventoryRepo();
+    private transactionWarehouseRepo: TransactionWarehouseRepo = new TransactionWarehouseRepo();
+    // private productDetailService: ProductDetailService = ProductDetailService.getInstance();
 
-    constructor() {
+    private constructor() {
         super(new ProductRepo());
     }
+
     private validateUnit(unitNotFoundOrExisted: string[], message: string) {
         const formattedErrors: string[] = [];
 
@@ -38,24 +51,14 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             });
         }
     }
+
     public static getInstance(): ProductService {
         if (!this.instance) {
             this.instance = new ProductService();
         }
         return this.instance;
     }
-    async delete(id: number): Promise<IIdResponse> {
-        const exist = await this.productRepo.findOne({ id: id });
-        if (!exist) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
-        const output = await this.productRepo.delete({ id: id });
-        return { id: output };
-    }
+
     async updateProduct(id: number, body: IUpdateProduct): Promise<IIdResponse> {
         // await this.isExist({ code: body.code, id }, true);
         const unitNotFound: string[] = [];
@@ -92,7 +95,7 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         let product = null;
 
         if (body.product_group_id) {
-            product = await this.productRepo.findOne({ id: body.product_group_id });
+            product = await this.repo.findOne({ id: body.product_group_id });
             if (!product) {
                 throw new APIError({
                     message: 'product_group.not_found',
@@ -110,36 +113,35 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             delete body.unit_id;
         }
 
-        if (Object.prototype.hasOwnProperty.call(body, 'price')) {
-            body.current_price = body.price;
-            delete body.price;
-        }
-
         if (unitNotFound && unitNotFound.length > 0) {
             this.validateUnit(unitExisted, 'unit_id.existed');
         }
 
-        const output = await this.db.$transaction(async (prisma) => {
+        const output = await this.db.$transaction(async (tx) => {
             const { delete: del, add, update, ...mapperProduct } = body;
             const extra_units = { add, update, delete: body.delete };
-            const updateProductId = await this.productRepo.update({ id: id }, mapperProduct, prisma);
-            await this.handleParentProduct(id, body.code || '', prisma);
+            const updateProductId = await this.repo.update({ id: id }, mapperProduct, tx);
+
+            // if have product details
+            // await this.handleProductDetails(id, details_add, details_update, details_delete, tx);
+
+            await this.handleParentProduct(id, body.code, tx);
 
             if (extra_units?.add && extra_units.add.length > 0) {
                 const unitsToAdd = extra_units.add.map(({ key, ...mapper }) => {
                     return { product_id: updateProductId, ...mapper };
                 });
-                await prisma.productUnits.createMany({ data: unitsToAdd });
+                await tx.productUnits.createMany({ data: unitsToAdd });
             } else if (extra_units?.delete && extra_units.delete.length > 0) {
                 for (const item of extra_units.delete) {
-                    await prisma.productUnits.delete({ where: { id: item.unit_id } });
+                    await tx.productUnits.delete({ where: { id: item.unit_id } });
                 }
             } else if (extra_units?.update && extra_units.update.length > 0) {
                 const unitsToUpdate = extra_units.update.map(({ key, ...mapper }) => {
                     return mapper;
                 });
                 for (const item of unitsToUpdate) {
-                    await prisma.productUnits.update({
+                    await tx.productUnits.update({
                         where: { id: item.unit_id },
                         data: { conversion_rate: item.conversion_rate },
                     });
@@ -163,10 +165,6 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
         const unit = await this.unitRepo.findOne({ id: body.unit_id });
         if (!unit) {
             unitNotFound.push('0');
-        }
-        if (body.price) {
-            body.current_price = body.price;
-            delete body.price;
         }
         if (body.extra_units) {
             for (const unit of body.extra_units) {
@@ -205,38 +203,61 @@ export class ProductService extends BaseService<Products, Prisma.ProductsSelect,
             body.extra_units = extra_units;
         }
 
-        const { product_group_id, unit_id, ...productData } = body;
-        const createdId = await this.productRepo.create({
-            ...productData,
-            product_group: { connect: { id: product_group_id } },
-            unit: { connect: { id: unit_id } },
-        });
-        await this.handleParentProduct(createdId, body.code || '');
+        const { ...restData } = body;
+        const mapData = this.autoMapConnection([restData]);
+        const productId = await this.repo.create(mapData[0]);
+
+        // await this.productDetailService.createMany(details)
+
+        // update product parent id
+        await this.handleParentProduct(productId, body.code);
 
         eventbus.emit(EVENT_PRODUCT_HISTORY_UPDATED, {
-            id: createdId,
+            id: productId,
             current_price: body.current_price,
         } as IEventProductHistoryUpdated);
 
-        return { id: createdId };
+        return { id: productId };
     }
 
-    private async handleParentProduct(productId: number, code: string, tx?: Prisma.TransactionClient) {
+    private async handleParentProduct(productId: number, code?: string, tx?: Prisma.TransactionClient) {
+        if (!code) return;
         const productParent = await this.repo.findOne({ code, id: { not: productId } }, false, tx);
         if (productParent) {
             await this.repo.update({ id: productId }, { parent_id: productParent.id }, tx);
         }
     }
 
-    async getById(id: number): Promise<Partial<Products>> {
-        const output = await this.productRepo.findOne({ id: id }, true);
-        if (!output) {
-            throw new APIError({
-                message: 'common.not_found',
-                status: StatusCode.BAD_REQUEST,
-                errors: [`id.${ErrorKey.NOT_FOUND}`],
-            });
-        }
-        return output;
+    // public product
+    public async search(query: IPaginationInput): Promise<IPaginationResponse> {
+        const data = await this.repo.paginate(query, true);
+        return data;
+    }
+
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        const result = await this.repo.paginate(query, true);
+        result.data = this.transformProductDataStock(result.data, query.warehouseId);
+        return result;
+    }
+
+    private transformProductDataStock(data: IProduct[], warehouseId: number): IProduct[] {
+        return data.map((product) => {
+            const value =
+                (product.stock_trackings || []).length > 0 ? product.stock_trackings : product.stock_trackings_child;
+            let stockTrackings: IStockTracking[] = value || [];
+            if (warehouseId) {
+                stockTrackings = stockTrackings.filter((x: IStockTracking) => x.warehouse_id === warehouseId);
+            }
+
+            const totalBalance = stockTrackings.reduce((sum, tracking) => {
+                return sum + tracking.current_balance;
+            }, 0);
+
+            return {
+                ...product,
+                stock_trackings: stockTrackings,
+                current_balance: totalBalance,
+            };
+        });
     }
 }

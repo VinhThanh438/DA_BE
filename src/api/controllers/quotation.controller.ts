@@ -1,11 +1,11 @@
+import { IQuotation, ISupplierQuotationRequest } from '@common/interfaces/quotation.interface';
+import { IApproveRequest, IIdResponse } from '@common/interfaces/common.interface';
 import { QuotationService } from '@common/services/quotation.service';
+import { Request, Response, NextFunction } from 'express';
+import { QuotationType } from '@config/app.constant';
 import { BaseController } from './base.controller';
 import { Quotations } from '.prisma/client';
-import { Request, Response, NextFunction } from 'express';
 import logger from '@common/logger';
-import { IApproveRequest, IQuotation, ISupplierQuotationRequest } from '@common/interfaces/quotation.interface';
-import { QuotationStatus, QuotationType } from '@config/app.constant';
-import { IIdResponse } from '@common/interfaces/common.interface';
 
 export class QuotationController extends BaseController<Quotations> {
     private static instance: QuotationController;
@@ -26,9 +26,10 @@ export class QuotationController extends BaseController<Quotations> {
     public async create(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IQuotation | ISupplierQuotationRequest;
+            const empId = Number(req.user.employee_id);
             let result: IIdResponse;
             if (body.type === QuotationType.CUSTOMER) {
-                result = await this.service.createCustomerQuotation(body);
+                result = await this.service.createCustomerQuotation(empId, body as IQuotation);
             } else {
                 result = await this.service.createSupplierQuotation(body);
             }
@@ -43,7 +44,7 @@ export class QuotationController extends BaseController<Quotations> {
         try {
             const body = req.body as IQuotation;
             const id = Number(req.params.id);
-            const result = await this.service.updateQuotationEntity(id, body);
+            const result = await this.service.updateQuotation(id, body);
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.update: `, error);
@@ -51,13 +52,10 @@ export class QuotationController extends BaseController<Quotations> {
         }
     }
 
-    public async approve(req: Request, res: Response, next: NextFunction) {
+    async approve(req: Request, res: Response, next: NextFunction) {
         try {
             const body = req.body as IApproveRequest;
             const id = Number(req.params.id);
-            if (body.status === QuotationStatus.CONFIRMED) {
-                body.rejected_reason = '';
-            }
             const result = await this.service.approve(id, body);
             res.sendJson(result);
         } catch (error) {

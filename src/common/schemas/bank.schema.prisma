@@ -9,7 +9,6 @@ model Banks {
   description       String?
   balance           Decimal?    @default(0)
   beginning_balance Decimal?    @default(0)
-  available_balance Decimal?    @default(0)
   type              PrsBankType @default(bank)
 
   created_at DateTime @default(now())

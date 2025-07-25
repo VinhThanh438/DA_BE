@@ -1,4 +1,4 @@
-import { PositionService } from '@common/services/position.service';
+import { PositionService } from '@common/services/master/position.service';
 import { BaseController } from './base.controller';
 import { Positions } from '.prisma/client';
 

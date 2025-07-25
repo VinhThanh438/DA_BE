@@ -6,7 +6,7 @@ import { IEmployee } from '@common/interfaces/employee.interface';
 import { BaseRepo } from './base.repo';
 import { ADMIN_USER_NAME } from '@common/environment';
 import { transformDecimal } from '@common/helpers/transform.util';
-import { EmployeeSelection, EmployeeSelectionAll } from './prisma/employee.select';
+import { EmployeeSelection, EmployeeSelectionAll } from './prisma/prisma.select';
 
 export const getSelection = (includeRelations: boolean): Prisma.EmployeesSelect => ({
     ...EmployeeSelection,
@@ -14,7 +14,7 @@ export const getSelection = (includeRelations: boolean): Prisma.EmployeesSelect 
 });
 
 export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Prisma.EmployeesWhereInput> {
-    protected db = DatabaseAdapter.getInstance().employees;
+    protected db = DatabaseAdapter.getInstance().getClient().employees;
     protected defaultSelect = EmployeeSelection;
     protected detailSelect = EmployeeSelectionAll;
     protected modelKey = 'employees' as const;
@@ -38,7 +38,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
         const currentPage = page ?? 1;
         const limit = size ?? 10;
         const skip = (currentPage - 1) * limit;
-        const { keyword, startAt, endAt, organization_id } = args ?? {};
+        const { keyword, startAt, endAt, OR } = args ?? {};
 
         const conditions: Prisma.EmployeesWhereInput = {
             ...(startAt || endAt
@@ -53,7 +53,7 @@ export class EmployeeRepo extends BaseRepo<Employees, Prisma.EmployeesSelect, Pr
             NOT: {
                 name: ADMIN_USER_NAME,
             },
-            organization_id,
+            OR,
         };
 
         if (keyword) {

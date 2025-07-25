@@ -45,6 +45,47 @@ async function main() {
         },
     });
 
+    const employee = await prisma.employees.createMany({
+        data: [
+            {
+                name: 'Phạm Minh Hảo',
+                email: 'hao.minh@thepdonganh.com',
+                code: 'EMP002',
+                gender: 'male',
+                age: 28,
+                phone: '0987654321',
+                base_salary: 30000000,
+                date_of_birth: new Date('1995-03-15'),
+                organization_id: organization.id, // Will be set later
+                job_position_id: null, // Will be set later
+            },
+            {
+                name: 'Phùng Đức Minh',
+                email: 'hao.minh@thepdonganh.com',
+                code: 'EMP003',
+                gender: 'male',
+                age: 28,
+                phone: '0987654321',
+                base_salary: 30000000,
+                date_of_birth: new Date('1995-03-15'),
+                organization_id: organization.id, // Will be set later
+                job_position_id: null, // Will be set later
+            },
+            {
+                name: 'Phạm Văn Cương',
+                email: 'cuong.pham@thepdonganh.com',
+                code: 'EMP004',
+                gender: 'male',
+                age: 28,
+                phone: '0987654777',
+                base_salary: 30000000,
+                date_of_birth: new Date('1995-03-15'),
+                organization_id: organization.id, // Will be set later
+                job_position_id: null, // Will be set later
+            },
+        ],
+    });
+
     // Update employees and partner with organization_id
     await prisma.employees.update({
         where: { id: leader.id },
@@ -58,6 +99,7 @@ async function main() {
 
     console.log('✅ Seeded data:', {
         leader,
+        employee,
         organization,
     });
 }

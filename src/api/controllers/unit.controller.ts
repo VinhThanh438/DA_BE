@@ -1,7 +1,7 @@
 import { IPaginationInput } from '@common/interfaces/common.interface';
 import { ICreateUnit, IUpdateUnit } from '@common/interfaces/product.interface';
 import logger from '@common/logger';
-import { UnitService } from '@common/services/unit.service';
+import { UnitService } from '@common/services/master/unit.service';
 import { NextFunction, Request, Response } from 'express';
 
 export class UnitController {

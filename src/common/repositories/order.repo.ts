@@ -1,13 +1,11 @@
 import { Orders, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { OrderSelectionAll } from './prisma/order.select';
 import { IFilterArgs, IPaginationInput, IPaginationResponse, SearchField } from '@common/interfaces/common.interface';
-import { CommonDetailSelectionAll } from './prisma/common-detail.select';
-import { OrderSelection } from './prisma/base.select';
+import { CommonDetailSelectionAll, OrderSelection, OrderSelectionAll } from './prisma/prisma.select';
 
 export class OrderRepo extends BaseRepo<Orders, Prisma.OrdersSelect, Prisma.OrdersWhereInput> {
-    protected db = DatabaseAdapter.getInstance().orders;
+    protected db = DatabaseAdapter.getInstance().getClient().orders;
     protected defaultSelect = OrderSelection;
     protected detailSelect = OrderSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'orders';
@@ -16,7 +14,7 @@ export class OrderRepo extends BaseRepo<Orders, Prisma.OrdersSelect, Prisma.Orde
         basic: [{ path: ['code'] }, { path: ['address'] }, { path: ['note'] }],
     };
 
-    public async paginate(
+    async paginate(
         { page, size, keyword, startAt, endAt, ...args }: Partial<IPaginationInput>,
         includeRelations?: boolean,
     ): Promise<IPaginationResponse> {

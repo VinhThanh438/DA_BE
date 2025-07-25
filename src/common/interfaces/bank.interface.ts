@@ -1,7 +1,8 @@
 import { BankType } from '@config/app.constant';
 import { IArrayDataInput } from './common.interface';
-import { z } from 'zod/dist/types';
 import { transferSchema } from '@api/validation/bank.validator';
+import { ITransaction } from './transaction.interface';
+import z from 'zod';
 
 export interface IBank extends IArrayDataInput {
     id?: number;
@@ -22,3 +23,7 @@ export interface IBank extends IArrayDataInput {
 }
 
 export type IBankTransfer = z.infer<typeof transferSchema>;
+
+export interface IFundBalance extends IBank {
+    transactions: ITransaction[];
+}

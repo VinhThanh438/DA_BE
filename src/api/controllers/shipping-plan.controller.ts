@@ -1,4 +1,4 @@
-import { ShippingPlanService } from '@common/services/shipping-plan.service';
+import { ShippingPlanService } from '@common/services/master/shipping-plan.service';
 import { BaseController } from './base.controller';
 import { ShippingPlans } from '.prisma/client';
 import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';

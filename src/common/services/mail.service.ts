@@ -5,7 +5,7 @@ import logger from '@common/logger';
 import { MailAdapter } from '@common/infrastructure/mail.adapter';
 import { MAIL_FROM } from '@common/environment';
 import { MailOptions, RequestStatus } from '@config/app.constant';
-import { IJobSendConfirmEmailData, IJobSendPendingEmailData } from '@common/interfaces/common.interface';
+import { IJobSendConfirmEmailData, IJobSendPendingEmailData, IJobSendRejectQuotationEmailData } from '@common/interfaces/common.interface';
 
 const readFileAsync = fs.promises.readFile;
 
@@ -18,6 +18,7 @@ export class MailService {
     private static FileNameList = {
         CONFIRM_MAIL_TEMPLATE: 'confirm-mail.template.html',
         PENDING_MAIL_TEMPLATE: 'confirm-mail.template.html',
+        REJECT_QUOTATION_MAIL_TEMPLATE: 'reject-quotation.template.html',
     };
 
     private static async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
@@ -82,6 +83,30 @@ export class MailService {
             await MailAdapter.sendMail(this.templateOption as MailOptions);
 
             logger.info('Pending email sent successfully', {
+                from: MAIL_FROM,
+                recipient: data.email,
+                name: data.name,
+            });
+        } catch (error) {
+            logger.error('Error sending pending email:', error);
+            throw error;
+        }
+    }
+
+    static async sendRejectQuotationMail(data: IJobSendRejectQuotationEmailData): Promise<void> {
+        try {
+            const template = await this.loadTemplate(this.FileNameList.REJECT_QUOTATION_MAIL_TEMPLATE);
+            const htmlContent = template(data);
+
+            Object.assign(this.templateOption, {
+                to: data.email,
+                subject: 'Từ chối yêu cầu báo giá',
+                template: htmlContent,
+            });
+
+            await MailAdapter.sendMail(this.templateOption as MailOptions);
+
+            logger.info('Reject quotation email sent successfully', {
                 from: MAIL_FROM,
                 recipient: data.email,
                 name: data.name,

@@ -30,6 +30,7 @@ model Orders {
   delivery_time     String?
   payment_note      String?
   additional_note   String?
+  detail_note       String?
 
   employee_id       Int?
   partner_id        Int?
@@ -48,7 +49,6 @@ model Orders {
   created_at              DateTime                @default(now())
   updated_at              DateTime                @updatedAt
   details                 CommonDetails[]
-  order_expenses          OrderExpenses[]
   productions             Productions[]
   contracts               Contracts[]
   inventories             Inventories[]
@@ -60,6 +60,9 @@ model Orders {
   payment_request_details PaymentRequestDetails[]
   invoices                Invoices[]
   loans                   Loans[]
+  unloading_costs         UnloadingCosts[]
+  facility_orders         FacilityOrders[]
+  debts                   Debts[]
 
   @@index([type])
   @@map("orders")

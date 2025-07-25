@@ -1,5 +1,5 @@
 import { PartnerRepo } from '@common/repositories/partner.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Partners, Prisma } from '.prisma/client';
 import { IPartnerDebtQueryFilter, IPartner } from '@common/interfaces/partner.interface';
 import { IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
@@ -8,8 +8,9 @@ import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { ClauseRepo } from '@common/repositories/clause.repo';
 import {
     DEFAULT_EXCLUDED_FIELDS,
-    InvoiceStatus,
+    InvoiceType,
     OrderStatus,
+    PartnerType,
     PaymentRequestStatus,
     PaymentRequestType,
     TransactionOrderType,
@@ -28,8 +29,10 @@ import { InvoiceService } from './invoice.service';
 import { ITransaction } from '@common/interfaces/transaction.interface';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { LoanRepo } from '@common/repositories/loan.repo';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { IOrder } from '@common/interfaces/order.interface';
+import { ShippingPlanRepo } from '@common/repositories/shipping-plan.repo';
+import { IShippingPlan } from '@common/interfaces/shipping-plan.interface';
 
 export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect, Prisma.PartnersWhereInput> {
     private static instance: PartnerService;
@@ -44,6 +47,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
     private orderRepo: OrderRepo = new OrderRepo();
     private invoiceService: InvoiceService = InvoiceService.getInstance();
     private loanRepo: LoanRepo = new LoanRepo();
+    private shippingPlanRepo: ShippingPlanRepo = new ShippingPlanRepo();
 
     private constructor() {
         super(new PartnerRepo());
@@ -112,7 +116,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             clause_id: this.clauseRepo,
         });
 
-        const { delete: deteleItems, update, add, banks_add, banks_update, banks_delete, ...body } = request;
+        const { delete: deleteItems, update, add, banks_add, banks_update, banks_delete, ...body } = request;
 
         await this.db.$transaction(async (tx) => {
             await this.repo.update({ id }, body as Partial<IPartner>, tx);
@@ -120,7 +124,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             const mappedDetails: Partial<IPartner> = {
                 add: this.mapDetails(add || [], { partner_id: id }),
                 update: this.mapDetails(update || [], { partner_id: id }),
-                delete: deteleItems || [],
+                delete: deleteItems || [],
 
                 banks_add: this.mapDetails(banks_add || [], { partner_id: id }),
                 banks_update: this.mapDetails(banks_update || [], { partner_id: id }),
@@ -239,9 +243,261 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
 
         return { id };
     }
+
+    public async getDeliveryDebt(query: IPartnerDebtQueryFilter): Promise<IDebtResponse> {
+        const { startAt, endAt, partnerId } = query;
+
+        const parsedStartAt = TimeAdapter.parseStartOfDayDate(startAt as string).toISOString();
+        const parsedEndAt = TimeAdapter.parseEndOfDayDate(endAt as string).toISOString();
+
+        query.partner_id = partnerId;
+        delete query.partnerId;
+
+        await this.validateForeignKeys(query, {
+            partner_id: this.repo,
+        });
+
+        // === 1. Tính tồn đầu kỳ ===
+        const beforeTransactions = await this.transactionRepo.findMany({
+            order_type: TransactionOrderType.DELIVERY,
+            partner_id: partnerId,
+            time_at: { lt: parsedStartAt },
+        });
+
+        const increaseBefore = beforeTransactions.reduce(
+            (sum, item) => sum + (item.type === TransactionType.IN ? Number(item.amount || 0) : 0),
+            0,
+        );
+
+        const reduceBefore = beforeTransactions.reduce(
+            (sum, item) => sum + (item.type === TransactionType.OUT ? Number(item.amount || 0) : 0),
+            0,
+        );
+
+        const beginningDebt = increaseBefore - reduceBefore;
+
+        // === 2. Tính giao dịch trong kỳ ===
+        const shippingPlan = await this.shippingPlanRepo.findMany(
+            {
+                partner_id: partnerId,
+                status: PaymentRequestStatus.CONFIRMED,
+                is_done: true,
+                order: {
+                    status: PaymentRequestStatus.CONFIRMED,
+                    time_at: {
+                        gte: parsedStartAt,
+                        lte: parsedEndAt,
+                    },
+                },
+            },
+            true,
+            undefined,
+            {
+                order: true,
+            },
+        );
+
+        // === 2.1. Lấy shipping plans từ kỳ trước có giao dịch ===
+        const beforeShippingPlans = await this.shippingPlanRepo.findMany(
+            {
+                partner_id: partnerId,
+                status: PaymentRequestStatus.CONFIRMED,
+                is_done: true,
+                order: {
+                    status: PaymentRequestStatus.CONFIRMED,
+                    time_at: {
+                        lt: parsedStartAt,
+                    },
+                },
+            },
+            true,
+            undefined,
+            {
+                order: true,
+            },
+        );
+
+        // Tính tổng tăng / giảm trong kỳ
+        const inPeriodTransactions = await this.transactionRepo.findMany({
+            order_type: TransactionOrderType.DELIVERY,
+            partner_id: partnerId,
+            time_at: {
+                gte: parsedStartAt,
+                lte: parsedEndAt,
+            },
+        });
+
+        const debtIncrease = inPeriodTransactions.reduce(
+            (sum, item) => sum + (item.type === TransactionType.IN ? Number(item.amount || 0) : 0),
+            0,
+        );
+
+        const debtReduction = inPeriodTransactions.reduce(
+            (sum, item) => sum + (item.type === TransactionType.OUT ? Number(item.amount || 0) : 0),
+            0,
+        );
+
+        const groupedBeforeTxByPlan = beforeTransactions.reduce<Record<string, typeof beforeTransactions>>(
+            (acc, tx) => {
+                const planId = tx.shipping_plan_id;
+                if (!planId) return acc;
+                if (!acc[planId]) acc[planId] = [];
+                acc[planId].push(tx);
+                return acc;
+            },
+            {},
+        );
+
+        const groupedTxByPlan = inPeriodTransactions.reduce<Record<string, typeof inPeriodTransactions>>((acc, tx) => {
+            const planId = tx.shipping_plan_id;
+            if (!planId) return acc;
+            if (!acc[planId]) acc[planId] = [];
+            acc[planId].push(tx);
+            return acc;
+        }, {});
+
+        const orderIds = shippingPlan.map((p: any) => p.order?.id).filter(Boolean);
+        const beforeOrderIds = beforeShippingPlans.map((p: any) => p.order?.id).filter(Boolean);
+        const allOrderIds = [...new Set([...orderIds, ...beforeOrderIds])];
+
+        const invoices = await this.invoiceRepo.findMany({
+            order_id: { in: allOrderIds },
+            type: InvoiceType.DELIVERY,
+        });
+
+        const groupedInvoiceByOrder = invoices.reduce<Record<number, any>>((acc, invoice) => {
+            if (!invoice.order_id) return acc;
+            acc[invoice.order_id] = invoice; // mỗi order chỉ lấy 1 invoice
+            return acc;
+        }, {});
+
+        // Duyệt qua từng đơn hàng và gắn transaction tương ứng
+        const details = shippingPlan.map((plan) => {
+            const castedPlan = plan as IShippingPlan;
+            const planId = castedPlan.id as number;
+            const order = castedPlan.order as any;
+
+            // Giao dịch đầu kỳ
+            const beforeTxs = groupedBeforeTxByPlan[planId] || [];
+            const planBeginningIncrease = beforeTxs.reduce(
+                (sum, t) => sum + (t.type === TransactionType.IN ? Number(t.amount || 0) : 0),
+                0,
+            );
+            const planBeginningReduction = beforeTxs.reduce(
+                (sum, t) => sum + (t.type === TransactionType.OUT ? Number(t.amount || 0) : 0),
+                0,
+            );
+            const beginning_debt = planBeginningIncrease - planBeginningReduction;
+
+            // Giao dịch trong kỳ
+            const transactions = groupedTxByPlan[planId] || [];
+            const planIncrease = transactions.reduce(
+                (sum, t) => sum + (t.type === TransactionType.IN ? Number(t.amount || 0) : 0),
+                0,
+            );
+            const planReduction = transactions.reduce(
+                (sum, t) => sum + (t.type === TransactionType.OUT ? Number(t.amount || 0) : 0),
+                0,
+            );
+
+            const ending_debt = beginning_debt + planIncrease - planReduction;
+
+            const reductionTransactions = transactions.filter(
+                (tx) => tx.type === TransactionType.OUT && tx.invoice_id !== null,
+            );
+
+            const invoice = groupedInvoiceByOrder[order?.id] || null;
+
+            castedPlan.total_money = (castedPlan.completed_quantity || 0) * (castedPlan.price || 0);
+
+            return {
+                shipping_plan: castedPlan,
+                invoice,
+                beginning_debt,
+                ending_debt,
+                transactions: reductionTransactions,
+            };
+        }) as any;
+
+        // === 2.2. Thêm shipping plans từ kỳ trước không có trong kỳ này ===
+        const currentPlanIds = new Set(shippingPlan.map((p: any) => p.id));
+
+        const beforeOnlyPlans = beforeShippingPlans.filter((plan: any) => !currentPlanIds.has(plan.id));
+
+        const beforeOnlyDetails = beforeOnlyPlans
+            .map((plan) => {
+                const castedPlan = plan as IShippingPlan;
+                const planId = castedPlan.id as number;
+                const order = castedPlan.order as any;
+
+                // Giao dịch đầu kỳ
+                const beforeTxs = groupedBeforeTxByPlan[planId] || [];
+                const planBeginningIncrease = beforeTxs.reduce(
+                    (sum, t) => sum + (t.type === TransactionType.IN ? Number(t.amount || 0) : 0),
+                    0,
+                );
+                const planBeginningReduction = beforeTxs.reduce(
+                    (sum, t) => sum + (t.type === TransactionType.OUT ? Number(t.amount || 0) : 0),
+                    0,
+                );
+                const beginning_debt = planBeginningIncrease - planBeginningReduction;
+
+                // Giao dịch trong kỳ (nếu có)
+                const transactions = groupedTxByPlan[planId] || [];
+                const planReduction = transactions.reduce(
+                    (sum, t) => sum + (t.type === TransactionType.OUT ? Number(t.amount || 0) : 0),
+                    0,
+                );
+
+                const ending_debt = beginning_debt - planReduction;
+
+                const reductionTransactions = transactions.filter(
+                    (tx) => tx.type === TransactionType.OUT && tx.invoice_id !== null,
+                );
+
+                const invoice = groupedInvoiceByOrder[order?.id] || null;
+
+                castedPlan.total_money = (castedPlan.completed_quantity || 0) * (castedPlan.price || 0);
+
+                // Chỉ thêm vào nếu có công nợ đầu kỳ hoặc cuối kỳ > 0
+                if (beginning_debt > 0 || ending_debt > 0 || transactions.length > 0) {
+                    return {
+                        shipping_plan: castedPlan,
+                        invoice,
+                        beginning_debt,
+                        ending_debt,
+                        transactions: reductionTransactions,
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean) as any;
+
+        // Gộp tất cả details
+        const allDetails = [...details, ...beforeOnlyDetails];
+
+        const endingDebt = beginningDebt + debtIncrease - debtReduction;
+
+        // === 3. Trả về dữ liệu ===
+        return {
+            beginning_debt: beginningDebt,
+            debt_increase: debtIncrease,
+            debt_reduction: debtReduction,
+            ending_debt: endingDebt,
+            details: allDetails,
+        };
+    }
+
     public async getDebt(query: IPartnerDebtQueryFilter, isCommission = false): Promise<IDebtResponse> {
         let { startAt, endAt, partnerId } = query;
-        endAt = TimeHelper.parseEndOfDayDate(endAt as string).toISOString();
+
+        const partner = await this.repo.findOne({ id: partnerId }, true);
+
+        if (partner?.type === PartnerType.DELIVERY) {
+            return this.getDeliveryDebt(query);
+        }
+
+        endAt = TimeAdapter.parseEndOfDayDate(endAt as string).toISOString();
 
         query.partner_id = partnerId;
         delete query.partnerId;
@@ -261,7 +517,6 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         const beforeInvoices = await this.invoiceRepo.findMany(
             {
                 is_payment_completed: false,
-                status: InvoiceStatus.CONFIRMED,
                 partner_id: partnerId,
                 invoice_date: { lt: startAt },
             },
@@ -277,15 +532,19 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             true,
         );
 
-        const beforeLoans = await this.loanRepo.findMany(
-            {
-                order_id: {
-                    in: beforeOrders.map((order) => order.id).filter((id): id is number => typeof id === 'number'),
+        const orderLoanIds = beforeOrders.map((order) => order.id).filter((id): id is number => typeof id === 'number');
+
+        let beforeLoans: any[] = [];
+
+        if (orderLoanIds.length > 0) {
+            beforeLoans = await this.loanRepo.findMany(
+                {
+                    order_id: { in: orderLoanIds },
+                    disbursement_date: { lt: startAt },
                 },
-                disbursement_date: { lt: startAt },
-            },
-            true,
-        );
+                true,
+            );
+        }
 
         // Calculate beginning debt from loans
         const loanDebt = beforeLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
@@ -312,7 +571,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         const transactionBefore = await this.transactionRepo.findMany(
             {
                 order_type: orderType,
-                type: TransactionType.OUT,
+                // type: TransactionType.OUT,
                 invoice_id: beforeInvoiceCondition,
                 time_at: { lt: startAt },
                 partner_id: partnerId,
@@ -326,7 +585,6 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         currentDebt = beginningDebt;
         const invoicesInPeriod = await this.invoiceRepo.findMany(
             {
-                status: InvoiceStatus.CONFIRMED,
                 invoice_date: { gte: startAt, lte: endAt },
                 partner_id: partnerId,
             },
@@ -350,7 +608,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         const transactionDuring = await this.transactionRepo.findMany(
             {
                 order_type: orderType,
-                type: TransactionType.OUT,
+                // type: TransactionType.OUT,
                 time_at: { gte: startAt, lte: endAt },
                 partner_id: partnerId,
             },
@@ -408,7 +666,6 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         const allPreviousUnpaidInvoices = await this.invoiceRepo.findMany(
             {
                 is_payment_completed: false,
-                status: InvoiceStatus.CONFIRMED,
                 partner_id: partnerId,
                 invoice_date: { lt: startAt }, // Hóa đơn kỳ trước
             },
@@ -443,7 +700,7 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
             const previousPayments = await this.transactionRepo.findMany(
                 {
                     order_type: orderType,
-                    type: TransactionType.OUT,
+                    // type: TransactionType.OUT,
                     invoice_id: invoice.id,
                     time_at: { lt: startAt },
                     partner_id: partnerId,
@@ -541,176 +798,368 @@ export class PartnerService extends BaseService<Partners, Prisma.PartnersSelect,
         };
     }
 
-    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+    private async handleDeliveryDebtPaginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        // Initialize summary totals
+        let summary_total_beginning = 0;
+        let summary_total_increase = 0;
+        let summary_total_reduction = 0;
+        let summary_total_ending = 0;
         const { isCommission, startAt, endAt, ...queryFilter } = query;
-        const result = await this.repo.paginate(queryFilter, true);
+        const { page = 1, size = 20, keyword, ...filter } = queryFilter;
+        let result: any;
 
-        if (startAt && endAt) {
-            result.data = await Promise.all(
-                result.data.map(async (partner: IPartner) => {
-                    const partnerId = partner.id;
+        // Thêm điều kiện search by keyword
+        if (keyword) {
+            filter.OR = [
+                { name: { contains: keyword, mode: 'insensitive' } },
+                { code: { contains: keyword, mode: 'insensitive' } },
+                { phone: { contains: keyword, mode: 'insensitive' } },
+                { email: { contains: keyword, mode: 'insensitive' } },
+            ];
+        }
 
-                    // === 1. Lấy dữ liệu trước kỳ ===
-                    const beforeInvoices = await this.invoiceRepo.findMany({
-                        is_payment_completed: false,
-                        status: InvoiceStatus.CONFIRMED,
+        // Sử dụng findMany thay vì paginate
+        const allPartners = await this.repo.findMany(filter as any, true);
+
+        const processedData = await Promise.all(
+            allPartners.map(async (partner: any) => {
+                const partnerId = partner.id;
+                const parsedStartAt = TimeAdapter.parseStartOfDayDate(startAt as string);
+                const parsedEndAt = TimeAdapter.parseEndOfDayDate(endAt as string);
+
+                const transactions = await this.transactionRepo.findMany({
+                    order_type: TransactionOrderType.DELIVERY,
+                    partner_id: partnerId,
+                });
+
+                const beforeTransactions = transactions.filter(
+                    (tx) => tx.time_at && new Date(tx.time_at) < parsedStartAt,
+                );
+
+                const inPeriodTransactions = transactions.filter((tx) => {
+                    const time = new Date(tx.time_at as any);
+                    return time >= parsedStartAt && time <= parsedEndAt;
+                });
+
+                // Tính tăng/giảm trước kỳ
+                const beforeIncrease = beforeTransactions.reduce(
+                    (sum, item) => sum + (item.type === TransactionType.IN ? Number(item.amount || 0) : 0),
+                    0,
+                );
+
+                const beforeReduction = beforeTransactions.reduce(
+                    (sum, item) => sum + (item.type === TransactionType.OUT ? Number(item.amount || 0) : 0),
+                    0,
+                );
+
+                // Tính tăng/giảm trong kỳ
+                const debtIncrease = inPeriodTransactions.reduce(
+                    (sum, item) => sum + (item.type === TransactionType.IN ? Number(item.amount || 0) : 0),
+                    0,
+                );
+
+                const debtReduction = inPeriodTransactions.reduce(
+                    (sum, item) => sum + (item.type === TransactionType.OUT ? Number(item.amount || 0) : 0),
+                    0,
+                );
+
+                const beginningDebt = beforeIncrease - beforeReduction;
+                const endingDebt = beginningDebt + debtIncrease - debtReduction;
+
+                return {
+                    ...partner,
+                    beginning_debt: beginningDebt,
+                    debt_increase: debtIncrease,
+                    debt_reduction: debtReduction,
+                    ending_debt: endingDebt,
+                    payment_requests: await this.paymentRequestRepo.findMany({
                         partner_id: partnerId,
-                        invoice_date: { lt: startAt },
-                    });
+                        status: PaymentRequestStatus.PENDING,
+                    }),
+                };
+            }),
+        );
 
-                    const beforeOrders = await this.orderRepo.findMany({
-                        status: OrderStatus.CONFIRMED,
+        // Lọc những record có tất cả debt = 0
+        const filteredData = processedData.filter((item: any) => {
+            const { beginning_debt, debt_increase, debt_reduction, ending_debt } = item;
+            const isAllZero =
+                Number(beginning_debt) === 0 &&
+                Number(debt_increase) === 0 &&
+                Number(debt_reduction) === 0 &&
+                Number(ending_debt) === 0;
+            return !isAllZero;
+        });
+
+        // Tính summary từ filtered data
+        filteredData.forEach((item: any) => {
+            summary_total_beginning += item.beginning_debt;
+            summary_total_increase += item.debt_increase;
+            summary_total_reduction += item.debt_reduction;
+            summary_total_ending += item.ending_debt;
+        });
+
+        // Thực hiện phân trang thủ công
+        result = this.manualPaginate(filteredData, page, size);
+
+        return {
+            ...result,
+            summary: {
+                total_beginning: parseFloat(summary_total_beginning.toFixed(2)),
+                total_increase: parseFloat(summary_total_increase.toFixed(2)),
+                total_reduction: parseFloat(summary_total_reduction.toFixed(2)),
+                total_ending: parseFloat(summary_total_ending.toFixed(2)),
+            },
+        };
+    }
+
+    public async handlePartnerDebtPaginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        let summary_total_beginning = 0;
+        let summary_total_increase = 0;
+        let summary_total_reduction = 0;
+        let summary_total_ending = 0;
+        const { isCommission, startAt, endAt, ...queryFilter } = query;
+        const { page = 1, size = 20, keyword, ...filter } = queryFilter;
+        let result: any;
+
+        // Thêm điều kiện search by keyword
+        if (keyword) {
+            filter.OR = [
+                { name: { contains: keyword, mode: 'insensitive' } },
+                { code: { contains: keyword, mode: 'insensitive' } },
+                { phone: { contains: keyword, mode: 'insensitive' } },
+                { email: { contains: keyword, mode: 'insensitive' } },
+            ];
+        }
+
+        // Sử dụng findMany thay vì paginate để lấy tất cả data trước khi xử lý
+        const allPartners = await this.repo.findMany(filter as any, true);
+
+        const processedData = await Promise.all(
+            allPartners.map(async (partner: any) => {
+                const partnerId = partner.id;
+
+                // === 1. Lấy dữ liệu trước kỳ ===
+                const beforeInvoices = await this.invoiceRepo.findMany({
+                    is_payment_completed: false,
+                    partner_id: partnerId,
+                    invoice_date: { lt: startAt },
+                });
+
+                const beforeOrders = await this.orderRepo.findMany({
+                    status: OrderStatus.CONFIRMED,
+                    time_at: { lt: startAt },
+                    partner_id: partnerId,
+                });
+
+                const beforeOrderIds = beforeOrders.map((order: any) => order.id);
+
+                let beforeLoans: any[] = [];
+
+                if (beforeOrderIds.length > 0) {
+                    beforeLoans = await this.loanRepo.findMany(
+                        {
+                            order_id: { in: beforeOrderIds },
+                            disbursement_date: { gte: startAt, lte: endAt },
+                        },
+                        true,
+                    );
+                }
+
+                const loanDebt = beforeLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
+
+                let enrichedBeforeInvoices = beforeInvoices;
+                if (isCommission) {
+                    const enrichedResponse = await this.invoiceService.enrichInvoiceTotals({
+                        data: beforeInvoices,
+                    } as IPaginationResponse);
+                    enrichedBeforeInvoices = enrichedResponse.data;
+                }
+
+                const increaseBeginning = enrichedBeforeInvoices.reduce(
+                    (sum: number, item: any) =>
+                        sum + Number(isCommission ? item.total_commission : item.total_amount || 0),
+                    0,
+                );
+
+                let beforeInvoiceCondition: any = beforeInvoices.map((inv: any) => inv.id).filter(Boolean);
+                if (beforeInvoiceCondition.length === 0) {
+                    beforeInvoiceCondition = null;
+                } else {
+                    beforeInvoiceCondition = { in: beforeInvoiceCondition };
+                }
+
+                const transactionBefore = await this.transactionRepo.findMany(
+                    {
+                        order_type: isCommission ? TransactionOrderType.COMMISSION : TransactionOrderType.ORDER,
+                        // type: TransactionType.OUT,
+                        invoice_id: beforeInvoiceCondition,
                         time_at: { lt: startAt },
                         partner_id: partnerId,
-                    });
+                    } as Prisma.TransactionsWhereInput,
+                    true,
+                );
 
-                    const beforeLoans = await this.loanRepo.findMany({
-                        order_id: { in: beforeOrders.map((order: any) => order.id) },
-                        disbursement_date: { lt: startAt },
-                    });
+                const reductionBefore = transactionBefore.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-                    const loanDebt = beforeLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
+                const beginningDebt = increaseBeginning - reductionBefore + loanDebt;
 
-                    let enrichedBeforeInvoices = beforeInvoices;
-                    if (isCommission) {
-                        const enrichedResponse = await this.invoiceService.enrichInvoiceTotals({
-                            data: beforeInvoices,
-                        } as IPaginationResponse);
-                        enrichedBeforeInvoices = enrichedResponse.data;
-                    }
+                // === 3. Trong kỳ ===
+                let reduction = 0;
+                const invoicesInPeriod = await this.invoiceRepo.findMany(
+                    {
+                        invoice_date: { gte: startAt, lte: endAt },
+                        partner_id: partnerId,
+                    },
+                    true,
+                );
 
-                    const increaseBeginning = enrichedBeforeInvoices.reduce(
-                        (sum: number, item: any) =>
-                            sum + Number(isCommission ? item.total_commission : item.total_amount || 0),
-                        0,
-                    );
+                let increase = invoicesInPeriod.reduce(
+                    (sum: number, item: any) =>
+                        sum + Number(isCommission ? item.total_commission : item.total_amount || 0),
+                    0,
+                );
 
-                    let beforeInvoiceCondition: any = beforeInvoices.map((inv: any) => inv.id).filter(Boolean);
-                    if (beforeInvoiceCondition.length === 0) {
-                        beforeInvoiceCondition = null;
-                    } else {
-                        beforeInvoiceCondition = { in: beforeInvoiceCondition };
-                    }
+                const ordersInPeriod = await this.orderRepo.findMany(
+                    {
+                        time_at: { gte: startAt, lte: endAt },
+                        partner_id: partnerId,
+                    },
+                    true,
+                );
 
-                    const transactionBefore = await this.transactionRepo.findMany(
-                        {
-                            order_type: isCommission ? TransactionOrderType.COMMISSION : TransactionOrderType.ORDER,
-                            type: TransactionType.OUT,
-                            invoice_id: beforeInvoiceCondition,
-                            time_at: { lt: startAt },
-                            partner_id: partnerId,
-                        } as Prisma.TransactionsWhereInput,
-                        true,
-                    );
+                const orderLoanIds = ordersInPeriod.map((order: any) => order.id);
 
-                    const reductionBefore = transactionBefore.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                let loans: any[] = [];
 
-                    const beginningDebt = increaseBeginning - reductionBefore + loanDebt;
-
-                    // === 3. Trong kỳ ===
-                    let reduction = 0;
-                    const invoicesInPeriod = await this.invoiceRepo.findMany(
-                        {
-                            status: InvoiceStatus.CONFIRMED,
-                            invoice_date: { gte: startAt, lte: endAt },
-                            partner_id: partnerId,
-                        },
-                        true,
-                    );
-
-                    let increase = invoicesInPeriod.reduce(
-                        (sum: number, item: any) =>
-                            sum + Number(isCommission ? item.total_commission : item.total_amount || 0),
-                        0,
-                    );
-
-                    const ordersInPeriod = await this.orderRepo.findMany(
-                        {
-                            status: InvoiceStatus.CONFIRMED,
-                            time_at: { gte: startAt, lte: endAt },
-                            partner_id: partnerId,
-                        },
-                        true,
-                    );
-
-                    const loans = await this.loanRepo.findMany(
+                if (orderLoanIds.length > 0) {
+                    loans = await this.loanRepo.findMany(
                         {
                             order_id: { in: ordersInPeriod.map((order: any) => order.id) },
                             disbursement_date: { gte: startAt, lte: endAt },
                         },
                         true,
                     );
+                }
 
-                    reduction += loans.reduce((sum: number, loan: any) => sum + Number(loan.amount || 0), 0);
+                reduction += loans.reduce((sum: number, loan: any) => sum + Number(loan.amount || 0), 0);
 
-                    let invoiceIdConditions: any = invoicesInPeriod.map((inv: any) => inv.id).filter(Boolean);
-                    if (invoiceIdConditions.length === 0) {
-                        invoiceIdConditions = null;
-                    } else {
-                        invoiceIdConditions = { in: invoiceIdConditions };
-                    } // Giao dịch giảm trong kỳ - lấy tất cả giao dịch thanh toán trong kỳ
-                    const transactionDuring = await this.transactionRepo.findMany(
-                        {
-                            order_type: isCommission ? TransactionOrderType.COMMISSION : TransactionOrderType.ORDER,
-                            type: TransactionType.OUT,
-                            time_at: { gte: startAt, lte: endAt },
-                            partner_id: partnerId,
-                            // Bỏ điều kiện invoice_id để lấy tất cả giao dịch thanh toán trong kỳ
-                        } as Prisma.TransactionsWhereInput,
-                        true,
-                    );
+                let invoiceIdConditions: any = invoicesInPeriod.map((inv: any) => inv.id).filter(Boolean);
+                if (invoiceIdConditions.length === 0) {
+                    invoiceIdConditions = null;
+                } else {
+                    invoiceIdConditions = { in: invoiceIdConditions };
+                }
 
-                    reduction += transactionDuring.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                // Giao dịch giảm trong kỳ - lấy tất cả giao dịch thanh toán trong kỳ
+                const transactionDuring = await this.transactionRepo.findMany(
+                    {
+                        order_type: isCommission ? TransactionOrderType.COMMISSION : TransactionOrderType.ORDER,
+                        // type: TransactionType.OUT,
+                        time_at: { gte: startAt, lte: endAt },
+                        partner_id: partnerId,
+                        // Bỏ điều kiện invoice_id để lấy tất cả giao dịch thanh toán trong kỳ
+                    } as Prisma.TransactionsWhereInput,
+                    true,
+                );
 
-                    const endingDebt = beginningDebt + increase - reduction;
+                reduction += transactionDuring.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-                    // === 4. Lấy payment request ===
-                    const paymentRequests = async (): Promise<Partial<IPaymentRequest>[]> => {
-                        const statuses = [PaymentRequestStatus.PENDING];
-                        for (const status of statuses) {
-                            const found = await this.paymentRequestRepo.findFirst(
-                                {
-                                    partner_id: partnerId,
-                                    type: isCommission ? PaymentRequestType.COMMISSION : PaymentRequestType.ORDER,
-                                    status,
-                                    details: {
-                                        some: {
-                                            invoice_id: {
-                                                not: null,
-                                            },
+                const endingDebt = beginningDebt + increase - reduction;
+
+                // === 4. Lấy payment request ===
+                const paymentRequests = async (): Promise<Partial<IPaymentRequest>[]> => {
+                    const statuses = [PaymentRequestStatus.PENDING];
+                    for (const status of statuses) {
+                        const found = await this.paymentRequestRepo.findFirst(
+                            {
+                                partner_id: partnerId,
+                                type: isCommission ? PaymentRequestType.COMMISSION : PaymentRequestType.ORDER,
+                                status,
+                                details: {
+                                    some: {
+                                        invoice_id: {
+                                            not: null,
                                         },
                                     },
-                                } as Prisma.PaymentRequestsWhereInput,
-                                false,
-                            );
-                            if (found) return [found as Partial<IPaymentRequest>];
-                        }
-                        return [];
-                    };
+                                },
+                            } as Prisma.PaymentRequestsWhereInput,
+                            false,
+                        );
+                        if (found) return [found as Partial<IPaymentRequest>];
+                    }
+                    return [];
+                };
 
-                    return {
-                        ...partner,
-                        beginning_debt: beginningDebt,
-                        debt_increase: increase,
-                        debt_reduction: reduction,
-                        ending_debt: endingDebt,
-                        payment_requests: await paymentRequests(),
-                    };
-                }),
-            );
+                return {
+                    ...partner,
+                    beginning_debt: beginningDebt,
+                    debt_increase: increase,
+                    debt_reduction: reduction,
+                    ending_debt: endingDebt,
+                    payment_requests: await paymentRequests(),
+                };
+            }),
+        );
 
-            result.data = result.data.filter((item: any) => {
-                const { beginning_debt, debt_increase, debt_reduction, ending_debt } = item;
-                const isAllZero =
-                    Number(beginning_debt) === 0 &&
-                    Number(debt_increase) === 0 &&
-                    Number(debt_reduction) === 0 &&
-                    Number(ending_debt) === 0;
-                return !isAllZero;
-            });
+        // Lọc những record có tất cả debt = 0
+        const filteredData = processedData.filter((item: any) => {
+            const { beginning_debt, debt_increase, debt_reduction, ending_debt } = item;
+            const isAllZero =
+                Number(beginning_debt) === 0 &&
+                Number(debt_increase) === 0 &&
+                Number(debt_reduction) === 0 &&
+                Number(ending_debt) === 0;
+            return !isAllZero;
+        });
+
+        // Sắp xếp các phần tử có dữ liệu lên đầu (theo tổng nợ cuối kỳ giảm dần)
+        filteredData.sort((a: any, b: any) => {
+            const aSum =
+                Math.abs(Number(a.beginning_debt)) +
+                Math.abs(Number(a.debt_increase)) +
+                Math.abs(Number(a.debt_reduction)) +
+                Math.abs(Number(a.ending_debt));
+            const bSum =
+                Math.abs(Number(b.beginning_debt)) +
+                Math.abs(Number(b.debt_increase)) +
+                Math.abs(Number(b.debt_reduction)) +
+                Math.abs(Number(b.ending_debt));
+            return bSum - aSum;
+        });
+
+        // Tính summary từ filtered data
+        filteredData.forEach((item: any) => {
+            summary_total_beginning += item.beginning_debt;
+            summary_total_increase += item.debt_increase;
+            summary_total_reduction += item.debt_reduction;
+            summary_total_ending += item.ending_debt;
+        });
+
+        // Thực hiện phân trang thủ công
+        result = this.manualPaginate(filteredData, page, size);
+
+        return {
+            ...result,
+            summary: {
+                total_beginning: parseFloat(summary_total_beginning.toFixed(2)),
+                total_increase: parseFloat(summary_total_increase.toFixed(2)),
+                total_reduction: parseFloat(summary_total_reduction.toFixed(2)),
+                total_ending: parseFloat(summary_total_ending.toFixed(2)),
+            },
+        };
+    }
+
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        const { isCommission, startAt, endAt, ...queryFilter } = query;
+
+        if (startAt && endAt && queryFilter.type !== PartnerType.DELIVERY) {
+            return this.handlePartnerDebtPaginate(queryFilter);
+        } else if (startAt && endAt && queryFilter.type === PartnerType.DELIVERY) {
+            return this.handleDeliveryDebtPaginate(queryFilter);
+        } else {
+            return this.repo.paginate(queryFilter, true);
         }
-
-        return result;
     }
 
     public async findByConditions(query: Prisma.PartnersWhereInput): Promise<Partial<Partners> | null> {

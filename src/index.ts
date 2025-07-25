@@ -1,4 +1,4 @@
-import { Application } from './application';
+import { Application } from '@api/application';
 import logger from '@common/logger';
 
 /**
@@ -6,7 +6,6 @@ import logger from '@common/logger';
  * Might configure aspects like logging, telemetry, memory leak observation or even orchestration before.
  * This is about to come later!
  */
-
 Application.createApplication().then(() => {
     logger.info('The application was started successfully!');
 });

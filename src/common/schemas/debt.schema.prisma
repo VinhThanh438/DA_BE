@@ -1,0 +1,26 @@
+model Debts {
+    id               Int            @id @default(autoincrement())
+    type             PrsPartnerType
+    debt_type        PrsDebtType
+    time_at          DateTime       @default(now())
+    total_amount     Decimal        @default(0)
+    total_commission Decimal        @default(0)
+
+    partner_id Int
+    invoice_id Int?
+    order_id   Int?
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    partner Partners  @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+    invoice Invoices? @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+    order   Orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
+
+    @@map("debts")
+}
+
+enum PrsDebtType {
+    income // thu - ban
+    expense // chi - mua
+}

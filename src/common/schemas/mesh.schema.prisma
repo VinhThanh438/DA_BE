@@ -1,0 +1,55 @@
+// lưới detail
+model Mesh {
+  id Int @id @default(autoincrement())
+
+  code           String @default(cuid())
+  total_quantity Int    @default(0)
+  total_weight   Float  @default(0)
+  total_area     Float  @default(0)
+
+  scope_name String?
+  quantity_name String?
+  length_name String?
+  width_name String?
+  weight_name String?
+  area_name String?
+
+  quotation_id Int?        @unique
+  quotation    Quotations? @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+
+  note    String?
+  details MeshDetail[]
+
+  @@map("meshs")
+}
+
+model MeshDetail {
+  id Int @id @default(autoincrement())
+
+  quantity Int    @default(0) // số lượng
+  name     String
+
+  length         Float @default(0) // chiều dài
+  length_phi     Float @default(0) // phi 
+  length_spacing Int   @default(0) // khoảng cách
+  length_left    Int   @default(0) // chia trái
+  length_right   Int   @default(0) // chia phải
+
+  width         Float @default(0) // chiều rộng
+  width_spacing Int   @default(0) // khoảng cách
+  width_phi     Float @default(0) // phi
+  width_left    Int   @default(0) // chia trái
+  width_right   Int   @default(0) // chia phải
+
+  product_id Int?
+  product    Products? @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  area_id Int?
+  area    Areas? @relation(fields: [area_id], references: [id], onDelete: Cascade)
+
+  mesh_id Int
+  mesh    Mesh @relation(fields: [mesh_id], references: [id], onDelete: Cascade)
+  mesh_production_details MeshProductionDetails[]
+
+  @@map("mesh_details")
+}

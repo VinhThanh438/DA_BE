@@ -1,5 +1,5 @@
 import { Gender } from '@config/app.constant';
-import { IOrganization } from './company.interface';
+import { IOrganization } from './organization.interface';
 
 export interface IEmployee {
     code?: string;
@@ -29,13 +29,11 @@ export interface IEmployee {
     identity_issued_place?: string;
     identity_issued_date?: Date;
     identity_expired_date?: Date;
-    indentity_files?: string[];
 
     passport_code?: string;
     passport_issued_place?: string;
     passport_issued_date?: Date;
     passport_expired_date?: Date;
-    passport_files?: string[];
 
     organization_id?: number;
     job_position_id?: number;

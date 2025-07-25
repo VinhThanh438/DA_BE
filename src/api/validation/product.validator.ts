@@ -1,10 +1,10 @@
 import { extendFilterQuery, wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { IProduct, IUpdateProduct } from '@common/interfaces/product.interface';
+import { queryFilter as baseQueryFilter } from './common.validator';
 import { ProductType } from '@config/app.constant';
-import { values } from 'lodash';
 import { Joi, schema } from 'express-validation';
 import { ObjectSchema } from 'joi/lib';
-import { queryFilter as baseQueryFilter } from './common.validator';
+import { values } from 'lodash';
 
 export const createProduct: schema = {
     body: wrapSchema(
@@ -13,7 +13,7 @@ export const createProduct: schema = {
             code: Joi.string().trim().required().max(100),
             vat: Joi.number().optional().allow('', null).min(0).max(100),
             packing_standard: Joi.string().allow('', null).optional().max(255),
-            price: Joi.number().optional().min(0).allow('', null),
+            current_price: Joi.number().optional().min(0).allow('', null),
             note: Joi.string().allow('', null).max(1000),
             image: Joi.string().allow('', null).max(250),
             unit_id: Joi.number().integer().min(1).required(),
@@ -32,6 +32,8 @@ export const createProduct: schema = {
                 // .min(1)
                 .optional(),
             product_group_id: Joi.number().integer().min(1).optional(),
+            is_public: Joi.boolean().optional().default(false),
+            // details: Joi.array().items(createProductDetailSchema).optional().default([]),
         }),
     ),
 };
@@ -43,13 +45,14 @@ export const updateProduct: schema = {
             code: Joi.string().trim().optional().max(100),
             vat: Joi.number().optional().allow('', null).min(0).max(100),
             packing_standard: Joi.string().allow('', null).optional().max(255),
-            price: Joi.number().optional().allow('', null).min(0),
+            current_price: Joi.number().optional().min(0).allow('', null),
             note: Joi.string().allow('', null).optional().max(1000),
             image: Joi.string().allow('', null).max(250),
             type: Joi.string()
                 .valid(...values(ProductType))
                 .optional()
                 .allow(null, ''),
+            is_public: Joi.boolean().optional().default(false),
 
             unit_id: Joi.number().integer().optional().min(1),
             product_group_id: Joi.number().integer().optional().min(1),
@@ -79,6 +82,11 @@ export const updateProduct: schema = {
                     key: Joi.string().allow(null, ''),
                 }),
             ),
+
+            // chi tiết lưới
+            // details_add: Joi.array().items(createProductDetailSchema).optional().default([]),
+            // details_update: Joi.array().items(updateProductDetailSchema).optional().default([]),
+            // details_delete: Joi.array().items(Joi.number()).optional().default([])
         }),
     ),
     params: wrapSchema(
@@ -123,6 +131,9 @@ export const queryFilter: schema = {
                 .valid(...values(ProductType))
                 .optional()
                 .allow(null, ''),
+            unitId: Joi.number().optional().allow(null, ''),
+            hasMesh: Joi.boolean().optional().allow(null, ''),
+            warehouseId: Joi.number().optional().allow(null, ''),
         }),
     ),
 };

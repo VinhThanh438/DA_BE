@@ -1,23 +1,43 @@
 model ShippingPlans {
-  id              Int       @id @default(autoincrement())
-  price           Float     // Giá cước vận chuyển
-  quantity        Int       @default(0) // Số chuyến
-  note            String?   // Ghi chú
-  rejected_reason String?
-  status          PrsOrderStatus?  @default(pending)
-  files           Json?            @default("[]")
+  id                 Int             @id @default(autoincrement())
+  price              Float           @default(0) // Giá cước vận chuyển
+  vat                Float?          @default(0) // % VAT
+  quantity           Int             @default(0) // Số chuyến vận chuyển
+  completed_quantity Int             @default(0) // Số chuyến vận chuyển đã hoàn thành
+  note               String? // Ghi chú
+  rejected_reason    String?
+  status             PrsOrderStatus? @default(pending)
+  files              Json?           @default("[]")
+  is_done            Boolean?        @default(false) // Trạng thái đã hoàn thành hay chưa
+  type               String          @default("shipping")
+  facility_type      String?
 
-  partner_id      Int       // ID của đơn vị vận chuyển
-  order_id        Int       // ID của đơn hàng
-  organization_id        Int?
+  partner_id      Int? // ID của đơn vị vận chuyển
+  order_id        Int? // ID của đơn hàng
+  organization_id Int?
 
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  // chi phí tạm tính
+  facility_id   Int?
+  quotation_id  Int?
+  material_id   Int? // vật tư chính
+  current_price Int  @default(0) // giá bình quân hiện tại
+  temp_cost     Int  @default(0) // chi phí tạm
+  real_quantity Int  @default(0) // số lượng thực tế
+  real_price    Int  @default(0) // giá thực tế
+  main_quantity Int  @default(0) // số lượng chính (số lượng đã tính toán)
 
-  partner         Partners  @relation(fields: [partner_id], references: [id], onDelete: Restrict)
-  order           Orders    @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  organization    Organizations?    @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: Restrict)
+  order        Orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+  inventories  Inventories[]
+  invoices     Invoices[]
+  transactions Transactions[]
+  facility     Facility?      @relation(fields: [facility_id], references: [id], onDelete: SetNull)
+  quotation    Quotations?    @relation(fields: [quotation_id], references: [id], onDelete: SetNull)
+  material     Products?      @relation("ShippingPlanMaterial", fields: [material_id], references: [id], onDelete: Cascade)
 
   @@map("shipping_plans")
-  inventories Inventories[]
 }

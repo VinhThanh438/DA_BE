@@ -1,15 +1,15 @@
 import { $Enums, Prisma, Transactions } from '.prisma/client';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { IFilterArgs, IIdResponse, IPaginationInput, IPaginationResponse } from '@common/interfaces/common.interface';
-import { TransactionSelectWithBankOrder } from '@common/repositories/prisma/transaction.select';
 import { APIError } from '@common/error/api.error';
 import { ErrorCode, ErrorKey, StatusCode } from '@common/errors';
 import { ITransaction } from '@common/interfaces/transaction.interface';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-details.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
+import { TransactionSelectWithBankOrder } from '@common/repositories/prisma/prisma.select';
 
 export class TransactionService extends BaseService<Transactions, Prisma.UsersSelect, Prisma.TransactionsWhereInput> {
     private static instance: TransactionService;
@@ -49,8 +49,8 @@ export class TransactionService extends BaseService<Transactions, Prisma.UsersSe
             ...(orderIds.length > 0 && { order_id: { in: orderIds.map((i: any) => parseInt(i)) } }),
             ...((startAt || endAt) && {
                 time_at: {
-                    ...(startAt && { gte: TimeHelper.parseStartOfDayDate(startAt) }),
-                    ...(endAt && { lte: TimeHelper.parseEndOfDayDate(endAt) }),
+                    ...(startAt && { gte: TimeAdapter.parseStartOfDayDate(startAt) }),
+                    ...(endAt && { lte: TimeAdapter.parseEndOfDayDate(endAt) }),
                 },
             }),
         } as Prisma.TransactionsWhereInput;

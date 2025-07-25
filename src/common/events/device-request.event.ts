@@ -5,7 +5,7 @@ import { QueueService } from '@common/services/queue.service';
 import { EVENT_DEVICE_PENDING_APPROVAL } from '@config/event.constant';
 import { SEND_PENDING_MAIL_JOB } from '@config/job.constant';
 
-export class DeviceRequetsEvent {
+export class DeviceRequestEvent {
     /**
      * Register device pending approval event
      */
@@ -16,8 +16,8 @@ export class DeviceRequetsEvent {
     private static async sendPendingMail(data: any): Promise<void> {
         try {
             await (
-                await QueueService.getQueue<IJobSendPendingEmailData>(SEND_PENDING_MAIL_JOB)
-            ).add({
+                await QueueService.getQueue(SEND_PENDING_MAIL_JOB)
+            ).add(SEND_PENDING_MAIL_JOB, {
                 email: data.email,
                 name: data.name,
             });

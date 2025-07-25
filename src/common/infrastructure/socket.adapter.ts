@@ -1,54 +1,73 @@
 import { Server as HttpServer } from 'http';
-import { Server } from 'socket.io';
-import { createServer } from 'http';
+import { Server, Socket } from 'socket.io';
+import { SocketRouter } from '@api/routes/socket.route';
 import logger from '@common/logger';
 
 export class SocketAdapter {
-    private static io: Server;
-    private static httpServer: HttpServer;
+    private static server?: Server;
+    private static activeConnections: Map<string, Socket> = new Map();
 
     /**
-     * Get the Socket.io instance using existing HTTP server.
-     * @param httpServer Optional HTTP server to use (if sharing with Express)
+     * Initialize and get Socket.IO server instance
      */
-    public static async getSocketInstance(httpServer?: HttpServer): Promise<Server> {
-        if (!this.io) {
-            const serverToUse = httpServer || this.getHttpServer();
-            this.io = new Server(serverToUse, {
+    public static async connect(httpServer: HttpServer): Promise<Server> {
+        if (!this.server) {
+            this.server = new Server(httpServer, {
                 cors: {
                     origin: '*',
                     methods: ['GET', 'POST'],
                 },
             });
+
+            this.handleConnection();
         }
-        return this.io;
+        return this.server;
+    }
+
+    public static getServer(): Server | undefined {
+        return this.server;
     }
 
     /**
-     * Get the HTTP server instance (only used when not sharing).
+     * Get the Socket.IO server instance
      */
-    public static getHttpServer(): HttpServer {
-        if (!this.httpServer) {
-            this.httpServer = createServer(); // Create http if not exist
-            logger.info('HTTP server instance created.');
+    public static handleConnection(): void {
+        if (!this.server) {
+            logger.error('Socket.IO server is not initialized.');
+            return;
         }
-        return this.httpServer;
+        this.server.on('connection', (socket: Socket) => {
+            this.activeConnections.set(socket.id, socket);
+            logger.info(`Socket ${socket.id} connected`);
+
+            socket.on('disconnect', () => {
+                this.activeConnections.delete(socket.id);
+                logger.info(`Socket ${socket.id} disconnected`);
+            });
+
+            SocketRouter.register(socket);
+        });
     }
 
     /**
-     * Validate the token (example logic).
-     * @param token The token to validate.
+     * Gracefully shutdown Socket.IO server
      */
-    public static validateToken(token: string): boolean {
-        if (!token) {
-            logger.warn('Token validation failed: Token is missing.');
-            return false;
-        }
+    public static async disconnect(): Promise<void> {
+        try {
+            if (!this.server) return;
 
-        const isValid = token === 'valid-token';
-        if (!isValid) {
-            logger.warn('Token validation failed: Invalid token.');
+            this.activeConnections.forEach((socket) => {
+                socket.disconnect(true);
+            });
+
+            this.activeConnections.clear();
+            this.server = undefined;
+
+            logger.info('Socket.IO server shutdown completed');
+            return;
+        } catch (error) {
+            logger.error('Socket shutdown error:', error);
+            throw error;
         }
-        return isValid;
     }
 }

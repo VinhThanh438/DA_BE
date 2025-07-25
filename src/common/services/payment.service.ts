@@ -1,6 +1,11 @@
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { Payments, Prisma } from '.prisma/client';
-import { IApproveRequest, IIdResponse, IPaginationInput } from '@common/interfaces/common.interface';
+import {
+    IApproveRequest,
+    IIdResponse,
+    IPaginationInput,
+    IPaginationResponse,
+} from '@common/interfaces/common.interface';
 import {
     IFundBalanceReport,
     IPayment,
@@ -10,20 +15,24 @@ import {
 import { PaymentRepo } from '@common/repositories/payment.repo';
 import { PaymentRequestRepo } from '@common/repositories/payment-request.repo';
 import { handleFiles } from '@common/helpers/handle-files';
-import { deleteFileSystem } from '@common/helpers/delete-file-system';
 import { PaymentType, TransactionType } from '@config/app.constant';
 import { OrderRepo } from '@common/repositories/order.repo';
 import { InvoiceRepo } from '@common/repositories/invoice.repo';
 import { BankRepo } from '@common/repositories/bank.repo';
 import eventbus from '@common/eventbus';
-import { EVENT_LOAN_PAID, EVENT_PAYMENT_CREATED, EVENT_PAYMENT_DELETED } from '@config/event.constant';
+import {
+    EVENT_DELETE_UNUSED_FILES,
+    EVENT_LOAN_PAID,
+    EVENT_PAYMENT_CREATED,
+    EVENT_PAYMENT_DELETED,
+} from '@config/event.constant';
 import { IPaymentCreatedEvent, IPaymentDeletedEvent, ITransaction } from '@common/interfaces/transaction.interface';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { TransactionRepo } from '@common/repositories/transaction.repo';
 import { APIError } from '@common/error/api.error';
 import { StatusCode, ErrorCode, ErrorKey } from '@common/errors';
 import { transformDecimal } from '@common/helpers/transform.util';
-import { TimeHelper } from '@common/helpers/time.helper';
+import { TimeAdapter } from '@common/infrastructure/time.adapter';
 import { PaymentRequestDetailRepo } from '@common/repositories/payment-request-details.repo';
 
 export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect, Prisma.PaymentsWhereInput> {
@@ -45,6 +54,55 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
             this.instance = new PaymentService();
         }
         return this.instance;
+    }
+
+    public async paginate(query: IPaginationInput): Promise<IPaginationResponse> {
+        const { page = 1, size = 20, keyword, startAt, endAt, ...filterConditions } = query;
+
+        if (keyword) {
+            filterConditions.OR = [
+                { note: { contains: keyword, mode: 'insensitive' } },
+                { description: { contains: keyword, mode: 'insensitive' } },
+            ];
+        }
+
+        if (startAt || endAt) {
+            filterConditions.payment_date = {};
+            if (startAt) {
+                filterConditions.payment_date.gte = startAt;
+            }
+            if (endAt) {
+                filterConditions.payment_date.lte = endAt;
+            }
+        }
+
+        // Get all payments matching the filter conditions
+        const allPayments = await this.repo.findMany(filterConditions as any, true);
+
+        // Calculate summary totals from ALL filtered data
+        let total_income = 0;
+        let total_expense = 0;
+
+        allPayments.forEach((payment: any) => {
+            const amount = Number(payment.amount || 0);
+
+            if (payment.type === PaymentType.INCOME) {
+                total_income += amount;
+            } else {
+                total_expense += amount;
+            }
+        });
+
+        // Thực hiện phân trang thủ công
+        const result = this.manualPaginate(allPayments, page, size);
+
+        return {
+            ...result,
+            summary: {
+                total_income,
+                total_expense,
+            },
+        };
     }
 
     public async createPayment(request: Partial<IPayment>): Promise<IIdResponse> {
@@ -73,7 +131,12 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
             let bank = null;
             if (bank_id) {
                 bank = await this.bankRepo.findOne({ id: bank_id });
-                if (bank && bank.balance != null && (paymentData.amount ?? 0) > Number(bank.balance)) {
+                if (
+                    bank &&
+                    bank.balance != null &&
+                    (paymentData.amount ?? 0) > Number(bank.balance) &&
+                    request.type === PaymentType.EXPENSE
+                ) {
                     throw new APIError({
                         message: `common.status.${StatusCode.BAD_REQUEST}`,
                         status: ErrorCode.BAD_REQUEST,
@@ -105,23 +168,27 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
 
             const partnerId = paymentRequest ? paymentRequest.partner_id : undefined;
 
-            paymentData.payment_request_detail = payment_request_detail_id
-                ? ({ connect: { id: payment_request_detail_id } } as any)
-                : undefined;
-            paymentData.order = order_id ? ({ connect: { id: order_id } } as any) : undefined;
-            paymentData.invoice = invoice_id ? ({ connect: { id: invoice_id } } as any) : undefined;
-            paymentData.partner = partnerId ? ({ connect: { id: partnerId } } as any) : undefined;
-            paymentData.bank = bank_id ? ({ connect: { id: bank_id } } as any) : undefined;
-            paymentData.organization = organization_id ? ({ connect: { id: organization_id } } as any) : undefined;
-            paymentData.interest_log = interest_log_id ? ({ connect: { id: interest_log_id } } as any) : undefined;
+            const mappedData = this.autoMapConnection([paymentData], {
+                partner_id: partnerId,
+            });
 
-            const resultId = await this.repo.create(paymentData);
+            let resultId;
+            if (request.type === PaymentType.INCOME) {
+                const { category, ...rest } = request;
+                const mappedData = this.autoMapConnection([rest]);
+                resultId = await this.repo.create(mappedData[0] as Partial<Payments>);
+            } else {
+                resultId = await this.repo.create(mappedData[0]);
+            }
 
             if (resultId) {
                 const eventData = {
                     order_type: category || undefined,
                     note: request.description,
-                    new_bank_balance: Number(bank?.balance) - Number(request.amount),
+                    new_bank_balance:
+                        request.type === PaymentType.EXPENSE
+                            ? Number(bank?.balance) - Number(request.amount)
+                            : Number(bank?.balance) + Number(request.amount),
                     amount: request.amount,
                     bank_id: request.bank_id,
                     interest_log_id: interest_log_id,
@@ -134,8 +201,12 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                     description: request.note,
                     invoice: request.invoice_id ? { connect: { id: request.invoice_id } } : undefined,
                     invoice_id: request.invoice_id,
+                    payment_id: resultId,
+                    order_id: request.order_id,
+                    partner_id: request?.partner_id,
+                    organization_id: request.organization_id,
                     order: request.order_id ? { connect: { id: request.order_id } } : undefined,
-                    partner: partnerId ? { connect: { id: partnerId } } : undefined,
+                    partner: request?.partner_id ? { connect: { id: request.partner_id } } : undefined,
                     organization: request.organization_id ? { connect: { id: request.organization_id } } : undefined,
                     time_at: paymentData.payment_date,
                     payment_request_detail_id: request.payment_request_detail_id,
@@ -152,7 +223,7 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
             return { id: resultId };
         } catch (error) {
             if (request.files?.length) {
-                deleteFileSystem(request.files);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, request.files);
             }
             throw error;
         }
@@ -182,13 +253,13 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
 
             // clean up file
             if (files_delete && files_delete.length > 0) {
-                deleteFileSystem(files_delete);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_delete);
             }
 
             return { id };
         } catch (error) {
             if (files_add && files_add.length > 0) {
-                deleteFileSystem(files_add);
+                eventbus.emit(EVENT_DELETE_UNUSED_FILES, files_add);
             }
             throw error;
         }
@@ -237,7 +308,11 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
         const deletedId = await this.repo.delete({ id });
         if (deletedId) {
             const refund = payment.amount;
-            eventbus.emit(EVENT_PAYMENT_DELETED, { bank_id: payment.bank_id, refund } as IPaymentDeletedEvent);
+            eventbus.emit(EVENT_PAYMENT_DELETED, {
+                bank_id: payment.bank_id,
+                refund,
+                type: payment.type,
+            } as IPaymentDeletedEvent);
         }
         return { id: deletedId };
     }
@@ -266,11 +341,11 @@ export class PaymentService extends BaseService<Payments, Prisma.PaymentsSelect,
                     else if (tx.type === TransactionType.OUT) periodReduction += amount;
                 }
 
-                if (endAt && TimeHelper.getCurrentDate() > TimeHelper.parseToDate(endAt)) {
+                if (endAt && TimeAdapter.getCurrentDate() > TimeAdapter.parseToDate(endAt)) {
                     let endingIncrease = 0;
                     let endingReduction = 0;
                     const endingTransactions = await this.transactionRepo.findMany({
-                        time_at: { gte: TimeHelper.parseToDate(endAt), lte: TimeHelper.getCurrentDate() },
+                        time_at: { gte: TimeAdapter.parseToDate(endAt), lte: TimeAdapter.getCurrentDate() },
                         bank_id: bank.id,
                     });
                     for (const tx of endingTransactions) {

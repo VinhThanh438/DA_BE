@@ -3,7 +3,7 @@ import { IIdResponse } from '@common/interfaces/common.interface';
 import { IEmployee, IUpdateEmployee } from '@common/interfaces/employee.interface';
 import { EmployeeRepo } from '@common/repositories/employee.repo';
 import { JobPositionRepo } from '@common/repositories/job-position.repo';
-import { BaseService } from './base.service';
+import { BaseService } from './master/base.service';
 import { OrganizationRepo } from '@common/repositories/organization.repo';
 import { DEFAULT_EXCLUDED_FIELDS } from '@config/app.constant';
 import { EmployeeContractRepo } from '@common/repositories/employee-contract.repo';

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { OrganizationRepo } from '@common/repositories/organization.repo';
 import logger from '@common/logger';
-import { OrganizationType } from '@config/app.constant';
+import { RedisAdapter } from '@common/infrastructure/redis.adapter';
+import { ORGANIZATION_DATA_KEY } from '@config/redis-key.constant';
+import { IOrganization } from '@common/interfaces/organization.interface';
 
 export class SpatialClassificationMiddleware {
     public static async handle(req: Request, res: Response, next: NextFunction) {
@@ -10,21 +11,21 @@ export class SpatialClassificationMiddleware {
 
             if (!organizationId) return next();
 
-            const organizationRepo: OrganizationRepo = new OrganizationRepo();
+            const organizations = (await RedisAdapter.get(ORGANIZATION_DATA_KEY, true)) as Array<IOrganization>;
 
-            const children = await organizationRepo.findMany({
-                parent_id: organizationId,
-                OR: [{ type: OrganizationType.DEPARTMENT }, { type: OrganizationType.COMPANY }],
-            });
+            const children = organizations.filter((org) => org.parent_id === organizationId);
 
             const organizationIds = [organizationId, ...children.map((org) => org.id)].filter(
                 (id): id is number => typeof id === 'number' && id !== undefined,
             );
 
-            (req.query as any).organization_id = { in: organizationIds };
+            const conditionArray = [{ organization_id: { in: organizationIds } }, { organization_id: null }];
+
+            (req.query as any).OR = conditionArray;
+
             return next();
         } catch (error) {
-            logger.error('SpatialClassificationMiddleware.assignOrganizationToBody error:', error);
+            logger.error('SpatialClassificationMiddleware.handle error:', error);
             next(error);
         }
     }

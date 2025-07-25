@@ -31,8 +31,8 @@ export const create: schema = {
                 .valid(...Object.values(PaymentRequestType))
                 .optional(),
             rejected_reason: Joi.string().allow(null, '').optional(),
-            time_at: Joi.string().isoDate().optional().allow(null),
-            payment_date: Joi.string().isoDate().optional().allow(null),
+            time_at: Joi.isoDateTz().optional().allow(null),
+            payment_date: Joi.isoDateTz().optional().allow(null),
             files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
 
             employee_id: Joi.number().optional().allow(null),

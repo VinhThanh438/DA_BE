@@ -11,6 +11,9 @@ export const queryDebtFilter: schema = {
     query: wrapSchema(
         extendFilterQuery(baseQueryFilter.query as ObjectSchema<any>, {
             partnerId: Joi.number().required(),
+            type: Joi.string()
+                .optional()
+                .valid(...values(PartnerType)),
         }),
     ),
 };
@@ -119,6 +122,7 @@ export const queryFilter: schema = {
                 .optional()
                 .valid(...values(PartnerType)),
             isCommission: Joi.boolean().optional(),
+            types: Joi.array().items(Joi.string()).optional().default([]),
         }),
     ),
 };

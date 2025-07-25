@@ -1,7 +1,6 @@
 import { Deposits, Prisma } from '.prisma/client';
 import { BaseRepo } from './base.repo';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
-import { DepositSelection, DepositSelectionAll } from './prisma/deposit.select';
 import {
     IFilterArgs,
     IPaginationInfo,
@@ -9,9 +8,10 @@ import {
     IPaginationResponse,
 } from '@common/interfaces/common.interface';
 import { IDepositPaginationInput } from '@common/interfaces/deposit.interface';
+import { DepositSelection, DepositSelectionAll } from './prisma/prisma.select';
 
 export class DepositRepo extends BaseRepo<Deposits, Prisma.DepositsSelect, Prisma.DepositsWhereInput> {
-    protected db = DatabaseAdapter.getInstance().deposits;
+    protected db = DatabaseAdapter.getInstance().getClient().deposits;
     protected defaultSelect = DepositSelection;
     protected detailSelect = DepositSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'deposits';

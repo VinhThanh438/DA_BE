@@ -3,42 +3,77 @@ model Productions {
   id      Int      @id @default(autoincrement())
   code    String   @default(cuid())
   time_at DateTime @default(now())
-  files           Json?    @default("[]")
+  files   Json?    @default("[]")
+  type    String   @default("normal") // normal, mesh, drawn
 
   organization_id Int?
   order_id        Int?
   partner_id      Int? // Doi tac
   employee_id     Int? // Nhan vien ban hang
 
+  // với lưới thép hàn
+  idx      Int     @default(0) // lần sản xuất
+  progress Int     @default(0) // tiến độ sản xuất
+  note     String?
+
+  total_quantity Int   @default(0) // tổng số lượng
+  total_weight   Float @default(0) // tổng khối lượng
+  total_area     Float @default(0) // tổng diện tích
+  // với lưới thép hàn
+
   organization Organizations? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   order        Orders?        @relation(fields: [order_id], references: [id], onDelete: SetNull)
   partner      Partners?      @relation(fields: [partner_id], references: [id], onDelete: SetNull)
   employee     Employees?     @relation(fields: [employee_id], references: [id], onDelete: SetNull)
 
-  created_at         DateTime            @default(now())
-  updated_at         DateTime            @updatedAt
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  details           ProductionDetails[]
+  purchase_requests PurchaseRequests[]
+
+  mesh_production_details MeshProductionDetails[] // sản xuất lưới thép hàn details
+  raw_materials           RawMaterials[] // nguồn phôi cho sản xuất
 
   @@map("productions")
-  details ProductionDetails[]
-  purchase_requests PurchaseRequests[]
 }
 
+// trường hợp bình thường
 model ProductionDetails {
-  id              Int      @id @default(autoincrement())
-  quantity        Int      @default(0)
-  completion_date DateTime @default(now())
-  note            String?
+  id       Int @id @default(autoincrement())
+  quantity Int @default(0)
 
-  production_id Int?
-  product_id    Int?
-  unit_id       Int?
+  production_id   Int
+  order_detail_id Int?
 
-  product    Products?    @relation(fields: [product_id], references: [id], onDelete: SetNull)
-  unit    Units?    @relation(fields: [unit_id], references: [id], onDelete: SetNull)
-  production Productions? @relation(fields: [production_id], references: [id], onDelete: SetNull)
+  production   Productions    @relation(fields: [production_id], references: [id], onDelete: Cascade)
+  order_detail CommonDetails? @relation(fields: [order_detail_id], references: [id], onDelete: SetNull)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@map("production_details")
+}
+
+// trường hợp lưới thép hàn
+model MeshProductionDetails {
+  id Int @id @default(autoincrement())
+
+  quantity         Int   @default(0)
+  length_bar_plate Int   @default(0) // số thanh của chiều dài của lưới thép hàn
+  width_bar_plate  Int   @default(0) // số thanh của chiều rộng của lưới thép hàn
+  weight           Float @default(0) // khối lượng của lưới thép hàn
+  area             Float @default(0) // diện tích của lưới thép hàn
+  tolerance_length Float @default(0) // dung sai chiều dài
+  tolerance_width  Float @default(0) // dung sai chiều rộng
+
+  production_id  Int
+  mesh_detail_id Int
+
+  production  Productions @relation(fields: [production_id], references: [id], onDelete: Cascade)
+  mesh_detail MeshDetail  @relation(fields: [mesh_detail_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("mesh_production_details")
 }

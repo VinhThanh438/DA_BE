@@ -9,8 +9,8 @@ export const getInterestLogs = z.object({
         .string()
         .optional()
         .transform((val) => parseInt(val as string) || 10),
-    startAt: z.string().date().optional().nullable(),
-    endAt: z.string().date().optional().nullable(),
+    startAt: (z as any).isoDateTz().optional().nullable(),
+    endAt: (z as any).isoDateTz().optional().nullable(),
     bankId: z
         .string()
         .transform((val) => parseInt(val))

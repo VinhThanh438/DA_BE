@@ -1,26 +1,35 @@
+// src/common/infrastructure/database.adapter.ts
 import { PrismaClient } from '@prisma/client';
 import logger from '@common/logger';
 
-export class DatabaseAdapter extends PrismaClient {
+export class DatabaseAdapter {
     private static instance: DatabaseAdapter;
+    private readonly client: PrismaClient;
+    private isConnected = false;
 
     private constructor() {
-        super({
-            log: ['info', 'error', 'warn'],
+        this.client = new PrismaClient({
+            log: ['info', 'warn', 'error'],
             errorFormat: 'pretty',
         });
     }
 
     public static getInstance(): DatabaseAdapter {
-        if (!DatabaseAdapter.instance) {
-            DatabaseAdapter.instance = new DatabaseAdapter();
+        if (!this.instance) {
+            this.instance = new DatabaseAdapter();
         }
-        return DatabaseAdapter.instance;
+        return this.instance;
     }
 
-    async connect(): Promise<void> {
+    public async connect(): Promise<void> {
+        if (this.isConnected) {
+            logger.warn('Database already connected.');
+            return;
+        }
+
         try {
-            await this.$connect();
+            await this.client.$connect();
+            this.isConnected = true;
             logger.info('Database connection established');
         } catch (error) {
             logger.error('Database connection failed:', error);
@@ -28,15 +37,23 @@ export class DatabaseAdapter extends PrismaClient {
         }
     }
 
-    async disconnect(): Promise<void> {
+    public async disconnect(): Promise<void> {
+        if (!this.isConnected) {
+            logger.warn('Database is not connected or already disconnected.');
+            return;
+        }
+
         try {
-            await this.$disconnect();
+            await this.client.$disconnect();
+            this.isConnected = false;
             logger.info('Database connection closed');
         } catch (error) {
             logger.error('Error disconnecting from database:', error);
             throw error;
         }
     }
-}
 
-export const prisma = DatabaseAdapter.getInstance();
+    public getClient(): PrismaClient {
+        return this.client;
+    }
+}

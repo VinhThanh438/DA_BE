@@ -84,14 +84,14 @@ export class TransactionEvent {
                     }
                 }
             } else if (interest_log_id) {
-                const interesLog = await this.interestLogRepo.findOne({ id: interest_log_id }, true);
+                const interestLog = await this.interestLogRepo.findOne({ id: interest_log_id }, true);
 
-                if (!interesLog) {
+                if (!interestLog) {
                     logger.warn('TransactionEvent.paymentCreatedHandler: Interest log not found.');
                     return;
                 }
 
-                const loan = await this.loanRepo.findOne({ id: interesLog.loan_id }, true);
+                const loan = await this.loanRepo.findOne({ id: interestLog.loan_id }, true);
                 if (!loan) {
                     logger.warn('TransactionEvent.paymentCreatedHandler: Loan not found.');
                     return;
@@ -111,12 +111,26 @@ export class TransactionEvent {
                 await this.transactionRepo.create(transactionDataWithInterest);
 
                 eventbus.emit(EVENT_INTEREST_LOG_PAID, {
-                    interestLogId: interesLog.id,
+                    interestLogId: interestLog.id,
                     isPaymented: true,
                 });
                 logger.info('TransactionEvent.paymentCreatedHandler: interest transaction created successfully.');
             } else {
-                logger.warn('TransactionEvent.paymentCreatedHandler: No infomation found!');
+                const transactionDateWithBank = {
+                    type: TransactionType.IN,
+                    order_type: TransactionOrderType.ORDER,
+                    time_at: transactionData.time_at,
+                    amount: data.amount,
+                    organization_id: data.organization_id,
+                    order: data.order,
+                    invoice: data.invoice,
+                    partner: data.partner,
+                    bank: data.bank,
+                    payment: data.payment,
+                    note: data.note,
+                };
+                const transactionId = await this.transactionRepo.create(transactionDateWithBank as any);
+                logger.warn('TransactionEvent.paymentCreatedHandler: successfully with id: ', transactionId);
             }
         } catch (error: any) {
             logger.error('TransactionEvent.paymentCreatedHandler:', error);

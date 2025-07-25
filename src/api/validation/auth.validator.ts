@@ -1,6 +1,5 @@
 import { wrapSchema } from '@common/helpers/wrap-schema.helper';
 import { Joi, schema } from 'express-validation';
-import { values } from 'lodash';
 
 export const logIn: schema = {
     body: wrapSchema(

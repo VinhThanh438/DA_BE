@@ -1,0 +1,28 @@
+model Commissions {
+    id        Int   @id @default(autoincrement())
+    price     Int   @default(0) // đơn giá / lượng
+    price_vat Float @default(0) // thuế VAT
+
+    quantity     Int   @default(0) // đơn giá / lượng
+    quantity_vat Float @default(0) // thuế VAT
+
+    representative_id Int // nhân viên
+    note              String? // ghi chú
+
+    total_quantity Int @default(0) // tổng lượng
+    origin_price   Int @default(0) // giá gốc
+
+    quotation_detail_id         Int? // chi tiết chung (common detail)
+    quotation_request_detail_id Int? // chi tiết chung (common detail)
+    facility_order_id           Int? // đơn hàng dịch vụ (facility order)
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    representative           Representatives          @relation(fields: [representative_id], references: [id], onDelete: Cascade)
+    quotation_detail         CommonDetails?           @relation(fields: [quotation_detail_id], references: [id], onDelete: Cascade)
+    quotation_request_detail QuotationRequestDetails? @relation(fields: [quotation_request_detail_id], references: [id], onDelete: Cascade)
+    facility_order           FacilityOrders?          @relation(fields: [facility_order_id], references: [id], onDelete: Cascade)
+
+    @@map("commissions")
+}

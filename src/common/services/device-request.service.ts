@@ -9,7 +9,7 @@ import { SEND_CONFIRM_MAIL_JOB } from '@config/job.constant';
 import { QueueService } from './queue.service';
 import eventbus from '@common/eventbus';
 import { IEventUserFirstLoggin } from '@common/interfaces/user.interface';
-import { EVENT_USER_FIRST_LOGGIN } from '@config/event.constant';
+import { EVENT_USER_FIRST_LOGIN } from '@config/event.constant';
 import { UserRepo } from '@common/repositories/user.repo';
 
 export class DeviceRequestService {
@@ -66,15 +66,15 @@ export class DeviceRequestService {
 
         // send email
         await (
-            await QueueService.getQueue<IJobSendConfirmEmailData>(SEND_CONFIRM_MAIL_JOB)
-        ).add({
+            await QueueService.getQueue(SEND_CONFIRM_MAIL_JOB)
+        ).add(SEND_CONFIRM_MAIL_JOB, {
             email: userData?.email as string,
             name: userData?.username,
             status,
         });
 
         // allow user loggin without device id
-        eventbus.emit(EVENT_USER_FIRST_LOGGIN, {
+        eventbus.emit(EVENT_USER_FIRST_LOGIN, {
             id: userData.id,
             device: undefined,
             status: true,

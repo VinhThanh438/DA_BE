@@ -2,7 +2,7 @@ import { BaseController } from './base.controller';
 import { Roles } from '.prisma/client';
 import { IRole } from '@common/interfaces/role.interface';
 import logger from '@common/logger';
-import { RoleService } from '@common/services/role.service';
+import { RoleService } from '@common/services/master/role.service';
 import { NextFunction, Request, Response } from 'express';
 
 export class RoleController extends BaseController<Roles> {

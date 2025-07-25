@@ -5,6 +5,7 @@ import { IInventory } from '@common/interfaces/inventory.interface';
 import logger from '@common/logger';
 import { InventoryService } from '@common/services/inventory.service';
 import { Request, Response, NextFunction } from 'express';
+import { StatusCode } from '@common/errors';
 
 export class InventoryController extends BaseController<Inventories> {
     private static instance: InventoryController;
@@ -72,10 +73,17 @@ export class InventoryController extends BaseController<Inventories> {
 
     public async getInventoryReport(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const isAdmin = Boolean(req.user.isAdmin) || false;
             const query = req.query as IPaginationInput;
-            const data = await this.service.getInventoryReport(query);
-            res.sendJson(data);
+            const { data, summary } = await this.service.getInventoryReport(query);
+            // res.sendJson(data);
+            res.status(200).json({
+                errorCode: 0,
+                statusCode: StatusCode.SUCCESS,
+                message: 'OK',
+                data,
+                // pagination: (data as { pagination: object }).pagination,
+                summary,
+            });
         } catch (error) {
             logger.error(`${this.constructor.name}.getInventoryReport: `, error);
             next(error);
@@ -96,8 +104,8 @@ export class InventoryController extends BaseController<Inventories> {
     public async getInventoryImportDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const query = req.query as IPaginationInput;
-            const data = await this.service.getInventoryImportDetail(query);
-            res.sendJson(data);
+            const result = await this.service.getInventoryImportDetail(query);
+            res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.getInventoryImportDetail: `, error);
             next(error);
@@ -123,6 +131,18 @@ export class InventoryController extends BaseController<Inventories> {
             res.sendJson(result);
         } catch (error) {
             logger.error(`${this.constructor.name}.updateRealQuantityRequest: `, error);
+            next(error);
+        }
+    }
+
+    public async updateAdjustQuantity(req: Request, res: Response, next: NextFunction) {
+        try {
+            const body = req.body as IInventory;
+            const id = Number(req.params.id);
+            const result = await this.service.updateAdjustQuantity(id, body);
+            res.sendJson(result);
+        } catch (error) {
+            logger.error(`${this.constructor.name}.updateAdjustQuantityRequest: `, error);
             next(error);
         }
     }

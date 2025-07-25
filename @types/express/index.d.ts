@@ -7,6 +7,7 @@ declare global {
             user: any;
             getRequestInfo(): IRequestInfo;
             userDevice: IRequestInfo;
+            userTimezone: string;
         }
 
         interface Response {
@@ -15,8 +16,6 @@ declare global {
             secureCookie: (name: string, value: string, options?: import('express').CookieOptions) => void;
         }
     }
-
-    type DateString = `${number}-${number}-${number}`;
 }
 
 export {};

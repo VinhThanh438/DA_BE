@@ -16,7 +16,8 @@ class PrismaSearchBuilder {
             mode?: Prisma.QueryMode;
             useAnd?: boolean;
             searchStrategy?: 'exact' | 'fuzzy' | 'hybrid';
-        } = { mode: 'insensitive', useAnd: true, searchStrategy: 'exact' },
+            useUnaccent?: boolean
+        } = { mode: 'insensitive', useAnd: true, searchStrategy: 'exact', useUnaccent: true },
     ): any {
         if (!keyword?.trim()) {
             return {};

@@ -1,79 +1,53 @@
 import rateLimit from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { APIError } from '@common/error/api.error';
 import { StatusCode } from '@common/errors';
 import { ResponseMiddleware } from './response.middleware';
+import logger from '@common/logger';
 
 export class RateLimiterMiddleware {
-    private static commonOptions = {
-        standardHeaders: true, // Return rate limit information in response headers
-        legacyHeaders: false, // Disable legacy x-rate-limit-* headers
-        keyGenerator: (req: Request) => {
-            return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '';
-        },
+    private static readonly commonOptions = {
+        standardHeaders: true,
+        legacyHeaders: false,
+        keyGenerator: (req: Request) => req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '',
     };
 
-    /**
-     * Handle rate limit error
-     * @param req
-     * @param res
-     */
-    static handleRateLimitError(req: Request, res: Response, minutesLeft: number): void {
-        const message = req.i18n.t(`common.status.${StatusCode.REQUEST_TOO_MANY}`, { minute: minutesLeft });
+    private static handleRateLimitError(req: Request, res: Response, minutesLeft: number): void {
+        try {
+            const message = req.i18n.t(`common.status.${StatusCode.REQUEST_TOO_MANY}`, { minute: minutesLeft });
+            const error = new APIError({
+                message,
+                status: StatusCode.REQUEST_TOO_MANY,
+                errorCode: 1,
+                messageData: { minute: minutesLeft },
+            });
+            return ResponseMiddleware.handler(error, req, res, () => {});
+        } catch (err) {
+            logger.error('Rate limit error handler failed:', err);
+            throw new APIError({
+                message: `common.status.${StatusCode.SERVER_ERROR}`,
+                status: StatusCode.SERVER_ERROR,
+                errorCode: 1,
+            });
+        }
+    }
 
-        const error = new APIError({
-            message: message,
-            status: StatusCode.REQUEST_TOO_MANY,
-            errorCode: 1,
-            messageData: { minute: minutesLeft },
+    private static createLimiter(minute: number, max: number, skip?: (req: Request) => boolean) {
+        return rateLimit({
+            windowMs: minute * 60 * 1000,
+            max,
+            ...RateLimiterMiddleware.commonOptions,
+            skip,
+            message: (req: Request) => req.i18n.t(`common.status.${StatusCode.REQUEST_TOO_MANY}`, { minute }),
+            handler: (req: Request, res: Response) => RateLimiterMiddleware.handleRateLimitError(req, res, minute),
         });
-
-        return ResponseMiddleware.handler(error, req, res, () => {});
     }
 
-    /**
-     * @returns RateLimiterMiddleware - A global rate limiter instance.
-     * @description Creates and returns a global rate limiter to be used across all routes.
-     */
-    public static createGlobalLimiter() {
-        const minute = 1;
-        const timeout = minute * 60 * 1000; // 1 minute
-        const options: Parameters<typeof rateLimit>[0] = {
-            windowMs: timeout, // 1 minute
-            max: 15, // Maximum of requests per IP within the window
-            message: (req: Request) => {
-                const minute = 1;
-                return req.i18n.t(`common.status.${StatusCode.REQUEST_TOO_MANY}`, { minute });
-            },
-            handler: (req: Request, res: Response) => {
-                RateLimiterMiddleware.handleRateLimitError(req, res, minute);
-            },
-            ...this.commonOptions,
-            skip: (req: Request) => req.method !== 'POST',
-        };
+    public static readonly globalLimiter = RateLimiterMiddleware.createLimiter(1, 15, (req) => req.method !== 'POST');
 
-        return rateLimit(options);
-    }
+    public static readonly loginLimiter = RateLimiterMiddleware.createLimiter(5, 15);
 
-    /**
-     * @returns RateLimiterMiddleware - A rate limiter instance for login route.
-     * @description Creates and returns a rate limiter for login route with custom options.
-     */
-    public static createLoginLimiter() {
-        const minute = 5;
-        const timeout = minute * 60 * 1000;
-        const options: Parameters<typeof rateLimit>[0] = {
-            windowMs: timeout,
-            max: 15,
-            message: (req: Request) => {
-                return req.i18n.t(`common.status.${StatusCode.REQUEST_TOO_MANY}`, { minute });
-            },
-            handler: (req: Request, res: Response) => {
-                RateLimiterMiddleware.handleRateLimitError(req, res, minute);
-            },
-            ...this.commonOptions,
-        };
+    public static readonly uploadLimiter = RateLimiterMiddleware.createLimiter(1, 10);
 
-        return rateLimit(options);
-    }
+    public static readonly exportFileLimiter = RateLimiterMiddleware.createLimiter(1, 5);
 }

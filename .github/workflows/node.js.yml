@@ -1,0 +1,74 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Thep_Dong_Anh
+
+on:
+    push:
+        branches: ['main']
+
+jobs:
+    build:
+        runs-on: self-hosted
+
+        strategy:
+            matrix:
+                node-version: [22.x]
+                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/s
+
+        steps:
+            - name: Zip 'uploads' folder
+              run: tar -czf uploads_backup.tar.gz -C /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH/BE_THEP_DONG_ANH/uploads .
+
+            - name: coppy 'uploads' folder
+              run: cp uploads_backup.tar.gz /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH
+
+            # - name: Debug permissions
+            #   run: |
+            #     ls -la /www/wwwroot/backend/thepdonganh/_work/BE_THEP_DONG_ANH/BE_THEP_DONG_ANH
+            #     whoami
+            #     stat /www/wwwroot/backend/thepdonganh/_work
+
+            - name: Clean up index.lock
+              run: |
+                  rm -f /www/wwwroot/backend/thepdonganh/_work/BE_THEP_DONG_ANH/BE_THEP_DONG_ANH/.git/index.lock
+
+            # Step 1: Checkout code
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  clean: true
+
+            # Step 2: Set up Node.js
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  # cache: "yarn"
+
+            # Step 3: Install dependencies
+            - name: Install dependencies
+              run: yarn
+
+            # Step 4: Ghi env
+            - name: Write env file
+              run: |
+                  touch .env
+                  echo "${{ secrets.PROD_ENV_FILE }}" > .env
+
+            - name: Create folder uploads
+              run: mkdir -p /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH/BE_THEP_DONG_ANH/uploads
+
+            - name: restore sshpass and restore file uploads zip to uploads folder
+              run: sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "if [ -f /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH/uploads_backup.tar.gz ]; then tar -xzf /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH/uploads_backup.tar.gz -C /www/wwwroot/be/thep/_work/BE_THEP_DONG_ANH/BE_THEP_DONG_ANH/uploads; fi"
+
+            - name: Run Prisma migrations
+              run: yarn prisma:push
+
+            # Step 5 : Buld project
+            - name: Build project
+              run: yarn build
+
+            # Step 6 : Start with pm2 update
+            - run: pm2 restart THEP_DONG_ANH
+            - run: pm2 restart WORKER

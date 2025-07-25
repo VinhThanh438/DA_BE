@@ -2,9 +2,9 @@ import express from 'express';
 import { queryById } from '@api/validation/common.validator';
 import { BankController } from '@api/controllers/bank.controller';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { zodValidateBody } from '@api/middlewares/zodValidate.middleware';
-import { create, queryFilter, update, transferSchema } from '@api/validation/bank.validator';
+import { create, queryFilter, update, transferSchema, fundBalance } from '@api/validation/bank.validator';
 import { SpatialClassificationMiddleware } from '@api/middlewares/spatial-classification.middleware';
+import { zodValidateBody } from '@api/middlewares/zod-validate.middleware';
 
 const router = express.Router();
 const controller = BankController.getInstance();
@@ -12,6 +12,8 @@ const controller = BankController.getInstance();
 router.get('/', validateRequest(queryFilter), controller.getAll.bind(controller));
 
 router.get('/:id', validateRequest(queryById), controller.getById.bind(controller));
+
+router.get('/fund-balance/:id', validateRequest(fundBalance), controller.getFundBalanceById.bind(controller));
 
 router.post(
     '/',

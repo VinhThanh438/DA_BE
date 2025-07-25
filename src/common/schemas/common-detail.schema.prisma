@@ -1,31 +1,44 @@
 // Phan schema detail chung cho quotation (Bao gia), contract (Hop dong), order (Don hang)
 model CommonDetails {
-  id       Int      @id @default(autoincrement())
-  quantity Int?     @default(0)
-  price    Decimal? @default(0)
-  discount Float?   @default(0)
-  commission Float? @default(0)
-  vat      Float? // %vat
-  note     String?
-  imported_quantity  Int?     @default(0)
+  id                Int      @id @default(autoincrement())
+  quantity          Int?     @default(0)
+  price             Decimal? @default(0)
+  discount          Float?   @default(0)
+  commission        Float?   @default(0)
+  vat               Float? // %vat
+  note              String?
+  imported_quantity Int?     @default(0)
 
   product_id Int?
-  unit_id Int?
+  unit_id    Int?
 
-  order_id     Int?
-  quotation_id Int?
-  contract_id  Int?
+  order_id                    Int?
+  quotation_id                Int?
+  contract_id                 Int?
+  quotation_request_detail_id Int?
+
+  // chi phí tạm tính
+  material_id   Int? // vật tư chính
+  current_price Int  @default(0) // giá bình quân hiện tại
+  temp_cost     Int  @default(0) // chi phí tạm
+  real_quantity Int  @default(0) // số lượng thực tế
+  real_price    Int  @default(0) // giá thực tế
+  main_quantity Int  @default(0) // số lượng chính (số lượng đã tính toán)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  unit   Units?   @relation(fields: [unit_id], references: [id], onDelete: SetNull)
-  product   Products?   @relation(fields: [product_id], references: [id], onDelete: SetNull)
-  order     Orders?     @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  quotation Quotations? @relation(fields: [quotation_id], references: [id], onDelete: SetNull)
-  contract  Contracts?  @relation(fields: [contract_id], references: [id], onDelete: SetNull)
-  inventory_details   InventoryDetails[]
-  invoice_details InvoiceDetails[]
+  unit                     Units?                   @relation(fields: [unit_id], references: [id], onDelete: SetNull)
+  product                  Products?                @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  order                    Orders?                  @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  quotation                Quotations?              @relation(fields: [quotation_id], references: [id], onDelete: SetNull)
+  quotation_request_detail QuotationRequestDetails? @relation(fields: [quotation_request_detail_id], references: [id], onDelete: SetNull)
+  contract                 Contracts?               @relation(fields: [contract_id], references: [id], onDelete: SetNull)
+  inventory_details        InventoryDetails[]
+  invoice_details          InvoiceDetails[]
+  commissions              Commissions[]
+  material                 Products?                @relation("CommonDetailMaterial", fields: [material_id], references: [id])
+  production_details       ProductionDetails[]
 
   @@map("common_details")
 }

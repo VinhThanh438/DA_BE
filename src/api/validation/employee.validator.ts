@@ -25,8 +25,8 @@ const EmployeeContract = {
     code: Joi.string().optional().max(50).allow(null, ''),
     type: Joi.string().optional().allow(null, '').max(50),
     salary: Joi.number().optional().allow(null, ''),
-    start_date: Joi.string().isoDate().optional().allow(null),
-    end_date: Joi.string().isoDate().optional().allow(null),
+    start_date: Joi.isoDateTz().optional().allow(null),
+    end_date: Joi.isoDateTz().optional().allow(null),
     is_applied: Joi.boolean().optional().allow(null),
     key: Joi.string().allow(null, ''),
     file: Joi.string().optional().allow(null, ''),
@@ -43,7 +43,7 @@ const EmployeeBody = {
     marital_status: Joi.string().optional().allow(null, ''),
     working_status: Joi.string().optional().allow(null, ''),
     employee_status: Joi.string().optional().allow(null, '').max(100),
-    date_of_birth: Joi.string().isoDate().optional().allow(null),
+    date_of_birth: Joi.isoDateTz().optional().allow(null),
     phone: Joi.string().optional().allow(null, '').max(20),
     tax: Joi.string().optional().allow(null, '').max(50),
     ethnicity: Joi.string().optional().allow(null, '').max(100),
@@ -59,22 +59,20 @@ const EmployeeBody = {
     // Identity
     identity_code: Joi.string().optional().allow(null, '').max(20),
     identity_issued_place: Joi.string().optional().allow(null, '').max(100),
-    identity_issued_date: Joi.string().isoDate().optional().allow(null),
-    identity_expired_date: Joi.string().isoDate().optional().allow(null),
-    indentity_files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+    identity_issued_date: Joi.isoDateTz().optional().allow(null),
+    identity_expired_date: Joi.isoDateTz().optional().allow(null),
 
     // Passport
     passport_code: Joi.string().optional().allow(null, '').max(20),
     passport_issued_place: Joi.string().optional().allow(null, '').max(100),
-    passport_issued_date: Joi.string().isoDate().optional().allow(null),
-    passport_expired_date: Joi.string().isoDate().optional().allow(null),
-    passport_files: Joi.array().items(Joi.string()).optional().allow(null, '').default([]),
+    passport_issued_date: Joi.isoDateTz().optional().allow(null),
+    passport_expired_date: Joi.isoDateTz().optional().allow(null),
 
     organization_id: Joi.number().integer().optional(),
     job_position_id: Joi.number().integer().optional(),
 
-    trial_date: Joi.string().isoDate().optional().allow(null),
-    official_date: Joi.string().isoDate().optional().allow(null),
+    trial_date: Joi.isoDateTz().optional().allow(null),
+    official_date: Joi.isoDateTz().optional().allow(null),
 
     // Education
     educations: Joi.array()
@@ -141,7 +139,7 @@ const EmployeeBody = {
                 rate: Joi.number().optional().allow(null, ''),
                 insurance_number: Joi.string().optional().allow(null, '').max(50),
                 insurance_salary: Joi.number().optional().allow(null, ''),
-                start_date: Joi.string().isoDate().optional().allow(null),
+                start_date: Joi.isoDateTz().optional().allow(null),
                 key: Joi.string().allow(null, ''),
             }),
         )

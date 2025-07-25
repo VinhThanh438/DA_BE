@@ -1,12 +1,11 @@
 import { Invoices, Prisma } from '.prisma/client';
 import { DatabaseAdapter } from '@common/infrastructure/database.adapter';
 import { BaseRepo } from './base.repo';
-import { InvoiceSelectionAll, InvoiceSelectionWithTotal } from './prisma/invoice.select';
 import { IFilterArgs, IPaginationInput, IPaginationResponse, SearchField } from '@common/interfaces/common.interface';
-import { InvoiceDetailSelectionAll } from './prisma/invoice-detail.select';
+import { InvoiceSelectionWithTotal, InvoiceSelectionAll, InvoiceDetailSelectionAll } from './prisma/prisma.select';
 
 export class InvoiceRepo extends BaseRepo<Invoices, Prisma.InvoicesSelect, Prisma.InvoicesWhereInput> {
-    protected db = DatabaseAdapter.getInstance().invoices;
+    protected db = DatabaseAdapter.getInstance().getClient().invoices;
     protected defaultSelect = InvoiceSelectionWithTotal;
     protected detailSelect = InvoiceSelectionAll;
     protected modelKey: keyof Prisma.TransactionClient = 'invoices';

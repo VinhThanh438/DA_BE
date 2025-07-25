@@ -1,63 +1,71 @@
 services:
-  postgresql:
-    container_name: postgresql
-    build:
-      context: .
-      dockerfile: postgres.Dockerfile
-    image: custom-postgres:latest
-    volumes:
-      - postgresql_data:/var/lib/postgresql/data
-      - postgresql_log:/var/log/postgresql
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
-    environment:
-      - POSTGRES_USER=${DB_USER_NAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "5432:5432"
-    networks:
-      - be_thep_dong_anh_network
-    restart: always  
+    postgresql:
+        container_name: postgresql
+        image: postgres:15.6
+        volumes:
+            - postgresql_data:/var/lib/postgresql/data
+            - postgresql_log:/var/log/postgresql
+            - ./docker/postgres/init:/docker-entrypoint-initdb.d
+        environment:
+            - POSTGRES_USER=${DB_USER_NAME}
+            - POSTGRES_PASSWORD=${DB_PASSWORD}
+            - POSTGRES_DB=${DB_NAME}
+        ports:
+            - '5432:5432'
+        networks:
+            - be_thep_dong_anh_network
+        restart: always
 
-  redis:
-    container_name: redis
-    image: redis:latest
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    networks:
-      - be_thep_dong_anh_network
-    restart: always
+    redis:
+        container_name: redis
+        image: redis:latest
+        volumes:
+            - redis_data:/data
+        ports:
+            - '6379:6379'
+        networks:
+            - be_thep_dong_anh_network
+        restart: always
 
-  be_thep_dong_anh:
-    image: be_thep_dong_anh
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    depends_on:
-      - postgresql
-      - redis
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URI=${REDIS_URI}
-      - LOG_LEVEL=${LOG_LEVEL}
-    env_file:
-      - .env
-    networks:
-      - be_thep_dong_anh_network
-    ports:
-      - "4200:4200"
-    restart: always
+    be_thep_dong_anh_api:
+        image: be_thep_dong_anh
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        depends_on:
+            - postgresql
+            - redis
+        environment:
+            - DATABASE_URL=${DATABASE_URL}
+            - REDIS_URI=${REDIS_URI}
+            - LOG_LEVEL=${LOG_LEVEL}
+        env_file:
+            - .env.docker
+        networks:
+            - be_thep_dong_anh_network
+        ports:
+            - '4200:4200'
+        restart: always
+
+    be_thep_dong_anh_worker:
+        image: be_thep_dong_anh
+        depends_on:
+            - postgresql
+            - redis
+        env_file:
+            - .env.docker
+        networks:
+            - be_thep_dong_anh_network
+        restart: always
 
 networks:
-  be_thep_dong_anh_network:
-    driver: bridge
+    be_thep_dong_anh_network:
+        driver: bridge
 
 volumes:
-  postgresql_data:
-    driver: local
-  postgresql_log:
-    driver: local
-  redis_data:
-    driver: local
+    postgresql_data:
+        driver: local
+    postgresql_log:
+        driver: local
+    redis_data:
+        driver: local

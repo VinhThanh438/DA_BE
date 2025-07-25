@@ -50,12 +50,6 @@ export class AuthMiddleware {
                 req.user = user;
 
                 const userData = await UserService.getInstance().findOne({ id: user.id });
-                if (!userData) {
-                    throw new APIError({
-                        message: 'user.common.not-found',
-                        status: StatusCode.BAD_REQUEST,
-                    });
-                }
 
                 if (userData?.is_disabled) {
                     throw new APIError({
@@ -95,7 +89,10 @@ export class AuthMiddleware {
                             status: StatusCode.REQUEST_UNAUTHORIZED,
                         });
                     }
-                    const newAccessToken = TokenHelper.generateToken({ id: user.id, eId: user.eId }, deviceId);
+                    const newAccessToken = TokenHelper.generateToken(
+                        { id: user.id, employee_id: user.employee_id },
+                        deviceId,
+                    );
 
                     res.cookie('access_token', 'Bearer ' + newAccessToken);
                     req.user = user;
