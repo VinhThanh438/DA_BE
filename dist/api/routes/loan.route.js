@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const interest_log_controller_1 = require("../controllers/interest-log.controller");
+const loan_controller_1 = require("../controllers/loan.controller");
+const spatial_classification_middleware_1 = require("../middlewares/spatial-classification.middleware");
+const validate_middleware_1 = require("../middlewares/validate.middleware");
+const zod_validate_middleware_1 = require("../middlewares/zod-validate.middleware");
+const common_validator_1 = require("../validation/common.validator");
+const interest_log_validator_1 = require("../validation/interest-log.validator");
+const loan_validator_1 = require("../validation/loan.validator");
+const express_1 = __importDefault(require("express"));
+const router = express_1.default.Router();
+const controller = loan_controller_1.LoanController.getInstance();
+const interestLogController = interest_log_controller_1.InterestLogController.getInstance();
+router.get('/', (0, validate_middleware_1.validateRequest)(loan_validator_1.queryFilter), controller.paginate.bind(controller));
+router.get('/interest-log', (0, zod_validate_middleware_1.zodValidateQuery)(interest_log_validator_1.getInterestLogs), spatial_classification_middleware_1.SpatialClassificationMiddleware.assignInfoToQuery, interestLogController.paginate.bind(interestLogController));
+router.get('/:id', (0, validate_middleware_1.validateRequest)(common_validator_1.queryById), controller.getById.bind(controller));
+router.post('/', (0, validate_middleware_1.validateRequest)(loan_validator_1.create), spatial_classification_middleware_1.SpatialClassificationMiddleware.assignInfoToRequest, controller.create.bind(controller));
+router.put('/approve/:id', (0, validate_middleware_1.validateRequest)(common_validator_1.approve), controller.approve.bind(controller));
+router.put('/:id', (0, validate_middleware_1.validateRequest)(loan_validator_1.update), controller.update.bind(controller));
+router.delete('/:id', (0, validate_middleware_1.validateRequest)(common_validator_1.queryById), controller.delete.bind(controller));
+exports.default = router;
