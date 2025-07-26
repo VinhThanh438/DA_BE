@@ -77,13 +77,7 @@ export class ExpressServer {
             }),
         );
 
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'https://api.thepdonganh.itomo.one',
-            'https://thepdonganh.itomo.one',
-            'http://192.168.1.18:3000',
-        ];
+        const allowedOrigins = ['http://localhost:3000', 'https://vuthanhvinhvippro.id.vn'];
 
         server.use(
             cors({

@@ -84,13 +84,7 @@ class ExpressServer {
                 scriptSrc: ["'unsafe-inline'", "'self'"],
             },
         }));
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'https://api.thepdonganh.itomo.one',
-            'https://thepdonganh.itomo.one',
-            'http://192.168.1.18:3000',
-        ];
+        const allowedOrigins = ['http://localhost:3000', 'https://vuthanhvinhvippro.id.vn'];
         server.use((0, cors_1.default)({
             origin: (origin, callback) => {
                 if (!origin || allowedOrigins.includes(origin)) {
