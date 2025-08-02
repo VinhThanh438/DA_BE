@@ -1,0 +1,26 @@
+{
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "cSpell.language": "en,vi",
+    "cSpell.dictionaries": ["vietnamese"],
+    "cSpell.words": [
+        "appleboy",
+        "autoincrement",
+        "boms",
+        "Compartion",
+        "cuid",
+        "eventbus",
+        "fontawesome",
+        "fortawesome",
+        "GATELOG",
+        "paymented",
+        "pricings",
+        "referrerpolicy",
+        "rowspan",
+        "swiper"
+    ],
+    "cSpell.ignoreRegExpList": ["/\\/\\/.*$/", "/\\/\\*[\\s\\S]*?\\*\\//", "/(['\"])(?:(?=(\\\\?))\\2.)*?\\1/"],
+    "[prisma]": {
+        "editor.defaultFormatter": "Prisma.prisma"
+    }
+}

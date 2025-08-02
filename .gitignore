@@ -151,4 +151,4 @@ temp
 src/common/schemas/migrations
 
 # vscode
-.vscode/
+# .vscode/
