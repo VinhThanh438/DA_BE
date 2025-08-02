@@ -50,23 +50,3 @@ jobs:
                       yarn install
                       yarn prisma:push
                       yarn pm2:reload
-
-# jobs:
-#     deploy:
-#         name: Deploy
-#         runs-on: ubuntu-22.04
-#         steps:
-#             - name: deploy
-#               uses: appleboy/ssh-action@master
-#               with:
-#                   host: ${{ secrets.HOST }}
-#                   username: ${{ secrets.USERNAME }}
-#                   key: ${{ secrets.PRIVATE_KEY }}
-#                   port: ${{ secrets.PORT }}
-#                   script: |
-#                       cd ~/erp/DA_BE
-#                       git pull
-#                       yarn
-#                       yarn prisma:push
-#                       yarn build
-#                       yarn pm2:reload
