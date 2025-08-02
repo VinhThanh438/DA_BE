@@ -1,4 +1,4 @@
-# BE_THEP_DONG_ANH
+# BE_ERP
 
 ## Project Architecture
 
@@ -19,7 +19,7 @@ Dự án này cung cấp một **hệ thống backend** sử dụng **ExpressJS*
 
 ### ⚙️ Business Logic Handling
 
-Toàn bộ logic nghiệp vụ được xử lý trong thư mục `common` và `services` bên trong `common`, **tránh phụ thuộc chéo** giữa các thành phần khác nhau trong hệ thống.
+Toàn bộ logic nghiệp vụ được xử lý trong thư mục `common` và `services` bên trong `common`
 
 ---
 
@@ -72,9 +72,3 @@ Dễ dàng triển khai triến lược multiple entrypoint khi cần scale hệ
 - `yarn prisma:reset` Để xóa toàn bộ dữ liệu trong database
 
 ---
-
-## APP
-
-## DOCUMENTS
-
-[`Document link`](https://drive.google.com/drive/folders/1YTbmTn_Sus2NhwOx1hN9RDytSQiwCWR8)
