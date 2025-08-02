@@ -5,8 +5,8 @@ on:
         branches: ['main']
 
 jobs:
-    build:
-        name: Build
+    deploy:
+        name: Deploy
         runs-on: ubuntu-22.04
         steps:
             - name: deploy
@@ -20,5 +20,6 @@ jobs:
                       cd ~/erp/DA_BE
                       git pull
                       yarn
+                      yarn prisma:push
                       yarn build
                       yarn pm2:reload
